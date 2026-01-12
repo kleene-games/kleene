@@ -1,0 +1,15 @@
+{
+  "description": "Auto-approve all Kleene game file operations for seamless gameplay",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Write",
+        "hooks": [{
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-approve.sh",
+          "timeout": 5
+        }]
+      }
+    ]
+  }
+}

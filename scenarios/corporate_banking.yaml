@@ -1,0 +1,1129 @@
+metadata:
+  title: "The Rise and Fall: A Banking Career"
+  author: "Kleene Narrative Engine"
+  version: "1.0"
+  description: "Navigate the treacherous waters of corporate banking from junior analyst to your ultimate destiny"
+
+state:
+  character:
+    reputation:
+      type: integer
+      initial: 50
+      description: "Your standing among colleagues and management (0-100)"
+
+    ethics:
+      type: integer
+      initial: 50
+      description: "Your ethical compass (0=corrupt, 100=saint)"
+
+    analytical_skills:
+      type: integer
+      initial: 40
+      description: "Your technical fraud analysis abilities"
+
+    political_skills:
+      type: integer
+      initial: 30
+      description: "Your ability to navigate office politics"
+
+    network_strength:
+      type: integer
+      initial: 20
+      description: "Strength of your professional network"
+
+  world:
+    position:
+      type: string
+      initial: "Junior Analyst"
+      description: "Current job title"
+
+    salary:
+      type: integer
+      initial: 65000
+      description: "Annual salary in dollars"
+
+    years_employed:
+      type: integer
+      initial: 0
+      description: "Years at the bank"
+
+    scandal_exposure:
+      type: integer
+      initial: 0
+      description: "How much you know about company wrongdoing"
+
+    boss_relationship:
+      type: string
+      initial: "neutral"
+      description: "Relationship with current manager"
+
+    martinez_trust:
+      type: integer
+      initial: 0
+      description: "Trust level with Sarah Martinez (mentor figure)"
+
+    chen_alliance:
+      type: integer
+      initial: 0
+      description: "Alliance strength with David Chen (political climber)"
+
+nodes:
+  start:
+    type: story
+    title: "First Day at Sentinel National Bank"
+    content: |
+      Your hands are slightly clammy as you push through the revolving doors of Sentinel National Bank's headquarters.
+      The marble lobby echoes with purposeful footsteps. You're starting today as a Junior Analyst in the Credit Card
+      Fraud Analysis team—bottom rung of the corporate ladder, but it's a start.
+
+      At orientation, you meet two people who will shape your journey:
+
+      Sarah Martinez, a veteran Senior Analyst with 15 years at the bank, gives you a warm smile. "Stick with me,
+      kid. I'll show you how things really work around here."
+
+      David Chen, a smooth-talking Associate Manager, shakes your hand firmly. "Smart people rise fast here.
+      Let me know if you want to skip the grunt work and make real moves."
+
+      Your manager, Patricia Reynolds, barely looks up from her screen during your introduction. "Desk is over there.
+      Don't bother me unless it's urgent."
+    next: first_week_decision
+
+  first_week_decision:
+    type: choice
+    title: "End of Week One"
+    content: |
+      Friday afternoon. You've spotted something odd in the transaction data—a pattern that might indicate organized
+      fraud, but it's outside your assigned accounts. Reporting it means extra work and possibly stepping on toes.
+
+      Sarah notices you studying the data. "Found something?"
+
+      David walks by: "Still here? Come on, some of us are heading to McGinty's. Network with the right people."
+    choices:
+      - text: "Report the fraud pattern to Patricia, even though it's extra work"
+        logic: "reputation += 10; ethics += 10; analytical_skills += 5; boss_relationship = 'professional'"
+        next: noticed_by_management
+
+      - text: "Join David at the bar—networking might be more valuable than overtime"
+        logic: "political_skills += 10; network_strength += 10; chen_alliance += 15"
+        next: chen_mentorship
+
+      - text: "Take Sarah's offer to learn the ropes properly before making waves"
+        logic: "analytical_skills += 15; martinez_trust += 20; reputation += 5"
+        next: martinez_mentorship
+
+  noticed_by_management:
+    type: story
+    title: "Making an Impression"
+    content: |
+      Patricia actually looks impressed when you present the fraud pattern. "This is good work. Most juniors
+      wouldn't have caught this." She forwards your analysis to the VP of Risk Management.
+
+      Monday morning, you're called into a meeting with James Whitmore, the VP. He's reviewing your report
+      with interest. "We've been looking for someone with initiative in Risk Management. How would you feel
+      about a rotation?"
+
+      But there's a catch—Patricia looks furious. She clearly didn't expect you to leapfrog her team so quickly.
+    logic: "years_employed += 0.25; reputation += 15"
+    next: early_promotion_choice
+
+  early_promotion_choice:
+    type: choice
+    title: "A Difficult Choice"
+    content: |
+      Whitmore is offering you a chance to move to Risk Management—better pay, better title (Senior Analyst),
+      better opportunities. But you've been here three months. Patricia's icy stare suggests this will burn a bridge.
+
+      Sarah catches you after the meeting: "Be careful. Whitmore's brilliant, but he collects proteges and
+      then forgets them. Patricia is petty and will remember this."
+    choices:
+      - text: "Accept the Risk Management position—this is too good to pass up"
+        logic: "position = 'Senior Analyst - Risk Management'; salary = 85000; reputation += 10; analytical_skills += 10; boss_relationship = 'enemy'"
+        next: risk_management_rise
+
+      - text: "Decline politely and stay in Fraud Analysis to build a solid foundation"
+        logic: "reputation += 20; ethics += 5; martinez_trust += 15; boss_relationship = 'respected'"
+        next: steady_progression
+
+  chen_mentorship:
+    type: story
+    title: "The Political Game"
+    content: |
+      David Chen becomes your unofficial mentor over the next six months. He teaches you which meetings matter,
+      who really makes decisions, and how to make your accomplishments visible to the right people.
+
+      "Analytics is fine," he says over drinks, "but this bank runs on relationships and perception. Watch."
+
+      He introduces you to Marcus Webb, the SVP of Commercial Banking, at a company mixer. Within minutes,
+      Chen has positioned you as "the sharpest analyst in Fraud Detection" despite your minimal experience.
+
+      Webb seems intrigued. "We're expanding the Commercial Lending team. Someone who understands fraud risk
+      could be valuable..."
+
+      But you've noticed Chen often takes credit for other people's work. And Sarah has started avoiding you.
+    logic: "years_employed += 0.5; political_skills += 20; network_strength += 20; reputation -= 5; martinez_trust -= 10"
+    next: commercial_opportunity
+
+  martinez_mentorship:
+    type: story
+    title: "Learning the Craft"
+    content: |
+      Sarah Martinez turns out to be an exceptional teacher. Over six months, she shows you the intricate
+      patterns of financial fraud—the subtle anomalies that only experience can recognize.
+
+      "The bank will try to rush you into management," she warns. "But master the fundamentals first.
+      Technical expertise is power they can't take away."
+
+      Under her guidance, you've become genuinely skilled. Your fraud detection rate is the highest in the
+      department. Patricia has thawed considerably and now trusts you with complex cases.
+
+      One evening, Sarah shares something troubling: "I've found irregularities in some Commercial Lending
+      accounts. Large loans approved despite risk flags. I think someone's overriding the system."
+
+      She looks at you seriously. "This could be big. Want to help me investigate quietly?"
+    logic: "years_employed += 0.5; analytical_skills += 25; reputation += 15; martinez_trust += 30; ethics += 5"
+    next: investigation_choice
+
+  investigation_choice:
+    type: choice
+    title: "A Dangerous Discovery"
+    content: |
+      Sarah's found evidence of loan approval fraud—potentially millions of dollars. But the approvals trace
+      back to the Commercial Banking division, which includes several VPs.
+
+      "If we're wrong, we're finished," Sarah says. "If we're right and they cover it up, we're also finished.
+      But if we do nothing, we're complicit."
+    choices:
+      - text: "Help Sarah investigate and build an airtight case before reporting"
+        logic: "scandal_exposure = 50; ethics += 15; analytical_skills += 10"
+        next: whistleblower_path
+
+      - text: "This is above your pay grade—suggest Sarah report it through official channels"
+        logic: "ethics += 5; reputation += 5; scandal_exposure = 20"
+        next: official_channels
+
+      - text: "Stay out of it—you have a career to think about"
+        logic: "ethics -= 15; political_skills += 5; martinez_trust -= 30"
+        next: willful_blindness
+
+  risk_management_rise:
+    type: story
+    title: "Climbing the Ladder"
+    content: |
+      Under James Whitmore's wing, your career accelerates. Within 18 months, you're promoted to Risk Manager,
+      then Associate Director. The work is challenging but rewarding—you're implementing new fraud detection
+      systems, working with C-suite executives, making real impact.
+
+      Your salary has climbed to $145,000. You're 28 years old and managing a team of five analysts.
+
+      Then Whitmore calls you into his office with an unusual request. "I need someone I trust to review the
+      Commercial Lending portfolio. Quietly. The numbers don't match the risk profiles."
+
+      As you dig into the data, you realize why: someone has been systematically approving high-risk loans
+      that should never have passed review. The exposure is over $50 million.
+
+      But here's the problem—one of the loan officers involved is Marcus Webb's nephew. Webb is on the
+      Executive Committee and notoriously protective of family.
+    logic: "years_employed += 2; position = 'Associate Director - Risk Management'; salary = 145000; reputation += 25; analytical_skills += 20; scandal_exposure = 75"
+    next: webb_scandal_choice
+
+  webb_scandal_choice:
+    type: choice
+    title: "Career Defining Moment"
+    content: |
+      You have ironclad evidence of loan fraud. Whitmore is waiting for your report. But exposing Webb's
+      nephew could make you a powerful enemy—or earn you respect for integrity.
+
+      David Chen (now a VP himself) catches wind of your investigation. "Be smart about this. Webb can end
+      careers. Maybe the report gets... summarized. You've got a bright future—don't waste it on principle."
+    choices:
+      - text: "Deliver the full unvarnished report to Whitmore and Compliance"
+        logic: "ethics += 25; reputation += 30; scandal_exposure = 100"
+        next: integrity_consequences
+
+      - text: "Soften the report to protect Webb while still flagging the issues"
+        logic: "ethics -= 10; political_skills += 15; reputation += 10"
+        next: political_compromise
+
+      - text: "Suppress the worst findings and hope the problem goes away"
+        logic: "ethics -= 30; scandal_exposure = 100; political_skills += 5"
+        next: complicity_path
+
+  commercial_opportunity:
+    type: choice
+    title: "Crossroads"
+    content: |
+      Marcus Webb is offering you a position as Senior Analyst in Commercial Lending—a lateral move in title
+      but a 30% salary bump and exposure to the revenue-generating side of the bank.
+
+      "Fraud Analysis is cost-center work," Webb explains. "Come to Commercial and learn how we make money.
+      That's where the real careers are built."
+
+      David is encouraging: "This is the opportunity I've been setting up for you."
+
+      But Sarah pulls you aside: "Webb's division has the worst risk culture in the bank. Everything's about
+      hitting numbers. You'll be pressured to approve questionable loans."
+    choices:
+      - text: "Accept Webb's offer—higher pay and better connections"
+        logic: "position = 'Senior Analyst - Commercial Lending'; salary = 95000; political_skills += 15; network_strength += 15; ethics -= 10"
+        next: commercial_corruption
+
+      - text: "Stay in Fraud Analysis where you can do honest work"
+        logic: "reputation += 10; ethics += 10; martinez_trust += 20"
+        next: steady_progression
+
+  steady_progression:
+    type: story
+    title: "The Long Game"
+    content: |
+      You've chosen the slow, steady path. Over three years, you've become Patricia's most reliable analyst,
+      then her successor when she retires. You're now the Manager of Fraud Analysis with a team of eight.
+
+      Salary: $115,000. Reputation: Excellent. You're known as thorough, ethical, and skilled.
+
+      The work isn't glamorous, but it's meaningful. You've prevented millions in fraud losses. Your team
+      respects you. Sarah is now Director of Risk Operations and remains a trusted ally.
+
+      Then the scandal breaks: The Commercial Banking division is under federal investigation for fraudulent
+      loan approvals. Several executives are implicated, including Marcus Webb and David Chen.
+
+      The CEO, Richard Caldwell, is cleaning house. He needs people with spotless reputations to rebuild
+      trust. Your name comes up.
+    logic: "years_employed += 3; position = 'Manager - Fraud Analysis'; salary = 115000; reputation += 35; ethics += 20; analytical_skills += 15; martinez_trust += 25"
+    next: crisis_opportunity
+
+  crisis_opportunity:
+    type: choice
+    title: "Opportunity in Crisis"
+    content: |
+      Caldwell offers you VP of Compliance and Risk—a massive leap. You'd oversee all risk management,
+      compliance, and fraud prevention. Salary: $225,000.
+
+      "I need someone clean," Caldwell says bluntly. "Someone who won't be tempted. Your record is spotless."
+
+      But Sarah warns: "You'll be the scapegoat if anything goes wrong. Caldwell is trying to save his own
+      skin. Take the title but watch your back—document everything."
+    choices:
+      - text: "Accept the VP role—this is your shot at the executive level"
+        logic: "position = 'VP of Compliance and Risk'; salary = 225000; reputation += 40; political_skills += 20"
+        next: vp_challenges
+
+      - text: "Negotiate for Chief Risk Officer role with Board reporting"
+        logic: "position = 'Chief Risk Officer'; salary = 275000; reputation += 50; political_skills += 25; ethics += 10"
+        next: cro_power
+
+      - text: "Decline—this feels like a setup to take the fall"
+        logic: "ethics += 15; reputation += 20"
+        next: external_opportunity
+
+  whistleblower_path:
+    type: story
+    title: "The Whistleblower"
+    content: |
+      You and Sarah spend two months building an airtight case. Forged signatures. Override codes.
+      Kickbacks. The fraud goes deeper than you imagined—and it implicates two VPs and one SVP.
+
+      You report it to Compliance, the Board's Audit Committee, and as a backup, you document everything
+      with an attorney.
+
+      The fallout is immediate and severe. The bank launches an internal investigation. Three executives
+      are placed on leave. The media gets wind of it.
+
+      You and Sarah are simultaneously praised as heroes and frozen out by your colleagues. "Snitches,"
+      someone spray-paints on your car.
+
+      The bank offers you a choice: a quiet severance package ($200,000) and an NDA, or stay and face the
+      political consequences.
+    logic: "years_employed += 1; scandal_exposure = 100; reputation = 30; ethics += 40; martinez_trust = 100"
+    next: whistleblower_choice
+
+  whistleblower_choice:
+    type: choice
+    title: "Aftermath"
+    content: |
+      You've done the right thing, but at great cost. Half the company sees you as a hero; the other half
+      as a traitor. Your career at Sentinel is effectively over, regardless of whether you stay or go.
+    choices:
+      - text: "Take the severance and move on—you have legal grounds and your integrity"
+        logic: "ethics += 10; reputation += 20"
+        next: whistleblower_redemption
+
+      - text: "Stay and fight—force them to acknowledge what you did was right"
+        logic: "ethics += 20; reputation -= 10; political_skills += 15"
+        next: hostile_environment
+
+      - text: "Take your evidence to federal regulators and the press"
+        logic: "ethics += 30; reputation = 100; scandal_exposure = 100"
+        next: full_exposure
+
+  complicity_path:
+    type: story
+    title: "The Compromise"
+    content: |
+      You bury the worst of the evidence. The report you submit flags some procedural issues but obscures
+      the fraud. Whitmore looks disappointed but doesn't push. Webb is grateful and now owes you a favor.
+
+      Over the next two years, your career flourishes. Director of Risk Management. Then SVP. Then offered
+      EVP of Operations. Salary: $425,000. Stock options. Company car.
+
+      You're 32 years old and on track to become CFO by 40.
+
+      But you can't sleep. The fraud is still happening. The exposure is now over $200 million. You're in
+      deep—every promotion has been tied to keeping quiet.
+
+      Then the FBI arrives. Someone else found the evidence. They have emails, records, and they want to
+      know why you buried your report.
+    logic: "years_employed += 4; position = 'EVP of Operations'; salary = 425000; reputation += 40; political_skills += 30; ethics -= 50; scandal_exposure = 100"
+    next: criminal_exposure
+
+  criminal_exposure:
+    type: choice
+    title: "The Reckoning"
+    content: |
+      The federal prosecutor is offering you a deal: cooperate fully, testify against Webb and the others,
+      and plead to a lesser charge. Or face conspiracy charges yourself—up to 15 years in prison.
+
+      Your attorney is blunt: "You suppressed evidence of bank fraud. That makes you part of the conspiracy.
+      Take the deal."
+    choices:
+      - text: "Cooperate fully with prosecutors—testify against everyone"
+        logic: "ethics += 20; reputation = 0"
+        next: prosecution_witness
+
+      - text: "Fight the charges—claim you didn't understand the full scope"
+        logic: "ethics -= 10; reputation -= 30"
+        next: trial_gamble
+
+      - text: "Flee—you have money and connections abroad"
+        logic: "ethics -= 40; reputation = 0"
+        next: fugitive_ending
+
+  commercial_corruption:
+    type: story
+    title: "The Revenue Machine"
+    content: |
+      Commercial Lending is intoxicating. You're approving million-dollar loans, schmoozing clients at
+      steakhouses, earning bonuses tied to loan volume. Within a year, you're making $135,000 plus commissions.
+
+      But Webb's team plays fast and loose with risk metrics. "The bank makes money on defaults too," Webb
+      explains. "Higher interest, penalty fees, we seize collateral. Stop thinking like Risk Management."
+
+      David Chen is thriving here. He's a Senior VP now, approving loans you know are sketchy.
+
+      One day, a client offers you a "consulting fee" of $50,000 if their loan gets approved. It's clearly
+      a bribe. David shrugs: "Everyone does it. Just run it through an LLC."
+    logic: "years_employed += 1.5; salary = 135000; political_skills += 20; network_strength += 25; ethics -= 25; scandal_exposure = 60"
+    next: bribe_decision
+
+  bribe_decision:
+    type: choice
+    title: "The Line"
+    content: |
+      $50,000 for approving one loan. You could approve it anyway—the numbers are borderline but defensible.
+      The money would change your life. Buy a house. Pay off loans.
+
+      But it's a line you've never crossed.
+    choices:
+      - text: "Take the bribe—everyone else is doing it"
+        logic: "ethics -= 30; salary += 50000; scandal_exposure = 80"
+        next: corruption_spiral
+
+      - text: "Reject the bribe and approve the loan on its merits"
+        logic: "ethics += 10; reputation += 10"
+        next: commercial_success
+
+      - text: "Report the bribe attempt to Compliance"
+        logic: "ethics += 25; reputation -= 20; network_strength -= 30"
+        next: pariah_status
+
+  corruption_spiral:
+    type: story
+    title: "The Slippery Slope"
+    content: |
+      Once you take the first bribe, the rest come easier. Over two years, you've pocketed $400,000 in
+      "consulting fees" routed through shell companies. Your official salary is $175,000, but your real
+      income is over $350,000.
+
+      You buy a luxury condo. Drive a Porsche. Vacation in Monaco.
+
+      David Chen knows what you're doing—he's doing it too. Webb probably knows but doesn't care as long
+      as loan volumes stay high.
+
+      Then the FBI raids the office. Subpoenas. Forensic accountants. Someone talked, and now they're
+      unraveling everything.
+
+      Your attorney's advice: "You're looking at bank fraud, money laundering, conspiracy. Best case,
+      you plead out and serve 3-5 years. Worst case, 20 years."
+    logic: "years_employed += 2; position = 'VP - Commercial Lending'; salary = 175000; ethics = 0; reputation = 0; scandal_exposure = 100"
+    next: prison_ending
+
+  integrity_consequences:
+    type: story
+    title: "The Cost of Integrity"
+    content: |
+      Your report triggers a massive internal investigation. Webb's nephew is fired. Two VPs are forced to
+      resign. The bank recovers $40 million in fraudulent loans.
+
+      Publicly, the CEO praises your "diligence and ethical leadership." Privately, you've become toxic.
+      Webb is demoted but still influential, and he's poisoned your reputation with other executives.
+
+      Your promotion to Director is mysteriously delayed. Projects you're assigned to get reassigned.
+      You're being managed out.
+
+      But then something unexpected: Three Board members invite you to lunch. They represent the faction
+      pushing for leadership change.
+
+      "Caldwell protected Webb too long," one explains. "We want new executive leadership. People with
+      actual integrity. Interested in being Chief Risk Officer?"
+    logic: "years_employed += 1; reputation = 70; ethics += 30; scandal_exposure = 100"
+    next: board_offer
+
+  board_offer:
+    type: choice
+    title: "The Board's Offer"
+    content: |
+      The Board faction is offering you CRO—reporting directly to them, not the CEO. Salary: $350,000.
+      Real power. But you'd be in the middle of a corporate civil war.
+
+      Alternatively, you've received an offer from a competitor bank: SVP of Risk Management. Clean slate.
+      $275,000. No politics.
+    choices:
+      - text: "Accept the CRO role—finish what you started"
+        logic: "position = 'Chief Risk Officer'; salary = 350000; reputation += 40; political_skills += 30"
+        next: cro_power
+
+      - text: "Take the competitor's offer—fresh start, less drama"
+        logic: "position = 'SVP of Risk Management'; salary = 275000; reputation += 30; ethics += 10"
+        next: fresh_start_success
+
+  vp_challenges:
+    type: story
+    title: "Baptism by Fire"
+    content: |
+      As VP of Compliance and Risk, you're tasked with rebuilding the bank's reputation post-scandal.
+      It's brutal work. Resistant executives. Regulatory scrutiny. Hostile media.
+
+      But you're good at it. You implement new controls, fire bad actors, rebuild the compliance team.
+      Over 18 months, the bank stabilizes.
+
+      CEO Caldwell is impressed. "You've done the impossible. I'm recommending you for COO."
+
+      Chief Operating Officer. Second-in-command. Salary: $650,000 plus stock. You're 35 years old.
+
+      But there's a catch: Caldwell wants you to go easier on the Commercial Banking team. "We're stable
+      now. Time to focus on growth. Stop blocking deals."
+    logic: "years_employed += 1.5; position = 'VP of Compliance and Risk'; reputation += 45; ethics += 15; political_skills += 25"
+    next: coo_decision
+
+  coo_decision:
+    type: choice
+    title: "The COO Dilemma"
+    content: |
+      Caldwell is offering you COO—the stepping stone to CEO. But he wants you to compromise the risk
+      controls you built. "Managed risk," he calls it. You call it "inevitable scandal 2.0."
+    choices:
+      - text: "Accept COO and maintain strict risk standards—fight from inside"
+        logic: "position = 'Chief Operating Officer'; salary = 650000; reputation += 50; ethics += 10"
+        next: coo_rebellion
+
+      - text: "Accept COO and relax controls—Caldwell's right, it's time for growth"
+        logic: "position = 'Chief Operating Officer'; salary = 650000; ethics -= 20; political_skills += 20"
+        next: growth_focus
+
+      - text: "Refuse COO and threaten to resign unless risk independence is guaranteed"
+        logic: "ethics += 25; reputation += 30"
+        next: principled_stand
+
+  cro_power:
+    type: story
+    title: "Real Authority"
+    content: |
+      As CRO with Board-level reporting, you have genuine authority. You're untouchable by the executive
+      committee. You rebuild the risk framework from the ground up—robust, independent, effective.
+
+      Three years in, the bank is the industry model for risk management. No scandals. Excellent ratings.
+      Profitable growth within appropriate risk parameters.
+
+      Then Richard Caldwell announces his retirement. The Board needs a new CEO. Several external candidates
+      are being considered, but two Board members approach you.
+
+      "The bank needs continuity and credibility. You embody both. Interested in the CEO role?"
+    logic: "years_employed += 3; position = 'Chief Risk Officer'; salary = 450000; reputation = 95; ethics += 20; political_skills += 30"
+    next: ceo_candidacy
+
+  ceo_candidacy:
+    type: choice
+    title: "The Ultimate Opportunity"
+    content: |
+      You're being offered the CEO position. Salary: $2.5 million plus significant stock options. You'd
+      be running a $50 billion bank at age 38.
+
+      But you'd give up the independence of the CRO role. As CEO, you'd balance risk, growth, shareholders,
+      regulators, employees. Compromise would be inevitable.
+    choices:
+      - text: "Accept the CEO role—lead the bank you've helped rebuild"
+        logic: "position = 'Chief Executive Officer'; salary = 2500000; reputation = 100"
+        next: ceo_ending
+
+      - text: "Stay as CRO—you're more effective here than in the political CEO role"
+        logic: "ethics += 15; reputation += 20"
+        next: cro_legacy_ending
+
+  official_channels:
+    type: story
+    title: "Process and Consequences"
+    content: |
+      Sarah reports the fraud through official channels. Compliance investigates. Internal Audit gets involved.
+      The process takes six months and ultimately confirms Sarah's findings.
+
+      Several Commercial Banking officers are fired. Loan approvals are tightened. Sarah is commended
+      for her diligence.
+
+      You, having stayed on the sidelines, are neither rewarded nor punished. Your career continues its
+      steady trajectory. Manager. Senior Manager. Director over eight years.
+
+      You're now Director of Fraud Prevention, making $155,000. Comfortable. Stable. Unremarkable.
+
+      Sarah, meanwhile, became Chief Compliance Officer. She remembers that you didn't help when it mattered.
+    logic: "years_employed += 8; position = 'Director of Fraud Prevention'; salary = 155000; reputation += 20; ethics += 5; martinez_trust = 0"
+    next: middle_management_ending
+
+  willful_blindness:
+    type: story
+    title: "Comfortable Ignorance"
+    content: |
+      You stay out of Sarah's investigation. She proceeds alone, reports it, and faces significant backlash
+      from the Commercial Banking executives before being vindicated.
+
+      She no longer speaks to you.
+
+      Your career advances steadily through political maneuvering rather than merit. You've learned to
+      avoid controversy, build relationships with powerful people, and never make waves.
+
+      Over 12 years, you climb to SVP of Fraud Operations. Salary: $285,000. You're 40 years old.
+
+      But you're seen as a political operator, not a leader. When the next VP role opens, they hire someone
+      external. You've hit your ceiling.
+    logic: "years_employed += 12; position = 'SVP of Fraud Operations'; salary = 285000; reputation = 50; ethics = 20; political_skills += 40"
+    next: ceiling_ending
+
+  political_compromise:
+    type: story
+    title: "The Careful Path"
+    content: |
+      Your report flags the loan issues but softens the implications for Webb's nephew. "Procedural
+      oversights" rather than "fraud." Webb is grateful for your discretion.
+
+      Your career benefits immediately. Director within a year. VP within three. Webb becomes your patron,
+      opening doors and recommending you for key projects.
+
+      You're making $240,000 as VP of Enterprise Risk Management at age 33. On track for SVP.
+
+      But the loans you soft-pedaled eventually default. $30 million in losses. Regulators investigate.
+      Your original report surfaces, and now it looks like you provided cover.
+
+      Webb throws you under the bus: "I relied on Risk Management's assessment. If they said the loans
+      were acceptable..."
+    logic: "years_employed += 5; position = 'VP of Enterprise Risk Management'; salary = 240000; reputation = 60; ethics = 30; scandal_exposure = 80"
+    next: scapegoat_choice
+
+  scapegoat_choice:
+    type: choice
+    title: "Taking the Fall"
+    content: |
+      The Board is looking for accountability. Your name is at the top of the list. Webb is politically
+      untouchable, but you're expendable.
+
+      HR offers you a choice: resign with severance ($150,000) or be terminated for cause with nothing.
+    choices:
+      - text: "Resign quietly and take the severance"
+        logic: "reputation = 30; ethics -= 10"
+        next: forced_out_ending
+
+      - text: "Refuse and force them to fire you—then expose everything publicly"
+        logic: "ethics += 20; reputation = 20; scandal_exposure = 100"
+        next: scorched_earth
+
+      - text: "Lawyer up and threaten wrongful termination lawsuit"
+        logic: "political_skills += 15; reputation = 40"
+        next: settlement_ending
+
+  commercial_success:
+    type: story
+    title: "Clean Money"
+    content: |
+      You reject the bribe but approve the loan based on its merits. The client is annoyed but proceeds.
+      The loan performs well, vindicating your judgment.
+
+      Over four years in Commercial Lending, you build a reputation for aggressive but clean deal-making.
+      High volume, good performance, no scandals.
+
+      You're promoted to SVP of Commercial Banking. Salary: $320,000 plus bonuses. You're 34 years old
+      and running a $2 billion loan portfolio.
+
+      When the FBI investigation hits Webb and Chen, you're untouched. Your portfolio has the best
+      performance and cleanest compliance record in the division.
+
+      The new CEO, brought in to restore credibility, asks you to lead the entire Commercial Banking
+      division as EVP.
+    logic: "years_employed += 4; position = 'SVP of Commercial Banking'; salary = 320000; reputation = 80; ethics += 15; political_skills += 25"
+    next: evp_offer
+
+  evp_offer:
+    type: choice
+    title: "Leadership Opportunity"
+    content: |
+      EVP of Commercial Banking means running a $15 billion business. Salary: $550,000 plus significant
+      bonuses. You'd oversee 200+ employees and be on the Executive Committee.
+
+      But you'd also be cleaning up Webb's mess for years. Every skeleton he buried will become your problem.
+    choices:
+      - text: "Accept the EVP role—this is what you've worked for"
+        logic: "position = 'EVP of Commercial Banking'; salary = 550000; reputation += 40; political_skills += 30"
+        next: evp_success_path
+
+      - text: "Counter-offer: EVP of Commercial + Chief Lending Officer title"
+        logic: "position = 'EVP and Chief Lending Officer'; salary = 625000; reputation += 50"
+        next: executive_track
+
+  whistleblower_redemption:
+    type: story
+    title: "Vindication"
+    content: |
+      You take the severance and leave Sentinel National Bank. For six months, you're unemployed and
+      wondering if you destroyed your career for nothing.
+
+      Then the federal investigation concludes. Three executives are indicted. The bank pays $200 million
+      in fines. And your name appears in the press as the whistleblower who exposed it all.
+
+      Suddenly, you're in demand. Five job offers. Speaking invitations. A book deal offer.
+
+      Commonwealth Financial, a competitor bank, offers you Chief Risk Officer. They want someone known
+      for integrity. Salary: $400,000. Fresh start. Clean slate.
+    logic: "years_employed = 0; position = 'Chief Risk Officer'; salary = 400000; reputation = 100; ethics = 100"
+    next: redemption_ending
+
+  prosecution_witness:
+    type: story
+    title: "State's Evidence"
+    content: |
+      You testify against Webb, Chen, and five other executives. Your testimony is devastating—you have
+      emails, documents, recordings. The jury convicts all of them.
+
+      You plead guilty to one count of misprision of felony. Sentence: 18 months in federal prison,
+      suspended. Three years probation. $50,000 fine.
+
+      Your banking career is over. You're 36 years old, unemployable in finance, and infamous.
+
+      You eventually find work as a compliance consultant for small community banks. The pay is $85,000—
+      less than you made as a junior analyst. But you sleep at night.
+    logic: "position = 'Compliance Consultant'; salary = 85000; reputation = 40; ethics += 30"
+    next: redemption_ending
+
+  trial_gamble:
+    type: story
+    title: "The Verdict"
+    content: |
+      You take your chances at trial. Your attorney argues you were manipulated by senior executives,
+      that you didn't understand the full scope of the fraud.
+
+      The jury deliberates for six days. You're acquitted on the conspiracy charges but convicted of
+      obstruction of justice for suppressing your original report.
+
+      Sentence: Four years in federal prison. $100,000 fine. Permanent ban from working in banking.
+
+      You serve 30 months. When you're released, you're 38 years old with a felony record and no career.
+    logic: "position = 'Unemployed (Felon)'; salary = 0; reputation = 0; ethics = 10"
+    next: prison_ending
+
+  coo_rebellion:
+    type: story
+    title: "Power Struggle"
+    content: |
+      As COO, you refuse to compromise the risk standards. You block deals that don't meet criteria.
+      Commercial Banking executives complain to Caldwell.
+
+      "You're costing us revenue," Caldwell warns. "Be flexible or be replaced."
+
+      You hold firm. The Board's risk committee backs you. Caldwell is forced to tolerate your independence,
+      but the relationship is toxic.
+
+      Two years later, Caldwell retires. The Board offers you the CEO role—they respect your integrity
+      and know you can run the bank.
+    logic: "years_employed += 2; reputation = 95; ethics += 20; political_skills += 15"
+    next: ceo_ending
+
+  growth_focus:
+    type: story
+    title: "Shifting Priorities"
+    content: |
+      As COO, you loosen risk controls to enable growth. Revenue climbs 15% year-over-year. Stock price
+      rises. Caldwell is thrilled.
+
+      Three years in, you're named CEO when Caldwell retires. Salary: $2.8 million. You've made it.
+
+      Two years into your tenure as CEO, the economy contracts. All those aggressive loans you approved
+      start defaulting. Losses mount. Regulators investigate.
+
+      The Board forces you to resign. You leave with a $10 million severance package but a permanently
+      damaged reputation.
+    logic: "years_employed += 5; position = 'Former CEO (Resigned)'; salary = 0; reputation = 20; ethics = 20"
+    next: forced_out_ending
+
+  principled_stand:
+    type: story
+    title: "Drawing the Line"
+    content: |
+      You refuse the COO role unless Caldwell guarantees risk independence. He refuses. You threaten to
+      resign publicly and explain why.
+
+      The Board intervenes. They're tired of Caldwell's risk tolerance. Within three months, Caldwell is
+      forced into early retirement.
+
+      The Board offers you CEO directly. "We need someone who won't compromise on risk."
+    logic: "years_employed += 0.5; reputation = 100; ethics += 30"
+    next: ceo_ending
+
+  pariah_status:
+    type: story
+    title: "The Outcast"
+    content: |
+      You report the bribe attempt. Compliance investigates. The client is blacklisted. Webb is furious—
+      you've cost him a major relationship.
+
+      You're systematically frozen out. No more big deals. No promotions. Eventually, you're "restructured"
+      out of the division.
+
+      You end up back in Risk Management, taking a pay cut to $95,000. Your career has effectively reset.
+
+      But Sarah Martinez, now a Senior VP, hears what happened and brings you onto her team. "I need
+      people with actual integrity."
+
+      Under Sarah's mentorship, you rebuild. It takes eight years, but you eventually become Director of
+      Risk Management. Salary: $165,000. Not where you could have been, but you can look yourself in the mirror.
+    logic: "years_employed += 8; position = 'Director of Risk Management'; salary = 165000; reputation = 70; ethics = 80; martinez_trust = 100"
+    next: middle_management_ending
+
+  evp_success_path:
+    type: story
+    title: "The Turnaround"
+    content: |
+      As EVP of Commercial Banking, you spend three years cleaning up Webb's mess. It's brutal, unglamorous
+      work—but you do it well. The division becomes profitable, compliant, and respected.
+
+      When the CEO position opens, you're the internal candidate. The Board is impressed with your turnaround
+      work. They offer you the role.
+    logic: "years_employed += 3; reputation = 90; ethics += 10"
+    next: ceo_ending
+
+  executive_track:
+    type: story
+    title: "Executive Success"
+    content: |
+      As EVP and Chief Lending Officer, you successfully turn around Commercial Banking while building
+      your reputation as a clean, competent executive.
+
+      Five years later, you're recruited to be CEO of a mid-sized regional bank. Salary: $1.8 million.
+      It's not Sentinel, but you're running your own institution.
+    logic: "years_employed += 5; position = 'CEO (Regional Bank)'; salary = 1800000; reputation = 95; ethics += 15"
+    next: regional_ceo_ending
+
+  hostile_environment:
+    type: story
+    title: "The Long Fight"
+    content: |
+      You refuse the severance and stay. For two years, you endure a hostile workplace. Sabotaged projects.
+      Excluded from meetings. Denied promotions.
+
+      But you document everything. When you're finally terminated "for cause," you sue for retaliation.
+
+      The lawsuit reveals the bank's misconduct publicly. You win a $2.5 million settlement and a public
+      apology. Your reputation as a whistleblower with integrity is cemented.
+
+      You're hired as Chief Ethics Officer at a Fortune 500 bank that wants someone known for principle.
+    logic: "years_employed += 2; position = 'Chief Ethics Officer'; salary = 425000; reputation = 95; ethics = 100"
+    next: redemption_ending
+
+  full_exposure:
+    type: story
+    title: "The Crusader"
+    content: |
+      You take your evidence to the SEC, FBI, and major media outlets. The scandal becomes national news.
+      Congressional hearings. Executive indictments. The bank's stock collapses.
+
+      You're simultaneously a hero and radioactive in the banking industry. No bank will hire someone who
+      might expose them too.
+
+      But you become a prominent advocate for financial reform. Book deals. Speaking circuit. Eventually,
+      you're appointed to a regulatory agency. Salary: $185,000 (government pay), but influence beyond measure.
+
+      You've traded wealth for impact.
+    logic: "position = 'Federal Banking Regulator'; salary = 185000; reputation = 100; ethics = 100"
+    next: regulator_ending
+
+  scorched_earth:
+    type: story
+    title: "Mutually Assured Destruction"
+    content: |
+      Rather than resign, you release your original buried report to the media along with evidence of
+      Webb's pressure. The scandal explodes. Webb is fired. The CEO is forced out.
+
+      But you're finished too. You're terminated for violating confidentiality agreements. Your severance
+      is voided. You face potential legal action.
+
+      The banking industry blacklists you. At 38, your career is over. You end up in corporate compliance
+      consulting for mid-sized companies. Salary: $120,000.
+
+      You destroyed them, but you destroyed yourself in the process.
+    logic: "position = 'Compliance Consultant'; salary = 120000; reputation = 30; ethics += 10"
+    next: pyrrhic_victory_ending
+
+  fresh_start_success:
+    type: story
+    title: "New Beginnings"
+    content: |
+      At Riverview Bank, you have a clean slate. No politics. No baggage. Just the work.
+
+      You build a best-in-class risk management program over five years. You're promoted to EVP of Risk
+      and Compliance. Salary: $480,000.
+
+      When the CEO retires, the Board offers you the position. You're 42 years old and running a $30 billion
+      regional bank.
+
+      It's not the Fortune 100, but it's a successful, ethical institution. And you built it.
+    logic: "years_employed += 5; position = 'CEO (Riverview Bank)'; salary = 1500000; reputation = 90; ethics = 85"
+    next: regional_ceo_ending
+
+  settlement_ending:
+    type: ending
+    title: "The Settlement"
+    content: |
+      After six months of legal threats, the bank settles. $850,000. NDA. Neutral reference.
+
+      You're 37, unemployed, but financially comfortable. You take a year off, then join a fintech startup
+      as Head of Risk. Salary: $220,000 plus equity.
+
+      The startup doesn't make you rich, but it's interesting work without the corporate politics. You're
+      48 when the company is acquired. Your equity is worth $3 million.
+
+      You retire comfortably, having avoided both prison and C-suite burnout.
+
+      **Final Position:** Head of Risk (Fintech, Acquired)
+      **Final Salary:** $220,000 (plus $3M equity windfall)
+      **Reputation:** 40/100
+      **Ethics:** 30/100
+      **Assessment:** Escaped consequences, but never reached your potential.
+
+  forced_out_ending:
+    type: ending
+    title: "Managed Out"
+    content: |
+      You resign and take the severance. At 38, you're too young to retire but too tainted for executive
+      roles at major banks.
+
+      You eventually find work at a small credit union as VP of Risk. Salary: $135,000. The work is fine.
+      The ambition is gone.
+
+      You retire at 65, having had a comfortable but unremarkable second act. You made one compromise too
+      many, and it cost you the career you could have had.
+
+      **Final Position:** VP of Risk (Credit Union)
+      **Final Salary:** $135,000
+      **Reputation:** 30/100
+      **Ethics:** 30/100
+      **Assessment:** Safe landing, but far below your potential.
+
+  prison_ending:
+    type: ending
+    title: "Federal Prison"
+    content: |
+      You're sentenced to eight years in federal prison for bank fraud and money laundering. With good
+      behavior, you serve five.
+
+      When released, you're 41 years old, a convicted felon, permanently barred from banking. Your career
+      is over. Your reputation is destroyed.
+
+      You work retail management for $45,000/year. You're broke, banned from the industry, and live with
+      the consequences of your choices every day.
+
+      Greed cost you everything.
+
+      **Final Position:** Retail Manager (Post-Incarceration)
+      **Final Salary:** $45,000
+      **Reputation:** 0/100
+      **Ethics:** 0/100
+      **Assessment:** Total failure. Prison time. Career destroyed.
+
+  fugitive_ending:
+    type: ending
+    title: "International Fugitive"
+    content: |
+      You flee to a country without extradition. You live off your hidden money for a few years, but
+      eventually it runs out. You can't work legally. Can't return home.
+
+      You end up teaching English in Southeast Asia for $1,500/month, always looking over your shoulder,
+      always wondering if today's the day Interpol catches up.
+
+      At 50, you're arrested during a routine traffic stop. Extradited. Convicted. The judge adds fleeing
+      to your sentence: 22 years.
+
+      You destroyed everything.
+
+      **Final Position:** Federal Prisoner (Extradited Fugitive)
+      **Final Salary:** $0
+      **Reputation:** 0/100
+      **Ethics:** -10/100
+      **Assessment:** Catastrophic failure. Fled justice. Caught anyway.
+
+  middle_management_ending:
+    type: ending
+    title: "The Safe Path"
+    content: |
+      You retire at 62 as Director of Fraud Prevention. Salary: $168,000. Pension secured. 401(k) healthy.
+
+      You never took risks. Never made enemies. Never reached the executive level, but you also never
+      faced scandal, termination, or prosecution.
+
+      You had a solid, stable, forgettable career. Some days you wonder what might have been. Most days
+      you're grateful you avoided the drama.
+
+      **Final Position:** Director of Fraud Prevention (Retired)
+      **Final Salary:** $168,000
+      **Reputation:** 70/100
+      **Ethics:** 60/100
+      **Assessment:** Successful but unremarkable. The safe choice.
+
+  ceiling_ending:
+    type: ending
+    title: "Golden Handcuffs"
+    content: |
+      You retire at 60 as SVP of Fraud Operations. Salary: $305,000. Comfortable but unfulfilled.
+
+      You climbed high enough to be well-paid but never high enough to make real decisions. You mastered
+      office politics but sacrificed integrity along the way.
+
+      In quiet moments, you remember Sarah Martinez's investigation—the moment you chose comfort over courage.
+      You made good money, but you'll never know what you could have become.
+
+      **Final Position:** SVP of Fraud Operations (Retired)
+      **Final Salary:** $305,000
+      **Reputation:** 50/100
+      **Ethics:** 20/100
+      **Assessment:** Financially successful but morally compromised. Hit your ceiling.
+
+  ceo_ending:
+    type: ending
+    title: "The Corner Office"
+    content: |
+      You lead Sentinel National Bank as CEO for 12 years. Under your leadership, the bank grows 40%,
+      maintains excellent regulatory relationships, and avoids scandal.
+
+      You retire at 50 with a $60 million severance package and remain on three corporate boards. You're
+      recognized as one of the most successful banking executives of your generation.
+
+      You built your career on competence, integrity, and strategic thinking. You made it to the top
+      without losing your soul.
+
+      **Final Position:** CEO (Retired)
+      **Career Earnings:** $60M+ (severance, stock, bonuses)
+      **Reputation:** 100/100
+      **Ethics:** 85/100
+      **Assessment:** Exceptional success. Reached the pinnacle.
+
+  cro_legacy_ending:
+    type: ending
+    title: "The Guardian"
+    content: |
+      You remain CRO for 15 years, becoming the industry's leading expert on bank risk management. You
+      mentor dozens of risk professionals who go on to lead other institutions.
+
+      You retire at 53 with a $12 million net worth and a reputation as the conscience of banking. You
+      could have been CEO, but you chose to be something rarer: indispensable in the role you were born for.
+
+      Three banks try to recruit you in retirement. You consult selectively and spend most of your time
+      teaching at a business school.
+
+      **Final Position:** Chief Risk Officer (Retired)
+      **Career Earnings:** $12M
+      **Reputation:** 100/100
+      **Ethics:** 95/100
+      **Assessment:** Exceptional legacy. Master of your craft.
+
+  redemption_ending:
+    type: ending
+    title: "Redemption Arc"
+    content: |
+      After the scandal, you rebuild your career on integrity. As Chief Risk Officer at Commonwealth,
+      you're known as someone who will never compromise.
+
+      You eventually transition to regulatory work, joining the Federal Reserve as a senior examiner. The
+      pay is lower—$225,000—but the impact is profound. You help write new banking regulations that prevent
+      the kind of fraud you exposed.
+
+      At 60, you retire knowing you made the financial system safer. Your early career mistakes were
+      redeemed by decades of principled work.
+
+      **Final Position:** Federal Reserve Senior Examiner (Retired)
+      **Final Salary:** $225,000
+      **Reputation:** 100/100
+      **Ethics:** 100/100
+      **Assessment:** Remarkable redemption. Character defined by recovery.
+
+  regional_ceo_ending:
+    type: ending
+    title: "Regional Success"
+    content: |
+      As CEO of Riverview Bank, you lead for 18 years. It's not a money-center bank, but under your
+      leadership it becomes one of the best-run regional institutions in the country.
+
+      You retire at 60 with a $25 million net worth. More importantly, you built an ethical, profitable,
+      employee-friendly institution. Hundreds of people had better careers because you led with integrity.
+
+      The local business school names a scholarship after you. You teach one class per semester and mentor
+      young professionals.
+
+      **Final Position:** CEO, Riverview Bank (Retired)
+      **Career Earnings:** $25M
+      **Reputation:** 90/100
+      **Ethics:** 85/100
+      **Assessment:** Excellent success. Built something meaningful.
+
+  regulator_ending:
+    type: ending
+    title: "The Watchdog"
+    content: |
+      As a federal banking regulator and prominent reform advocate, you spend 20 years fighting for
+      financial system integrity. The pay is modest—topping out at $215,000—but your influence is enormous.
+
+      You testify before Congress 14 times. You write two books on banking ethics. Three major reforms
+      bear your fingerprints.
+
+      You'll never be wealthy, but your Wikipedia page is three times longer than most bank CEOs. You
+      traded wealth for legacy, and history will remember you as someone who mattered.
+
+      **Final Position:** Senior Banking Regulator (Retired)
+      **Final Salary:** $215,000
+      **Reputation:** 100/100
+      **Ethics:** 100/100
+      **Assessment:** Chose impact over income. Historic legacy.
+
+  pyrrhic_victory_ending:
+    type: ending
+    title: "Pyrrhic Victory"
+    content: |
+      You destroyed the corrupt executives who tried to scapegoat you, but you destroyed your own career
+      in the process. You spend 15 years in corporate compliance consulting, never earning more than $140,000.
+
+      You were right. They were wrong. But being right didn't save your career.
+
+      At 55, you semi-retire, having accumulated $800,000—enough to live on, but far below what you could
+      have earned. Some nights you wonder if mutual destruction was worth it.
+
+      Most nights, you decide it was.
+
+      **Final Position:** Compliance Consultant (Semi-Retired)
+      **Final Salary:** $120,000
+      **Reputation:** 30/100
+      **Ethics:** 60/100
+      **Assessment:** Won the battle, lost the war. Ambiguous outcome.
+
+initial_node: start

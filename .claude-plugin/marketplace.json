@@ -1,0 +1,13 @@
+{
+  "name": "kleene-local",
+  "owner": {
+    "name": "Nathaniel Ramm"
+  },
+  "plugins": [
+    {
+      "name": "kleene",
+      "source": "./",
+      "description": "Three-valued narrative engine - interactive fiction using Option types"
+    }
+  ]
+}

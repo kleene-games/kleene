@@ -1,0 +1,433 @@
+name: "The Dragon's Choice"
+description: "A hero must decide how to face the dragon threatening their village."
+version: "1.0.0"
+
+# Initial character state
+initial_character:
+  name: "The Wanderer"
+  traits:
+    courage: 5
+    wisdom: 5
+    luck: 5
+  inventory: []
+  relationships: {}
+  flags: {}
+
+# Initial world state
+initial_world:
+  current_location: village
+  time: 0
+  flags:
+    dragon_alive: true
+    village_threatened: true
+  locations:
+    - id: village
+      name: "Quiet Village"
+      description: "A peaceful village threatened by the dragon."
+      connections: [forest, mountain_path]
+      items: [rusty_sword]
+
+    - id: forest
+      name: "Dark Forest"
+      description: "A mysterious forest with ancient secrets."
+      connections: [village, shrine]
+      items: []
+
+    - id: shrine
+      name: "Ancient Shrine"
+      description: "A shrine to the old gods, holding forbidden knowledge."
+      connections: [forest]
+      items: [dragon_tongue_scroll]
+
+    - id: mountain_path
+      name: "Mountain Path"
+      description: "The winding path up to the dragon's lair."
+      connections: [village, dragon_lair]
+      items: []
+
+    - id: dragon_lair
+      name: "Dragon's Lair"
+      description: "The cavern where the great wyrm dwells."
+      connections: [mountain_path]
+      items: []
+
+# Starting node
+start_node: intro
+
+# Scenario nodes
+nodes:
+  intro:
+    narrative: |
+      The village elder grips your arm with surprising strength.
+
+      "The dragon has returned. It circles the mountain each night,
+      and soon it will descend upon us."
+
+      She presses something into your hand - an old key.
+      "The blacksmith's shop. Take what you need. But know this:
+      not all paths require a blade."
+
+      You stand at the village crossroads. The mountain looms to the north.
+      The dark forest whispers to the east.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_sword
+          text: "Visit the blacksmith and take the sword"
+          consequence:
+            - type: gain_item
+              item: rusty_sword
+            - type: modify_trait
+              trait: courage
+              delta: 1
+          narrative: "You take the blade. It feels right in your hand."
+          next_node: sword_taken
+
+        - id: seek_knowledge
+          text: "Enter the dark forest to seek another way"
+          consequence:
+            - type: move_to
+              location: forest
+          narrative: "You turn from steel toward secrets."
+          next_node: forest_entrance
+
+        - id: rush_mountain
+          text: "Head directly to the mountain"
+          consequence:
+            - type: move_to
+              location: mountain_path
+          narrative: "No time to waste. The dragon awaits."
+          next_node: mountain_approach
+
+  sword_taken:
+    narrative: |
+      The sword is old but serviceable. You feel its weight, its history.
+      Many have carried this blade before you.
+
+      The mountain path awaits. But you could still seek other options...
+    choice:
+      prompt: "What now?"
+      options:
+        - id: to_mountain_armed
+          text: "Head to the mountain with your sword"
+          narrative: "Steel in hand, you climb toward destiny."
+          next_node: mountain_approach
+
+        - id: to_forest_armed
+          text: "Explore the forest first"
+          consequence:
+            - type: move_to
+              location: forest
+          narrative: "Perhaps knowledge and steel together..."
+          next_node: forest_entrance
+
+  forest_entrance:
+    narrative: |
+      The forest swallows you in shadow. Ancient trees whisper secrets.
+
+      Deeper in, you glimpse the ruins of a shrine - a place where
+      mortals once spoke with beings greater than themselves.
+    choice:
+      prompt: "Do you approach the shrine?"
+      options:
+        - id: enter_shrine
+          text: "Approach the ancient shrine"
+          consequence:
+            - type: move_to
+              location: shrine
+            - type: modify_trait
+              trait: wisdom
+              delta: 2
+          narrative: "The old magic stirs as you approach."
+          next_node: shrine_discovery
+
+        - id: leave_forest
+          text: "Return to the village path"
+          narrative: "Some secrets are best left undisturbed."
+          next_node: intro
+
+  shrine_discovery:
+    narrative: |
+      The shrine hums with ancient power. Upon an altar lies a scroll
+      inscribed with symbols that shift before your eyes.
+
+      You recognize the language: Dragon Tongue.
+
+      Legend says dragons respect those who speak their language.
+      Perhaps... there is another way to face the wyrm.
+    choice:
+      prompt: "Do you take the scroll?"
+      options:
+        - id: take_scroll
+          text: "Take the Dragon Tongue scroll"
+          consequence:
+            - type: gain_item
+              item: dragon_tongue_scroll
+            - type: set_flag
+              flag: knows_dragon_tongue
+              value: true
+          narrative: "The words burn themselves into your mind."
+          next_node: scroll_taken
+
+        - id: leave_scroll
+          text: "Leave the scroll - such power is dangerous"
+          narrative: "You step back from the altar."
+          next_node: intro
+
+  scroll_taken:
+    narrative: |
+      The ancient words echo in your mind. You understand now -
+      dragons are not merely beasts, but ancient beings with their own
+      honor, their own griefs.
+
+      The mountain awaits. You could face the dragon as a speaker, not a slayer.
+    choice:
+      prompt: "How will you proceed?"
+      options:
+        - id: to_mountain_wise
+          text: "Climb the mountain with newfound wisdom"
+          narrative: "You know now what you must do."
+          next_node: mountain_approach
+
+  mountain_approach:
+    narrative: |
+      The path winds upward, growing steeper. Smoke curls from above.
+
+      As you round the final bend, you see it: the dragon.
+
+      It is vast - scales like ancient iron, eyes like furnaces.
+      It has seen you. There is no turning back now.
+    choice:
+      prompt: "The dragon awaits. What do you do?"
+      options:
+        - id: fight_with_sword
+          text: "Draw your sword and fight!"
+          precondition:
+            type: has_item
+            item: rusty_sword
+          narrative: "Steel rings as you draw the blade."
+          next_node: dragon_fight
+
+        - id: fight_unarmed
+          text: "Charge the dragon with bare hands"
+          precondition:
+            type: trait_minimum
+            trait: courage
+            minimum: 10
+          narrative: "Madness... but sometimes madness works."
+          next_node: dragon_fight_unarmed
+
+        - id: speak_dragon_tongue
+          text: "Speak to the dragon in its own tongue"
+          precondition:
+            type: flag_set
+            flag: knows_dragon_tongue
+          narrative: "Ancient words flow from your lips."
+          next_node: dragon_dialogue
+
+        - id: flee_dragon
+          text: "Turn and flee!"
+          narrative: "Survival is its own victory... isn't it?"
+          next_node: attempt_flee
+
+  dragon_fight:
+    narrative: |
+      The battle is fierce. Fire and steel clash in the mountain air.
+
+      Your blade finds its mark - a gap in the ancient scales.
+      The dragon roars, not in anger, but in... surprise? Respect?
+
+      "Well struck, mortal. I yield."
+
+      The dragon's hoard is yours. The village is saved.
+      And you... you have been transformed by the trial.
+    choice:
+      prompt: "The dragon yields."
+      options:
+        - id: claim_victory
+          text: "Accept victory with honor"
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 3
+            - type: set_flag
+              flag: dragon_slain
+              value: true
+          narrative: "You have become more than you were."
+          next_node: ending_victory
+
+  dragon_fight_unarmed:
+    narrative: |
+      You charge, fists raised against scales and flame.
+
+      The dragon almost looks... amused? Saddened?
+
+      One breath is all it takes.
+    choice:
+      prompt: "..."
+      options:
+        - id: accept_death
+          text: "Darkness takes you"
+          consequence:
+            - type: character_dies
+              reason: "consumed by dragonfire"
+          next_node: ending_death
+
+  dragon_dialogue:
+    narrative: |
+      "You speak the old tongue."
+
+      The dragon's voice resonates in your bones. Its eyes, those
+      furnaces, hold something unexpected: sorrow.
+
+      "I do not raid your village for treasure or sport. I search
+      for something lost long ago - the resting place of my mate,
+      entombed beneath your village in an age before humans came."
+
+      The dragon lowers its great head.
+
+      "Help me find her. Let me say goodbye. And I will trouble
+      your people no more."
+    choice:
+      prompt: "The dragon asks for your help."
+      options:
+        - id: help_dragon
+          text: "Agree to help the dragon"
+          consequence:
+            - type: modify_trait
+              trait: wisdom
+              delta: 3
+            - type: set_flag
+              flag: dragon_ally
+              value: true
+          narrative: "You see now - there are no monsters, only stories."
+          next_node: dragon_alliance
+
+        - id: refuse_dragon
+          text: "Refuse - this could be a trick"
+          narrative: "You step back, uncertain."
+          next_node: dragon_refused
+
+  dragon_alliance:
+    narrative: |
+      Together, you descend. The dragon shows you ancient passages
+      beneath your village - places no living human has seen.
+
+      There, in a cavern of crystal, you find her. Another dragon,
+      beautiful even in death, preserved by magic beyond counting.
+
+      The dragon speaks words in a language older than Dragon Tongue.
+      A farewell. A promise.
+
+      Light fills the cavern. When it fades, both dragons are gone -
+      but the air hums with gratitude.
+
+      You emerge changed. You have touched something greater than yourself.
+    choice:
+      prompt: "The dragons have departed."
+      options:
+        - id: embrace_transcendence
+          text: "Carry this wisdom forward"
+          narrative: "Some victories transcend winning or losing."
+          next_node: ending_transcendence
+
+  dragon_refused:
+    narrative: |
+      "I see."
+
+      The dragon's eyes harden. Fire builds in its throat.
+
+      "Then we have nothing more to discuss."
+    choice:
+      prompt: "The dragon attacks."
+      options:
+        - id: face_flames
+          text: "There is no escape"
+          consequence:
+            - type: character_dies
+              reason: "burned by dragonfire"
+          next_node: ending_death
+
+  attempt_flee:
+    narrative: |
+      You turn and run. The dragon watches you go.
+
+      It does not pursue. Perhaps it finds you unworthy of the effort.
+      Perhaps it simply doesn't care.
+
+      You make it back to the village, gasping, shaking.
+      You are alive. But the dragon still circles the mountain.
+      And everyone knows you ran.
+    choice:
+      prompt: "You have survived."
+      options:
+        - id: live_with_shame
+          text: "Live with the choice you've made"
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: -2
+          narrative: "Survival has its price."
+          next_node: ending_fled
+
+# Endings
+endings:
+  ending_victory:
+    narrative: |
+      ═══════════════════════════════════════════════════════════
+      VICTORY
+
+      The village celebrates. Songs will be sung of your deed.
+      But more than the glory, you carry something precious:
+      the knowledge that you faced the impossible and prevailed.
+
+      You have been transformed by the trial.
+      ═══════════════════════════════════════════════════════════
+    type: victory
+
+  ending_death:
+    narrative: |
+      ═══════════════════════════════════════════════════════════
+      DEATH
+
+      The dragon's fire consumes you.
+
+      In the village, they will wonder what became of you.
+      Eventually, they will send another.
+
+      Your story ends here, but the dragon's story continues.
+      ═══════════════════════════════════════════════════════════
+    type: death
+
+  ending_transcendence:
+    narrative: |
+      ═══════════════════════════════════════════════════════════
+      TRANSCENDENCE
+
+      You did not slay the dragon. You did something greater:
+      you understood it.
+
+      The village is safe. The dragon is at peace.
+      And you... you have glimpsed the deeper patterns of existence.
+
+      Some call this victory. Others call it wisdom.
+      Perhaps they are the same thing.
+      ═══════════════════════════════════════════════════════════
+    type: transcendence
+
+  ending_fled:
+    narrative: |
+      ═══════════════════════════════════════════════════════════
+      FLED
+
+      You are alive. That counts for something.
+
+      But the dragon still circles. The village still fears.
+      And in your heart, you know you were tested and found wanting.
+
+      Perhaps someday you will return. Perhaps someday you will
+      find the courage you lacked today.
+
+      Until then, you carry the weight of the choice you made.
+      ═══════════════════════════════════════════════════════════
+    type: unchanged

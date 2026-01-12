@@ -1,0 +1,19 @@
+{
+  "name": "kleene",
+  "version": "0.1.0",
+  "description": "Three-valued narrative engine - interactive fiction using Option types and LLM-driven scenario generation",
+  "author": {
+    "name": "Nathaniel Ramm",
+    "email": "nathaniel@hiivmind.ai"
+  },
+  "repository": "https://github.com/hiivmind/kleene-plugin",
+  "license": "MIT",
+  "keywords": [
+    "game",
+    "narrative",
+    "interactive-fiction",
+    "option-types",
+    "text-adventure",
+    "three-valued-logic"
+  ]
+}
