@@ -103,6 +103,16 @@ TURN:
 
   6. Wait for user selection
 
+  6a. IF selection doesn't match any predefined option (free-text via "Other"):
+      - Classify intent (Explore/Interact/Act/Meta)
+      - Check feasibility against current state
+      - Generate narrative response matching scenario tone
+      - Apply soft consequences only (trait ±1, add_history, improv_* flags)
+      - Display response with consequence indicators
+      - Present same choices again (step 5)
+      - Do NOT advance node or turn
+      - GOTO step 6
+
   7. Apply consequences of chosen option:
      - Execute each consequence type
      - Update character/world state in memory
@@ -318,6 +328,185 @@ Action: character.exists = false (transcendence ending)
   entry: "Discovered the hidden passage"
 ```
 Action: Add to recent_history
+
+## Improvised Action Handling
+
+When a player selects "Other" and provides free-text input, react creatively rather than blocking. Generate a narrative response that acknowledges their action, then return to the current node's options.
+
+### Detection
+
+After receiving user selection (step 6 in Core Workflow), check if the response matches any predefined option label. If NOT:
+- The user provided free-text via "Other"
+- Execute the Improvisation Handler below
+- Do NOT advance to a new node
+
+### Intent Classification
+
+Classify the player's free-text action:
+
+| Intent | Keywords/Patterns | Example |
+|--------|-------------------|---------|
+| **Explore** | examine, look at, inspect, study, check | "I examine the dragon's scales" |
+| **Interact** | talk to, ask, speak with, approach | "I try talking to the shadow in the corner" |
+| **Act** | try to, attempt, I want to, I [verb] | "I try to climb the wall" |
+| **Meta** | save, help, what are my stats, rules | "save my game" |
+
+### Feasibility Check
+
+Given current state, evaluate if the action is:
+
+**Possible**: World permits this action
+- No preconditions block it
+- Makes sense in current location
+- Character has capability (traits, items)
+
+**Blocked**: World resists
+- Missing required item or trait
+- Wrong location
+- Contradicts established world rules
+
+**Impossible**: Breaks scenario logic
+- Tries to interact with non-existent entities
+- Attempts to skip major story beats
+- Would trivialize core challenges
+
+### Response Generation
+
+Generate a narrative response based on intent and feasibility:
+
+#### Explore (Possible)
+Provide atmospheric detail about what they examine. Add richness to the scene.
+```
+You study the dragon's scales more closely. In the flickering light,
+you notice patterns etched into each plate - not natural markings,
+but deliberate inscriptions. Writing, perhaps, in a language older
+than human speech.
+
+[+1 wisdom - Attention to detail]
+```
+
+#### Interact (Possible)
+Brief exchange or observation about the interaction attempt.
+```
+You call out to the shadow. It shifts, acknowledging you, but offers
+no words. A cold presence brushes past your mind - not hostile,
+but distinctly *other*. It seems to be waiting for something.
+
+[+1 intuition]
+```
+
+#### Act (Possible)
+Describe the attempt and its outcome. May succeed partially or reveal new information.
+```
+You attempt to scale the cavern wall. The rock is slick with moisture,
+but you find handholds. Halfway up, you spot something glinting in
+a crevice - a coin, ancient and tarnished. You pocket it before
+descending.
+
+[Gained: tarnished_coin (flavor item)]
+```
+
+#### Blocked Action
+Explain why the action fails. The world resists, but provide narrative context.
+```
+You try to push past the stone door, but it won't budge. The runes
+carved into its surface pulse faintly - whatever seal holds it closed
+requires more than brute force. Perhaps there's another way...
+```
+
+#### Impossible Action
+Gently redirect without breaking immersion.
+```
+The dragon fills the entire passage ahead. There's no path around it,
+no clever route to slip by unnoticed. Whatever happens next, it
+happens here, face to face with the wyrm.
+```
+
+#### Meta Request
+Handle directly, breaking the fourth wall briefly.
+```
+Game saved to game_state.yaml.
+---
+[Continuing...]
+```
+
+### Soft Consequences
+
+Improvised actions may apply ONLY these consequence types:
+
+| Allowed | Not Allowed |
+|---------|-------------|
+| `modify_trait` (delta: -1 to +1) | `gain_item` (scenario items) |
+| `add_history` | `lose_item` |
+| `set_flag` (only `improv_*` prefix) | `move_to` |
+| | `character_dies` |
+| | `character_departs` |
+
+**Why these limits?** Improvisation enriches the current moment without derailing scenario balance. Major state changes (items, locations, death) are reserved for scripted paths.
+
+### Soft Flags Convention
+
+Improvised actions can set flags prefixed with `improv_`:
+```
+improv_examined_dragon_scales
+improv_spoke_to_shadow
+improv_attempted_wall_climb
+```
+
+These flags:
+- Track what the player has explored/attempted
+- Enable richer responses to repeated improvisation
+- Should NOT gate major scenario paths
+
+### Tone Matching
+
+Match the scenario's established voice:
+- **Perspective**: Use second person present ("You examine...")
+- **Vocabulary**: Match the scenario (archaic/modern/technical)
+- **Imagery**: Match the scenario's descriptive density
+- **Rhythm**: Match sentence length and pacing
+
+Read the current node's narrative for guidance.
+
+### After Improvisation
+
+After generating the response:
+1. Apply any soft consequences
+2. Display the response with trait change indicators if applicable
+3. Present the current node's original options AGAIN
+4. Do NOT advance `current_node` or increment `turn`
+
+The game stays at the same decision point, enriched by the player's exploration.
+
+### Edge Cases
+
+**Player tries to defeat boss via free-text:**
+```
+The dragon is vast - scales like ancient iron. A wild attack without
+preparation would be suicide. The wyrm's eyes track you, waiting to
+see what you'll actually do.
+```
+Then: Show original options.
+
+**Player tries to leave scenario bounds:**
+```
+You consider turning back, but the path behind has collapsed.
+Rocks and debris block any retreat. The only way is forward.
+```
+
+**Player repeats same improvisation:**
+Check `improv_*` flags. If already set:
+```
+You've already examined the scales closely. The inscriptions remain
+as mysterious as before. Perhaps action, not study, is needed now.
+```
+
+**Player action matches a blocked option:**
+If free-text describes an action that has a precondition they don't meet, explain WHY it's blocked:
+```
+You reach for where your sword should hang, but your hand finds only
+air. Without a weapon, challenging the dragon directly would be folly.
+```
 
 ## Narrative Presentation
 

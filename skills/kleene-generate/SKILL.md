@@ -162,57 +162,47 @@ Output complete scenario in proper format.
 
 ## Emergent Node Generation
 
-When player attempts an unscripted action during play:
+> **Note**: Mode 2 is now handled **inline by kleene-play** via its "Improvised Action Handling" section. This documentation provides reference guidance for that implementation.
 
-### Context Gathering
+When a player provides free-text input via "Other", kleene-play generates a narrative response inline rather than calling this skill separately. The approach is **flavor text + soft consequences** - the game acknowledges the player's action creatively without creating permanent new nodes.
 
-Collect from game state:
-- Current location and description
+### How It Works (in kleene-play)
+
+1. Player selects "Other" and types custom action
+2. kleene-play classifies intent (Explore/Interact/Act/Meta)
+3. Checks feasibility against current state
+4. Generates narrative response matching scenario tone
+5. Applies soft consequences only (trait ±1, history, improv_* flags)
+6. Returns to current node's predefined options
+
+See: `kleene-play` skill → "Improvised Action Handling" section
+
+### Context for Response Generation
+
+When generating improvised responses, consider:
+- Current location and its description
 - Character traits, inventory, flags
 - World flags and time
 - Recent history (last 3-5 entries)
-- The attempted action
+- What the player is attempting
 
 ### Generation Constraints
 
-The generated node must:
+Improvised responses must:
 
 1. **Respect State**: Only reference items/flags that exist
-2. **Be Reachable**: Player can actually get here from current state
-3. **Have Consequences**: Meaningful state changes
-4. **Connect Forward**: Lead to existing nodes or valid endings
-5. **Maintain Tone**: Match the scenario's established voice
+2. **Stay Local**: Don't advance the story, enrich the current moment
+3. **Soft Consequences Only**: trait ±1, add_history, improv_* flags
+4. **Maintain Tone**: Match the scenario's established voice
+5. **Return to Options**: After response, show current node's choices again
 
-### Generation Template
+### What's NOT Allowed in Improvisation
 
-```yaml
-generated_node_id:
-  narrative: |
-    [Describe the situation based on player's action]
-    [React to their choice with the world's response]
-    [Set up the next decision point]
-  choice:
-    prompt: "[Contextual prompt]"
-    options:
-      - id: continue_path
-        text: "[Option that advances the story]"
-        consequence:
-          - [Meaningful state change]
-        narrative: "[Brief result]"
-        next_node: [existing_node OR new_generated_node OR ending]
-
-      - id: retreat_option
-        text: "[Option to return to known territory]"
-        narrative: "[Result of retreating]"
-        next_node: [existing_node]
-```
-
-### Integration
-
-After generating:
-1. Add node to scenario's `nodes` section
-2. Update any referring nodes if needed
-3. Continue play from new node
+- Creating permanent new scenario nodes
+- Gaining/losing scenario items
+- Changing location
+- Killing or transcending the character
+- Bypassing major story gates
 
 ## Branch Expansion
 
