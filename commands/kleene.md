@@ -108,7 +108,25 @@ Parse user intent:
    - If missing: warn user, offer to run `/kleene sync` to clean up registry
    - Otherwise: load scenario using path from registry
 
-6. The `kleene-play` skill:
+6. **Load scenario (handle large files):**
+
+   Attempt to read the scenario file:
+   ```
+   Read: ${CLAUDE_PLUGIN_ROOT}/scenarios/[path]
+   ```
+
+   If Read succeeds: standard mode (full scenario cached)
+
+   If Read returns **token limit error** (file too large):
+   - Switch to **lazy loading mode**
+   - Read first 200 lines only: `Read with limit: 200`
+   - Extract header: `initial_character`, `initial_world`, `endings`
+   - Grep for start node: `Grep "^  {start_node}:" -A 80`
+   - Set context flag: `lazy_loading: true`
+
+   The `kleene-play` skill will use this flag to load nodes on demand.
+
+7. The `kleene-play` skill:
    - Creates `./saves/[scenario_name]/` directory if needed
    - Generates timestamped save file: `YYYY-MM-DD_HH-MM-SS.yaml`
    - Initializes fresh state and writes initial save
@@ -336,6 +354,9 @@ Each gameplay session creates a new timestamped save file. Subsequent saves in t
 
 **Invalid scenario**:
 "Could not load scenario. Validation errors: [list errors]"
+
+**Large scenario (token limit)**:
+Automatically switch to lazy loading mode. No error shown to user - this is transparent.
 
 **Unknown action**:
 "I didn't understand that action. Try '/kleene help' for available commands."

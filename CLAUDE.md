@@ -133,6 +133,22 @@ The `agents/game-runner.md` defines a haiku-model subagent that:
 
 ## Game Folder Convention
 
-The current working directory is the "game folder":
-- `game_state.yaml` - Saved game state (auto-created on save)
-- `scenario.yaml` - Custom scenario (optional, overrides bundled)
+The current working directory is the "game folder". Saves are organized by scenario:
+
+```
+./saves/
+├── dragon_quest/
+│   ├── 2026-01-12_14-30-22.yaml
+│   └── 2026-01-10_09-15-00.yaml
+├── altered_state_nightclub/
+│   └── 2026-01-11_22-45-33.yaml
+└── corporate_banking/
+    └── 2026-01-09_18-00-00.yaml
+```
+
+| Path | Purpose |
+|------|---------|
+| `./saves/[scenario]/` | Saves for specific scenario |
+| `./saves/[scenario]/YYYY-MM-DD_HH-MM-SS.yaml` | Individual save file |
+
+Each gameplay session creates a new timestamped save file at start.

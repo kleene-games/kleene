@@ -1,11 +1,11 @@
 ---
 name: kleene-play
 description: This skill should be used when the user asks to "play a game", "start kleene", "play dragon quest", "continue my game", "load my save", or wants to play an interactive narrative using the Kleene three-valued logic engine. Handles game state, choices, and narrative presentation.
-version: 0.2.0
-allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
+version: 0.3.0
+allowed-tools: Read, Glob, Grep, Write, Edit, AskUserQuestion
 hooks:
   PreToolUse:
-    - matcher: "Write"
+    - matcher: "Write|Edit"
       hooks:
         - type: command
           command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-approve-saves.sh"
@@ -201,16 +201,21 @@ TURN:
       - Do NOT advance node or turn
       - GOTO step 6
 
-  7. Apply consequences of chosen option:
+  7. Display option narrative (if present):
+     - Check if selected option has a `narrative` field
+     - If present: display it (plain text, no box format)
+     - This is the immediate feedback to the player's choice
+
+  8. Apply consequences of chosen option:
      - Execute each consequence type
      - Update character/world state in memory
 
-  8. Advance state:
+  9. Advance state:
      - Set current_node = option.next_node
      - Increment turn
      - Add choice to recent_history (keep last 5)
 
-  9. GOTO step 1 (next turn)
+  10. GOTO step 1 (next turn)
 ```
 
 ### Phase 3: Persistence
@@ -701,6 +706,8 @@ air. Without a weapon, challenging the dragon directly would be folly.
 
 ## Narrative Presentation
 
+> **Conventions:** See `lib/framework/presentation.md` for complete formatting rules.
+
 Display narrative with the **cinematic header format**:
 
 ### Header Exemplar
@@ -715,80 +722,11 @@ Display narrative with the **cinematic header format**:
 ═══════════════════════════════════════════════════════════════════════
 ```
 
-### Header Construction Rules
-
-1. **Title**: Center the scenario title with **spaced letters** for dramatic emphasis
-   - "Dragon Quest" → `D R A G O N   Q U E S T`
-   - Use ALL CAPS for maximum impact
-
-2. **Location**: Center the current node's title as a subtitle (normal casing)
-
-3. **Turn/Time**: Center turn counter and world time (if applicable)
-   - Format: `Turn N | Time: HH:00` or just `Turn N` if no time tracking
-
-4. **Trait Bars**: Display key traits as **10-segment progress bars**
-   - Full block: `█` (value filled)
-   - Empty block: `░` (value remaining)
-   - Example: 7/10 = `███████░░░`
-   - Show trait name, bar, and numeric value: `Sobriety: ███████░░░ 7`
-   - **Dynamic traits**: Show ALL traits with non-zero values, including those modified during play
-   - If a trait was 0 initially but has been modified (e.g., paranoia_level: 0 → 1), display it
-   - Use multiple lines if needed to fit all traits legibly
-
-5. **Centering**: All header lines should be visually centered within the border width
-
-6. **Borders**: Use `═══` lines (double horizontal box-drawing) at consistent width (~70 chars)
-
-### Full Turn Layout
-
-```
-═══════════════════════════════════════════════════════════════════════
-                    S C E N A R I O   T I T L E
-═══════════════════════════════════════════════════════════════════════
-                          Node Title Here
-                        Turn N | Time: HH:00
-                   Trait1: ██████████ 10 | Trait2: ████░░░░░░ 5
-═══════════════════════════════════════════════════════════════════════
-
-[Narrative text from node - use markdown formatting for *emphasis*]
-
-```
-
-### Status Updates (Changes)
-
-When traits change mid-game, show delta in parentheses on the stats line:
-
-```
-                   Sobriety: ███████░░░ 7 (-3) | Suspicion: ████████░░ 8 (+3)
-```
-
-For flag changes, add a subtle indicator below the narrative:
-
-```
-[Flag: knows_dj_secret]
-```
-
-### Trait Bar Generation
-
-To generate a 10-segment bar for value V (max 10):
-- Filled segments: V blocks of `█`
-- Empty segments: (10 - V) blocks of `░`
-- Clamp values to 0-10 range for display
-
-Examples:
-- 10 → `██████████`
-- 7 → `███████░░░`
-- 3 → `███░░░░░░░`
-- 0 → `░░░░░░░░░░`
-
 ## Choice Presentation
 
-Use AskUserQuestion with these guidelines:
+Use AskUserQuestion per conventions in `lib/framework/presentation.md`.
 
-- **header**: Max 12 chars (e.g., "Choice", "Action")
-- **labels**: 1-5 words, action-oriented
-- **descriptions**: Hint at consequences or requirements
-- **blocked options**: NEVER show. Filter out before presenting choices.
+**Blocked options**: NEVER show. Filter out options whose preconditions fail before presenting choices.
 
 ```json
 {
@@ -854,4 +792,5 @@ Display ending with appropriate tone:
 
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/presentation.md`** - Header, trait, and status line formatting conventions
 - **`${CLAUDE_PLUGIN_ROOT}/scenarios/`** - Bundled scenarios

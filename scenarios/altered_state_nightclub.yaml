@@ -60,6 +60,11 @@ endings:
     description: "The DJ removes their headphones and stares at you. 'You were never supposed to understand,' they say. The music was the drug all along. Your brain rewired by frequencies you can't perceive. Perfect."
     type: "transcendence"
 
+  overdose_dissolution:
+    title: "Frequency Collapse"
+    description: "You took too much. Or the club took too much of you. Your consciousness fragments into the collective, but there's nothing left to integrate. You become static. White noise. A frequency no one can tune to anymore."
+    type: "death"
+
 nodes:
   entrance:
     title: "The Velvet Chamber - Main Entrance"
@@ -132,15 +137,16 @@ nodes:
         - text: "Take the drink but don't consume it yet"
           description: "Gather more information before committing to anything"
           next_node: "with_drink_searching"
-          consequences: []
+          consequences:
+            - type: "gain_item"
+              item: "bruised_drink"
 
         - text: "Ask specific questions about what's in it"
           description: "Press the bartender for answers"
           next_node: "bartender_interrogation"
           consequences:
-            - type: "set_flag"
-              flag: "knows_bartender_secret"
-              value: false
+            - type: "gain_item"
+              item: "bruised_drink"
 
         - text: "Drink it"
           description: "Commit to the experience"
@@ -240,16 +246,22 @@ nodes:
             - type: "set_flag"
               flag: "witnessed_glitch"
               value: true
+            - type: "gain_item"
+              item: "cryptic_paper"
 
         - text: "Ask the figure to explain more"
           description: "Press them for clarity"
           next_node: "figure_explanation"
-          consequences: []
+          consequences:
+            - type: "gain_item"
+              item: "cryptic_paper"
 
         - text: "Check the piece of paper more carefully"
           description: "Maybe there's more information here"
           next_node: "paper_examination"
-          consequences: []
+          consequences:
+            - type: "gain_item"
+              item: "cryptic_paper"
 
         - text: "Leave and head for the exit"
           description: "This conversation is getting too weird"
@@ -564,7 +576,10 @@ nodes:
               delta: 3
 
         - text: "Ask the DJ directly what substance everyone is on"
-          description: "One more direct question"
+          description: "One more direct question (requires having witnessed something)"
+          precondition:
+            type: flag_set
+            flag: witnessed_glitch
           next_node: "dj_final_answer"
           consequences:
             - type: "set_flag"
@@ -572,13 +587,24 @@ nodes:
               value: true
 
         - text: "Ask the DJ to turn off the music"
-          description: "Maybe that will break the spell"
+          description: "Maybe that will break the spell (requires having witnessed something)"
+          precondition:
+            type: flag_set
+            flag: witnessed_glitch
           next_node: "dj_shutdown_request"
           consequences: []
 
         - text: "Demand to know if this is real or a simulation"
           description: "Get to the fundamental question"
           next_node: "reality_question"
+          consequences: []
+
+        - text: "Press for deeper answers"
+          description: "You haven't seen enough yet"
+          precondition:
+            type: flag_not_set
+            flag: witnessed_glitch
+          next_node: "dj_rejection"
           consequences: []
 
   dj_final_answer:
@@ -1061,3 +1087,1200 @@ nodes:
           description: "There must be more"
           next_node: "resist_alteration"
           consequences: []
+
+  # ============================================
+  # NEW NODES - Bar/Drink Investigation Branch
+  # ============================================
+
+  demand_leadership:
+    title: "The Bartender's Direction"
+    narrative: |
+      "Who's in charge here?" you demand.
+
+      The bartender's eye twitches violently. His left hand grips the bar so hard you hear wood creak.
+
+      "In charge?" He laughs—a sound like breaking glass. "Nobody's in charge. That's the whole point. But if you want to understand the mechanism..." He leans close, and you smell something beneath the alcohol. Something like ozone. "Go downstairs. Level three. Ask for the Attendant."
+
+      "What will he tell me?"
+
+      "Nothing you'll want to hear." The bartender straightens, his expression suddenly blank. "But everything you need to know. The booths down there—they're not for sitting. They're for *listening*. To the frequency beneath the music."
+
+      He turns away, already mixing another bruised drink for someone else.
+
+      "Good luck," he says without looking back. "You'll need it. Or you won't. Hard to say which is worse."
+
+    choice:
+      prompt: "The bartender has pointed you toward the basement."
+      options:
+        - text: "Go downstairs to find the Attendant"
+          description: "Follow the lead to Level Three"
+          next_node: "downstairs_discovery"
+          consequences:
+            - type: "set_flag"
+              flag: "knows_bartender_secret"
+              value: true
+
+        - text: "This feels like a trap—find another way"
+          description: "Don't trust the bartender's directions"
+          next_node: "bar_rejection"
+          consequences: []
+
+  follow_woman_three_drinks:
+    title: "The VIP Ritual"
+    narrative: |
+      You follow the woman with three drinks toward the back of the club. She moves with purpose, weaving through the crowd like she's done this a thousand times.
+
+      Behind a curtain you hadn't noticed before, there's a private room. Red velvet walls. A circular table. Three people sitting around it, each with an empty glass in front of them.
+
+      The woman sets down the three drinks—one for each person. They don't acknowledge her. They don't move. They're staring at the center of the table, where a small candle burns with a flame that's somehow *black*.
+
+      "Sit," one of them says without looking at you. "Watch."
+
+      They each pick up a drink. They each take a single sip. They each set the drink down.
+
+      And then they begin to speak. In unison. In a language you don't recognize but somehow *feel*.
+
+      The black flame pulses with each syllable.
+
+      You realize, with dawning horror, that this isn't consumption. This is *communion*. The drinks aren't drugs. They're translations. Each sip is a word in a conversation you're only beginning to perceive.
+
+      The woman who brought the drinks turns to you. Her eyes are completely black now.
+
+      "You can join us," she says. "Or you can leave and forget you ever saw this."
+
+    choice:
+      prompt: "The ritual continues. The black flame waits."
+      options:
+        - text: "Take a drink and join the ritual"
+          description: "Accept communion"
+          next_node: "became_one_of_them"
+          consequences:
+            - type: "set_flag"
+              flag: "has_taken_substance"
+              value: true
+            - type: "modify_trait"
+              trait: "sobriety"
+              delta: -5
+
+        - text: "Back away slowly and leave"
+          description: "Some things shouldn't be witnessed"
+          next_node: "truth_too_heavy"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+
+        - text: "Knock the drinks off the table"
+          description: "Disrupt the ritual"
+          next_node: "overdose_dissolution"
+          consequences:
+            - type: "character_dies"
+              reason: "The ritual's disruption tears through you"
+
+  extreme_guy_confrontation:
+    title: "The Fast Drinker"
+    narrative: |
+      You approach the guy who drained his drink in thirty seconds. Up close, he's worse than you thought. His skin is translucent. You can see veins pulsing beneath it—not just blood vessels, but something else. Something that glows faintly with each pulse.
+
+      "Hey," you say. "Are you okay?"
+
+      He turns to look at you, and his eyes are wrong. Not dilated—*gone*. Just white. Empty white where irises should be.
+
+      "I can see it," he whispers. "I can finally see it."
+
+      "See what?"
+
+      "The pattern. The frequency. The thing beneath everything." He grabs your arm with surprising strength. "It's beautiful. It's so beautiful. But I went too fast. I went too fast and now I can't stop seeing it."
+
+      Tears are streaming down his face. They're not tears. They're something thicker. Darker.
+
+      "Don't do what I did," he says. "Don't take it all at once. You have to go slowly. The frequency will destroy you if you try to hear it all at once."
+
+      He releases you and turns back to staring at his hands. The glow beneath his skin is getting brighter.
+
+      "I have maybe ten minutes," he says conversationally. "Then I become part of the signal. Forever."
+
+    choice:
+      prompt: "The fast drinker is dissolving in front of you."
+      options:
+        - text: "Try to help him—call for help"
+          description: "Someone must be able to do something"
+          next_node: "security_intervention"
+          consequences: []
+
+        - text: "Ask him what the frequency sounds like"
+          description: "Learn from his mistake"
+          next_node: "dj_booth"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+            - type: "modify_trait"
+              trait: "intuition"
+              delta: 1
+
+        - text: "Do exactly what he did—drink fast"
+          description: "Maybe the quick path is the true path"
+          next_node: "overdose_dissolution"
+          consequences:
+            - type: "set_flag"
+              flag: "has_taken_substance"
+              value: true
+            - type: "character_dies"
+              reason: "The frequency overwhelmed your consciousness"
+
+  # ============================================
+  # NEW NODES - Painter Branch
+  # ============================================
+
+  being_sketched:
+    title: "The Last Portrait"
+    narrative: |
+      You sit still while the painter works. Her pencil moves with impossible speed—not sketching, but *transcribing*. Like she's copying something she's seeing through you rather than drawing you.
+
+      "Don't move," she murmurs. "I'm almost there."
+
+      You watch her eyes flick between you and the paper. They're dilated, but focused. Sharp. Present.
+
+      Then she stops. Her expression changes to something you can't read.
+
+      "That's interesting," she says slowly. "Very interesting."
+
+      She turns the notebook to show you. It's not your face. It's your face *and other faces*. Overlapping. Translucent. You in different positions, different expressions, different... *times*.
+
+      "You've been here before," she says. "Many times before. Look at the layering."
+
+      And you see it. Your face from tonight, yes. But also your face from what looks like different nights. Different angles. Different states of awareness.
+
+      "I sketch everyone who comes through," she explains. "And sometimes—not often, but sometimes—I see the echoes. The previous visits. The ones you don't remember."
+
+      She points to a version of your face that's smiling. Blissful. Completely altered.
+
+      "That was you three weeks ago," she says. "Based on the resonance pattern. You drank it that time. You loved it."
+
+      Your blood runs cold.
+
+    choice:
+      prompt: "The sketch shows versions of you that you don't remember being."
+      options:
+        - text: "Demand to see more sketches of yourself"
+          description: "How many times have you been here?"
+          next_node: "one_of_them_all_along"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+
+        - text: "Reject this—it has to be a trick"
+          description: "She's manipulating you"
+          next_node: "panic_exit"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: 3
+
+  painter_evidence:
+    title: "The Documentation"
+    narrative: |
+      "Show me proof," you demand. "Real proof."
+
+      The painter nods slowly. She reaches into her bag and pulls out a thick folder. Dog-eared. Coffee-stained. Full of papers.
+
+      "Fourteen months of documentation," she says. "Every night. Every face. Every pattern."
+
+      She spreads some papers on the table. Photographs mixed with sketches. Charts tracking pupil dilation over time. Notes in cramped handwriting about behavioral changes.
+
+      And timestamps. Hundreds of timestamps. All from inside the club.
+
+      "The interesting part," she says, pointing to a graph, "is that nobody's blood chemistry actually changes. I've had samples tested. No drugs. No alcohol beyond what they consciously consumed. Nothing."
+
+      "Then what—"
+
+      "The brain changes," she interrupts. "Not the chemistry—the *patterns*. Neural pathway reorganization. Happens within hours of entering the club. The music does something to how we process reality. Not chemically. *Structurally*."
+
+      She shows you a brain scan comparison. Before and after.
+
+      "The 'after' shows new connections that shouldn't be possible," she says. "Connections between parts of the brain that don't normally communicate. It's like... the frequency opens doors that evolution sealed shut."
+
+      "Why are you still here then? If you know this?"
+
+      Her smile is sad. "Because once those doors are open, they don't close. I can't *not* hear the frequency anymore. This is my home now. It has been for fourteen months."
+
+    choice:
+      prompt: "The evidence is overwhelming. The truth is inescapable."
+      options:
+        - text: "Leave immediately with this knowledge"
+          description: "Get out while you still can"
+          next_node: "truth_too_heavy"
+          consequences:
+            - type: "set_flag"
+              flag: "knows_dj_secret"
+              value: true
+
+        - text: "Ask her to help you escape"
+          description: "Maybe she knows a way"
+          next_node: "exit_search"
+          consequences: []
+
+  painter_truth_demand:
+    title: "The Artist's Confession"
+    narrative: |
+      "No more metaphors," you say firmly. "Tell me what's actually happening here."
+
+      The painter sets down her pencil. For the first time, she looks tired. Ancient. Like she's been carrying something heavy for far too long.
+
+      "Three years," she says quietly. "I've been here three years. Not fourteen months—three years. I lied earlier. I always lie about that."
+
+      "Why?"
+
+      "Because the truth is worse." She takes a deep breath. "The club doesn't have a location. It doesn't have an owner. It doesn't have a beginning. It exists because we believe it exists. Every person here is simultaneously creating it and being created by it."
+
+      "That's impossible."
+
+      "Everything here is impossible," she agrees. "But impossible things happen when enough people pay attention to them. The club is a... a tulpa. A thought-form. Built from the collective attention of everyone who's ever entered."
+
+      "Then how do people leave?"
+
+      "They don't," she says simply. "They just forget they're still here. They go home, they go to work, they live their lives—and part of them is always in the club. Dancing. Drinking. Adding their attention to the collective."
+
+      She looks at you with something like compassion.
+
+      "You're already part of it. You've been part of it since you walked through those curtains. The only question now is how much of yourself you're willing to keep."
+
+    choice:
+      prompt: "The painter has revealed the nature of the trap."
+      options:
+        - text: "Accept that you're already part of it"
+          description: "Surrender to the collective"
+          next_node: "acceptance_path"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: -2
+
+        - text: "Refuse—fight to keep your identity"
+          description: "You won't be absorbed"
+          next_node: "resist_alteration"
+          consequences: []
+
+  # ============================================
+  # NEW NODES - Dance Floor Branch
+  # ============================================
+
+  synchronized_trio:
+    title: "The Templates"
+    narrative: |
+      You follow the synchronized trio. They move through the crowd without breaking formation—three people moving as one organism. Other dancers part around them automatically, like water flowing around stones.
+
+      They descend the stairs to the basement. You follow at a distance.
+
+      At the bottom, they walk directly to three empty booths and sit down simultaneously. Same posture. Same angle. Same expression of peaceful anticipation.
+
+      The attendant with the clipboard looks at you. "Those are the templates," he says matter-of-factly. "The originals. Everyone else is a variation on their theme."
+
+      "What does that mean?"
+
+      "They were the first three," he explains. "The first three to fully integrate with the frequency. Now they serve as... anchors. Reference points. The rest of us are tuned relative to them."
+
+      One of the trio opens their eyes and looks at you. Their gaze is infinite—like looking into a well that has no bottom.
+
+      "Join us," they say. All three of them, in unison, through one mouth. "We've been waiting for the fourth."
+
+    choice:
+      prompt: "The templates are offering you a place in their formation."
+      options:
+        - text: "Sit in the fourth booth"
+          description: "Become a template"
+          next_node: "booth_experience"
+          consequences:
+            - type: "set_flag"
+              flag: "has_taken_substance"
+              value: true
+            - type: "modify_trait"
+              trait: "sobriety"
+              delta: -5
+
+        - text: "Ask what happened to the previous fourth"
+          description: "There must have been attempts before"
+          next_node: "attendant_interrogation"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+
+        - text: "Run back upstairs"
+          description: "This is too deep"
+          next_node: "basement_escape"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: 2
+
+  cold_woman_confrontation:
+    title: "The Dancing Dead"
+    narrative: |
+      You catch up to the woman with the cold skin and grab her arm. She stops dancing but doesn't turn around.
+
+      "Who are you?" you demand.
+
+      Slowly, she rotates to face you. Her smile is still there, but up close you can see it's not a smile of happiness. It's muscle memory. A rictus. A spasm frozen in place.
+
+      Her skin isn't just cold. It's room temperature. Exactly room temperature. No warmth from blood flow. No pulse beneath your fingers.
+
+      "I was like you once," she says. Her voice is normal. Conversational. Pleasant. "Asking questions. Looking for answers. The rhythm is food, I told you. I wasn't speaking metaphorically."
+
+      "What are you?"
+
+      "I'm what happens when you forget to leave." Her eyes are looking through you, at something behind you. "I've been dancing for sixteen hours now. Or sixteen days. Hard to tell anymore. The music keeps me moving. It's the only thing keeping me... cohered."
+
+      She reaches up and touches your face with those cold fingers.
+
+      "You're still warm," she observes. "Still separate. Still yourself. Enjoy that while it lasts."
+
+      Her arm, the one you're holding, detaches at the shoulder with a wet sound. It doesn't bleed. It just... disconnects. She keeps dancing with her remaining arm, smile unchanged.
+
+      The severed limb in your hands is still moving. Still trying to gesture to the music.
+
+    choice:
+      prompt: "You are holding a severed arm that is still dancing."
+      options:
+        - text: "Drop it and run for the exit"
+          description: "Get out get out get out"
+          next_node: "panic_exit"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: 4
+
+        - text: "Ask her how to avoid her fate"
+          description: "Learn from her mistake"
+          next_node: "acceptance_path"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+
+        - text: "Touch the arm to your ear—listen to its frequency"
+          description: "Maybe this is the key"
+          next_node: "overdose_dissolution"
+          consequences:
+            - type: "character_dies"
+              reason: "The frequency of the dead entered through contact"
+
+  # ============================================
+  # NEW NODES - Corner Figure Branch
+  # ============================================
+
+  figure_explanation:
+    title: "The Time Paradox"
+    narrative: |
+      "Explain more," you press. "About the timing. About how people took it before they decided to come here."
+
+      The figure's layered voice harmonizes with itself as they speak.
+
+      "Time isn't linear inside the club. It never has been. The moment you walked through those curtains, you existed in every moment the club has ever had. Past, present, future—they're all happening simultaneously here."
+
+      "That's impossible."
+
+      "Is it?" They gesture at the room. "Watch the dancers. Really watch. Some of them are dancing to music that hasn't played yet. Some of them are dancing to music that played last week. They're all synchronized because time is synchronized here."
+
+      You look at the dance floor. And for a moment—just a moment—you see it. The lag. Some dancers are half a beat behind. Some are half a beat ahead. But they're all moving to the same song.
+
+      "The substance everyone is 'on,'" the figure continues, "is *temporal dilution*. The experience of existing across multiple moments at once. Some people handle it well. They become regulars. Staff. Part of the structure."
+
+      "And the others?"
+
+      "They become the music." The figure's smile doesn't change. "Every beat has to come from somewhere. Every frequency is someone's consciousness, stretched across time until it becomes sound."
+
+      They hand you another piece of paper. This one says: "You already know the DJ's name because you told them tomorrow."
+
+    choice:
+      prompt: "Time itself is the drug. Reality is the side effect."
+      options:
+        - text: "Go to the DJ booth to verify this"
+          description: "Test the temporal paradox"
+          next_node: "dj_confrontation"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+            - type: "gain_item"
+              item: "cryptic_paper"
+
+        - text: "Reject this explanation and leave"
+          description: "Time paradoxes are nonsense"
+          next_node: "exit_search"
+          consequences: []
+
+  paper_examination:
+    title: "The Living Text"
+    narrative: |
+      You look at the paper more carefully. It says: "The DJ knows your name."
+
+      You blink.
+
+      Now it says: "The DJ knows your name was Sarah."
+
+      That's not your name. You blink again.
+
+      "The DJ knows your name will be important."
+
+      The text is changing. Not erasing and rewriting—you'd see that. It's just... different each time you focus on it. Like the paper is showing you all possible versions of itself at once.
+
+      You hold it up to the strobe lights. In the flickering illumination, you can see all the texts at once. Dozens of messages. Hundreds. Overlapping. All written in the same handwriting. Your handwriting, you realize with a chill.
+
+      "The DJ knows your name"
+      "You gave them your name"
+      "You will give them your name"
+      "You never came here"
+      "You've always been here"
+      "The paper is you"
+      "You are the paper"
+      "READ THIS WHEN YOU'RE READY"
+      "DON'T READ THIS"
+      "HELP"
+      "THERE IS NO HELP"
+      "THE EXIT IS BEHIND YOU"
+      "THERE IS NO EXIT"
+
+      The messages scroll faster and faster. You feel dizzy. The paper is warm now. Getting warmer. It's vibrating at a frequency you can feel in your teeth.
+
+    choice:
+      prompt: "The paper contains infinite messages. All of them are from you."
+      options:
+        - text: "Burn it"
+          description: "Destroy this paradox object"
+          next_node: "dj_booth"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: 2
+
+        - text: "Keep reading until you find the true message"
+          description: "One of them must be the real one"
+          next_node: "acceptance_path"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+
+        - text: "Give it back to the figure"
+          description: "You don't want this"
+          next_node: "panic_exit"
+          consequences:
+            - type: "modify_trait"
+              trait: "courage"
+              delta: -1
+
+  # ============================================
+  # NEW NODES - DJ Booth Branch
+  # ============================================
+
+  dj_booth_escape:
+    title: "The Music Follows"
+    narrative: |
+      You turn and try to leave the DJ booth. But as you descend the steps, the music comes with you. Not the ambient club music—the DJ's specific frequency. It's attached to you now. Wrapping around your consciousness like a warm blanket. Or a straitjacket.
+
+      You push through the crowd, but they part for you differently now. Respectfully. Fearfully. Like you're carrying something dangerous.
+
+      The music in your head is getting louder. You can feel it reorganizing your thoughts. Making connections. Building bridges between ideas that were never meant to connect.
+
+      You make it to where you think the exit is, but the curtains look different now. They're pulsing with the bass. Breathing. Alive.
+
+      "You can't leave with the frequency inside you," a voice says. It's the older woman from earlier—the one who's been here fourteen months. "It has to be extracted. Or accepted. There's no middle ground."
+
+      She looks at you with pity.
+
+      "Trust me," she says. "I tried to leave with it once. I woke up three days later, still dancing, no memory of the interval. The frequency protects itself."
+
+    choice:
+      prompt: "The music is inside you now. It won't let you leave unchanged."
+      options:
+        - text: "Go back to the DJ and ask them to remove it"
+          description: "Maybe it can be reversed"
+          next_node: "dj_final_answer"
+          consequences: []
+
+        - text: "Try to push through the exit anyway"
+          description: "Force your way out"
+          next_node: "forced_exit_attempt"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: 3
+
+        - text: "Accept the frequency as part of you"
+          description: "Stop fighting"
+          next_node: "acceptance_path"
+          consequences:
+            - type: "set_flag"
+              flag: "has_taken_substance"
+              value: true
+
+  dj_shutdown_request:
+    title: "The Impossible Request"
+    narrative: |
+      "Turn off the music," you say. "Stop the signal. End this."
+
+      The DJ's hands freeze over the controls. For the first time, their eyes open fully. Both completely white. Both focused entirely on you.
+
+      "Turn off the music," they repeat. Their voice has no inflection. No emotion. "You want me to turn off the music."
+
+      "Yes."
+
+      "The music that's been playing since before humans existed. The music that *made* humans exist. The background radiation of consciousness itself. You want me to... turn it off."
+
+      They stand up. The music continues without them touching anything.
+
+      "I don't play the music," they explain, walking toward you. "I translate it. I convert the universal frequency into something human ears can process. If I stopped, the raw signal would come through unfiltered."
+
+      "What would happen then?"
+
+      The DJ reaches out and touches your forehead. You see—for a fraction of a second—what the unfiltered music looks like.
+
+      It's not sound.
+
+      It's everything.
+
+      Every moment of every consciousness that has ever existed or will ever exist, compressed into a single eternal note.
+
+      You fall to your knees.
+
+      "That," the DJ says, "is what I protect you from. Every beat, every bar, every song—a tiny, tolerable piece of infinity. You're welcome."
+
+    choice:
+      prompt: "The DJ has shown you the truth beneath the music."
+      options:
+        - text: "Accept the revelation"
+          description: "You understand now"
+          next_node: "dj_revealed"
+          consequences:
+            - type: "set_flag"
+              flag: "knows_dj_secret"
+              value: true
+
+        - text: "Reject it and flee"
+          description: "You don't want to understand"
+          next_node: "panic_exit"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: 4
+
+  reality_question:
+    title: "The Fundamental Query"
+    narrative: |
+      "Is any of this real?" you demand. "Or is it all a simulation? A drug trip? A shared hallucination?"
+
+      The DJ tilts their head. Behind their closed eyelids, you can see rapid movement—not just their eyes, but something else. Something geometric. Fractal.
+
+      "Define 'real,'" they say.
+
+      "Objective. External. Not dependent on perception."
+
+      "Ah." The DJ nods. "Then no. None of this is real. But neither is anything else. Reality is what consciousness agrees to experience. Here, we just... agree more intensely."
+
+      They gesture at the crowd below.
+
+      "Every person down there has agreed that this experience is real. Their brains have synchronized to a shared frequency. That synchronization creates a consensus reality more 'real' than the one outside."
+
+      "But the outside world—"
+
+      "Is also a consensus," the DJ interrupts. "Just a larger, lazier one. Out there, billions of people agree on physics, on time, on causality. Here, a few hundred people agree on something different. Both are equally real. Both are equally constructed."
+
+      The DJ leans close.
+
+      "The only difference is that here, we know it's constructed. Out there, they've forgotten."
+
+      Their hand moves to the controls.
+
+      "Would you like a demonstration?"
+
+    choice:
+      prompt: "The DJ is offering to show you how reality bends."
+      options:
+        - text: "Yes—show me"
+          description: "See the construction in action"
+          next_node: "overdose_dissolution"
+          consequences:
+            - type: "character_dies"
+              reason: "The demonstration exceeded your capacity to process"
+
+        - text: "No—I've seen enough"
+          description: "Leave while you still remember what's real"
+          next_node: "truth_too_heavy"
+          consequences:
+            - type: "set_flag"
+              flag: "knows_dj_secret"
+              value: true
+
+        - text: "Can I become someone who shows others?"
+          description: "Join the mechanism"
+          next_node: "dj_revealed"
+          consequences:
+            - type: "set_flag"
+              flag: "knows_dj_secret"
+              value: true
+
+  # ============================================
+  # NEW NODES - Basement Branch
+  # ============================================
+
+  booth_experience:
+    title: "The Frequency Bath"
+    narrative: |
+      You sit in the booth. It's surprisingly comfortable—the cushions seem to mold around you, cradling you in perfect stillness.
+
+      The hum is immediate. Not from the speakers. From the booth itself. From the walls. From the air. It enters through your skin, your bones, your closed eyes.
+
+      Colors you've never seen before bloom behind your eyelids. Sounds you've never heard become visible. Your sense of self begins to... diffuse.
+
+      You're not losing consciousness. You're expanding it. Spreading out to fill the room. The building. The city. The concept of cities.
+
+      Time becomes a physical substance you can touch. You drag your fingers through moments that happened years ago. You breathe air that won't exist until tomorrow.
+
+      And beneath it all, the frequency. The eternal note that everything else is variations of. You can hear it now. Feel it. Understand it.
+
+      It's not beautiful.
+
+      It's not terrible.
+
+      It's *true*.
+
+      And truth, you realize, is the most intoxicating substance in existence.
+
+    choice:
+      prompt: "You have touched the frequency directly."
+      options:
+        - text: "Stay in the booth and go deeper"
+          description: "See how far the truth extends"
+          next_node: "embrace_alteration"
+          consequences:
+            - type: "set_flag"
+              flag: "has_taken_substance"
+              value: true
+            - type: "modify_trait"
+              trait: "sobriety"
+              delta: -4
+
+        - text: "Pull back before you lose yourself"
+          description: "You've learned enough"
+          next_node: "acceptance_path"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+
+  attendant_interrogation:
+    title: "The Gatekeeper's Knowledge"
+    narrative: |
+      "What exactly happens in these booths?" you demand.
+
+      The attendant looks at you with those clear, angry eyes. "Calibration," he says. "Frequency matching. The booths tune your consciousness to the club's baseline vibration."
+
+      "Against people's will?"
+
+      "Everyone who sits does so voluntarily." He makes a note on his clipboard. "The club doesn't force anything. It just... offers. People make their own choices."
+
+      "Then why can't they leave?"
+
+      "They can leave whenever they want." He actually laughs—a dry, humorless sound. "The problem isn't leaving. The problem is wanting to leave. The frequency adjusts your desires. After calibration, leaving seems... unnecessary. Uninteresting. Why would you go back to the gray world when you've seen the colors?"
+
+      He looks at the seven occupied booths.
+
+      "These seven have been here since the beginning. Whatever the beginning was. They're the foundation. The rest of us are built on their frequency."
+
+      "How do I avoid becoming like them?"
+
+      "You don't," he says simply. "You're already calibrating. Every second you spend here, you're adjusting. The only question is whether you accelerate the process or let it happen naturally."
+
+    choice:
+      prompt: "The attendant has explained the mechanism of capture."
+      options:
+        - text: "Try to leave immediately"
+          description: "Get out before you calibrate further"
+          next_node: "basement_escape"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: 2
+
+        - text: "Ask about Level Seven"
+          description: "How deep does this go?"
+          next_node: "woman_guided_descent"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+
+  wake_seated_person:
+    title: "The Mirror Recognition"
+    narrative: |
+      You reach out and shake the shoulder of the nearest seated person. Their body is warm. Alive. But unresponsive.
+
+      You shake harder. "Hey. Hey! Wake up."
+
+      Their eyes open.
+
+      And you're looking at yourself.
+
+      Not a person who looks like you. You. Your face. Your eyes. Your exact expression of horrified recognition.
+
+      "I was wondering when you'd arrive," they say with your voice. "You're late. Or early. Time is confusing down here."
+
+      "How—what—"
+
+      "Shh." They reach up and touch your face with your own hand. "You don't need to understand yet. You just need to accept. Every person in these booths is a version of someone who entered the club. Frozen at the moment of their deepest understanding."
+
+      "Are you... me?"
+
+      "I'm you from three weeks ago. When you came here the first time. When you took the drink. When you sat in this booth and dissolved."
+
+      "I've never been here before."
+
+      "You don't remember being here before." They smile your smile. "But you were. You are. You will be. And eventually, you'll sit in a booth and someone who looks like you will try to wake you up."
+
+      They close their eyes again, returning to stillness.
+
+      "Come back when you're ready to accept it," they murmur. "I'll be here. I've always been here."
+
+    choice:
+      prompt: "You have met yourself in the past/future/eternal present."
+      options:
+        - text: "Accept the paradox"
+          description: "You've always been part of this"
+          next_node: "one_of_them_all_along"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+
+        - text: "Reject the paradox and flee"
+          description: "This isn't real—it can't be"
+          next_node: "basement_escape"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: 3
+
+  basement_escape:
+    title: "The Time Slip"
+    narrative: |
+      You run for the stairs. Your legs feel heavy—calibrated heavy, part of you thinks—but you push through. Up the steps. Two at a time. Toward the music and the lights and the dancing.
+
+      You emerge from the basement.
+
+      The club is empty.
+
+      Not empty of people. Empty of everything. The bar is there but covered in dust. The dance floor is there but silent. The lights are off. The velvet curtains are moth-eaten and hanging in tatters.
+
+      Through a dirty window, you can see sunlight. Morning sunlight.
+
+      How long were you down there?
+
+      You walk to the entrance. Push through the ruined curtains. Step out onto the street.
+
+      It's daytime. A Tuesday, according to a newspaper box. You went in on a Saturday night.
+
+      But something is wrong. The street feels different. The cars look older. Or newer. Or both. The people walking past aren't looking at you—they're looking *through* you.
+
+      Behind you, the club door is gone. Just a wall now. Like there was never an entrance.
+
+      Your phone says it's Saturday. The newspaper says Tuesday. Your body says you've been awake for days.
+
+      Nothing aligns.
+
+      And in the distance, you can still hear the bass.
+
+    choice:
+      prompt: "You've escaped. But time isn't working correctly."
+      options:
+        - text: "Go home and try to forget"
+          description: "Resume normal life"
+          next_node: "managed_escape_confused"
+          consequences:
+            - type: "modify_trait"
+              trait: "sobriety"
+              delta: 1
+
+        - text: "Find the entrance again"
+          description: "You need answers"
+          next_node: "panic_exit"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: 2
+
+  # ============================================
+  # NEW NODES - Exit Search Branch
+  # ============================================
+
+  forced_exit_attempt:
+    title: "The Reality Tear"
+    narrative: |
+      You push past the woman and throw yourself at the false exit. Your body passes through the curtain—
+
+      —and splits.
+
+      Part of you is on the street. Cold air. Normal night. Regular people.
+
+      Part of you is still in the club. Dancing. Drinking. Part of the collective.
+
+      You exist in both places simultaneously. You can feel both bodies. Think both thoughts. See both realities.
+
+      The two yous look at each other across an impossible divide.
+
+      "You shouldn't have done that," your club-self says. "Now we're both stuck."
+
+      "I can leave," your street-self insists. "I can walk away."
+
+      "Try."
+
+      You try. Your street-body takes a step. Your club-body takes a step. They're connected now. Mirrored. Whatever one does, the other must do.
+
+      If your street-self leaves, your club-self must leave too. But your club-self can't leave. It's part of the frequency now.
+
+      So neither of you can move.
+
+      The woman watches sadly. "I told you," she says. "The exit doesn't work if you force it."
+
+      Your two selves begin to stretch. The connection between them is tearing. One of you will have to cease existing for the other to survive.
+
+    choice:
+      prompt: "You are being torn between two realities."
+      options:
+        - text: "Sacrifice your street-self to stay in the club"
+          description: "Let the outside world go"
+          next_node: "became_one_of_them"
+          consequences:
+            - type: "set_flag"
+              flag: "has_taken_substance"
+              value: true
+
+        - text: "Sacrifice your club-self to escape"
+          description: "Kill part of yourself to be free"
+          next_node: "overdose_dissolution"
+          consequences:
+            - type: "character_dies"
+              reason: "Part of you died so the rest could escape"
+
+        - text: "Find a way to merge back together"
+          description: "Accept both realities as one"
+          next_node: "acceptance_path"
+          consequences:
+            - type: "set_flag"
+              flag: "witnessed_glitch"
+              value: true
+
+  woman_guided_descent:
+    title: "The Seventh Level"
+    narrative: |
+      The woman takes your hand. Her grip is soft but unbreakable.
+
+      "I'll show you where this all started," she says. "Where the frequency was first heard. Where the club began."
+
+      She leads you down stairs you didn't notice before. Past the basement. Past the booths. Into darkness.
+
+      But the darkness isn't empty. It's full. Full of presence. Full of attention. Full of something vast and patient that's been waiting for exactly this moment.
+
+      "Level Seven," she whispers. "Not a physical space. A state of consciousness. The boundary between individual awareness and universal awareness."
+
+      Around you, shapes move. Not people. Not quite. Patterns. Frequencies given form.
+
+      "This is what everyone here is becoming," she explains. "What everyone has always been becoming. The substance is just the accelerant. The club is just the catalyst. This—" she gestures at the impossible geometry surrounding you "—is the destination."
+
+      "What happens if I keep going?"
+
+      "You become part of it. Permanently. Irreversibly. You stop being a person and start being a pattern. A frequency. A note in the eternal song."
+
+      She squeezes your hand.
+
+      "I've been here a long time," she says. "But I've never taken that last step. I've been waiting for someone to take it with me."
+
+    choice:
+      prompt: "Level Seven offers transcendence—at the cost of identity."
+      options:
+        - text: "Take the final step with her"
+          description: "Become something more than human"
+          next_node: "dj_revealed"
+          consequences:
+            - type: "set_flag"
+              flag: "has_taken_substance"
+              value: true
+
+        - text: "Pull away and try to return"
+          description: "You're not ready"
+          next_node: "acceptance_path"
+          consequences:
+            - type: "modify_trait"
+              trait: "courage"
+              delta: -1
+
+  systematic_escape:
+    title: "The Methodical Approach"
+    narrative: |
+      You decide to be systematic. Scientific. You will try every possible exit and document the results.
+
+      Exit One: Main entrance. Results in appearing at the bar.
+      Exit Two: Fire exit by the bathrooms. Results in appearing on the dance floor.
+      Exit Three: Staff door behind the bar. Results in appearing in the basement.
+      Exit Four: Window in the bathroom. Leads to an identical bathroom.
+
+      On your fifteenth attempt, something changes.
+
+      Exit Fifteen: A door you've never noticed, behind a velvet curtain in the corner. It doesn't redirect you. It opens onto... nothing. Actual nothing. Void. Absence of reality.
+
+      "That's the real exit," a voice says behind you. It's the older woman again. "The one that was here before the club existed. Before any of this existed."
+
+      "What happens if I step through?"
+
+      "You stop existing inside the club's reality. Completely. Permanently. The frequency loses its grip on you."
+
+      "And I return to normal life?"
+
+      "You return to *a* life. It might not be the one you remember. The club has been editing your past while you've been here. Changing things. You'll exit into a world where you might not exist in the way you remember existing."
+
+      She looks at you with something like respect.
+
+      "But you'll be free. Actually, truly free. Very few people find this door. Fewer still have the courage to use it."
+
+    choice:
+      prompt: "The true exit requires abandoning your past self."
+      precondition:
+        type: all_of
+        conditions:
+          - type: flag_not_set
+            flag: has_taken_substance
+          - type: trait_maximum
+            trait: paranoia_level
+            maximum: 4
+      options:
+        - text: "Step through into the void"
+          description: "Accept freedom at any cost"
+          next_node: "escape_unaffected"
+          consequences:
+            - type: "modify_trait"
+              trait: "courage"
+              delta: 2
+
+        - text: "I can't give up who I was"
+          description: "My identity matters more than freedom"
+          next_node: "acceptance_path"
+          consequences: []
+
+  basement_last_resort:
+    title: "The Desperate Descent"
+    narrative: |
+      You head back to the basement. If the answer isn't in escaping, maybe it's in going deeper.
+
+      The stairs seem longer this time. The hum louder. The booths fuller—you could swear there were only seven people before, but now there are twelve. Fifteen. Twenty.
+
+      The attendant is still there. Still with his clipboard. But his uniform fits differently now. Tighter. More like skin than fabric.
+
+      "Back again," he says. It's not a question.
+
+      "I need to understand," you say. "I need to know what this really is."
+
+      He sets down the clipboard. His clear eyes study you.
+
+      "You want to understand?" He walks toward you. "Really understand? Not the metaphors. Not the philosophy. The actual mechanism."
+
+      "Yes."
+
+      "Then stop trying to escape. Stop fighting. Stop asking. Just..." He gestures at an empty booth. "Listen. Let the frequency explain itself. It knows more than I do. More than anyone here does."
+
+      "What if I can't come back?"
+
+      "Then you'll finally have your answer." He smiles—a real smile, the first genuine emotion you've seen on his face. "Either way, the questions stop."
+
+    choice:
+      prompt: "The attendant is offering knowledge in exchange for surrender."
+      options:
+        - text: "Sit in the booth and listen"
+          description: "Accept the exchange"
+          next_node: "acceptance_path"
+          consequences:
+            - type: "set_flag"
+              flag: "has_taken_substance"
+              value: true
+            - type: "modify_trait"
+              trait: "sobriety"
+              delta: -3
+
+        - text: "Refuse and return upstairs"
+          description: "Find another way"
+          next_node: "bar_rejection"
+          consequences: []
+
+  # ============================================
+  # NEW NODES - World-Blocks (Security)
+  # ============================================
+
+  security_intervention:
+    title: "The Interception"
+    narrative: |
+      Two figures materialize from the crowd. They move with that same synchronized precision you've seen everywhere—perfect unison, perfect timing, perfect absence of individual thought.
+
+      Security. But not really. They wear the uniforms, but their eyes are wrong. Too dilated. Too focused. Too *present*.
+
+      "You've seen too much to leave unprocessed," one says. Or both say. Hard to tell when their mouths move together.
+
+      "The calibration must be completed," the other adds. "For your protection."
+
+      They take your arms—gently, but with absolute strength. You couldn't break free if you tried.
+
+      "This isn't a punishment," they explain as they guide you toward the basement stairs. "This is care. You touched something that wasn't ready for you. Or you weren't ready for it. The frequency needs to be stabilized."
+
+      You try to resist. Your legs won't obey.
+
+      "Don't fight," they say. "Fighting makes the calibration harder. Longer. More painful."
+
+      At the top of the stairs, they pause.
+
+      "You have one choice left," they offer. "We can escort you to a booth for gentle calibration. Or you can try to fight, and we'll calibrate you here. Now. Without the buffer."
+
+    choice:
+      prompt: "Security is offering compliance or force."
+      options:
+        - text: "Go with them to the booth"
+          description: "Accept gentle calibration"
+          next_node: "booth_experience"
+          consequences: []
+
+        - text: "Fight them with everything you have"
+          description: "Refuse to surrender"
+          next_node: "overdose_dissolution"
+          consequences:
+            - type: "character_dies"
+              reason: "The unfiltered frequency was too much"
+
+  dj_rejection:
+    title: "The Dismissal"
+    narrative: |
+      You approach the DJ booth, but before you can climb up, a hand on your shoulder stops you.
+
+      "Not yet." It's a woman with kind eyes but firm grip. "The DJ only speaks to those who have witnessed. You haven't seen enough."
+
+      "Seen enough of what?"
+
+      "The glitches. The moments when reality stutters. The cracks in the consensus." She studies your face. "Your eyes are still clear. You haven't looked deep enough."
+
+      "I want answers—"
+
+      "Everyone wants answers," she interrupts. "But the DJ doesn't give answers. They give understanding. And you can't understand what you haven't experienced."
+
+      She releases you.
+
+      "Come back after you've witnessed something impossible. Something that doesn't fit. Then the DJ will talk to you. Until then..." She gestures at the club. "Go deeper. Pay attention. See what's actually happening here."
+
+      Behind her, the DJ continues their movements, eyes closed, hands weaving patterns in the air. Untouchable. Unreachable. Until you've earned the right to approach.
+
+    choice:
+      prompt: "You've been turned away from the DJ booth."
+      options:
+        - text: "Explore the dance floor for glitches"
+          description: "Find something impossible"
+          next_node: "dancefloor_observation"
+          consequences: []
+
+        - text: "Head to the basement"
+          description: "Go deeper like she said"
+          next_node: "downstairs_discovery"
+          consequences: []
+
+        - text: "This is ridiculous—leave"
+          description: "You don't need their permission"
+          next_node: "exit_search"
+          consequences: []
+
+  # ============================================
+  # NEW NODES - Camera/Records (Security Branch)
+  # ============================================
+
+  camera_evidence:
+    title: "The Footage"
+    narrative: |
+      You turn to the security monitors. Twelve screens showing different angles of the club. Dance floor. Bar. Basement. Bathrooms. Exits.
+
+      At first, everything looks normal. People dancing. Drinking. Moving through the space.
+
+      Then you start noticing the inconsistencies.
+
+      On screen three, a woman walks from left to right. On screen seven, the same woman walks from right to left at the same moment. Same outfit. Same posture. Different direction.
+
+      On screen nine, the dance floor is packed. On screen ten, which shows the same area from a different angle, the dance floor is nearly empty.
+
+      You check the timestamps. All the same. All showing the same moment in time. But showing different realities.
+
+      There's a filing cabinet in the corner. You open it and find years of footage documentation. Incident reports. But the incidents make no sense.
+
+      "3:17 AM - Patron reported existing in two locations simultaneously. Resolved via booth calibration."
+      "4:22 AM - Reality fluctuation in bathroom. Three patrons merged temporarily. No lasting damage."
+      "1:48 AM - DJ predicted patron's arrival six hours before patron decided to come. Confirmed retroactively."
+
+      The reports go back years. Decades. Some are dated from before the building existed.
+
+    choice:
+      prompt: "The security records document impossible events as routine."
+      options:
+        - text: "Take evidence and try to leave"
+          description: "Someone outside needs to see this"
+          next_node: "systematic_escape"
+          consequences:
+            - type: "gain_item"
+              item: "security_footage"
+
+        - text: "Destroy the evidence"
+          description: "Some things shouldn't be documented"
+          next_node: "panic_exit"
+          consequences: []
+
+        - text: "Keep reading—find the earliest report"
+          description: "Understand how this started"
+          next_node: "truth_too_heavy"
+          consequences:
+            - type: "set_flag"
+              flag: "knows_dj_secret"
+              value: true
+
+  security_desk_search:
+    title: "The Records"
+    narrative: |
+      You search through the desk drawers. Papers. Forms. Schedules. All normal administrative detritus.
+
+      But in the bottom drawer, locked—you break it open—there's a single file folder. Hand-labeled: "ORIGINAL INCIDENT."
+
+      Inside, a single page. Yellowed with age. The text is typed on an old typewriter.
+
+      "The frequency was first detected on [DATE REDACTED] by [NAME REDACTED]. Initial contact resulted in fourteen minutes of shared hallucination between twelve individuals who had no previous connection to each other."
+
+      "Subsequent investigation revealed the frequency had always existed. It predates human hearing. It predates human existence. We didn't create it. We learned to tune to it."
+
+      "The establishment known as 'The Velvet Chamber' was built as a focusing array. The architecture itself is designed to amplify and contain the frequency. Anyone who enters the building begins calibrating automatically."
+
+      "There is no way to un-calibrate. There is no cure. There is no exit that returns you to full separation from the frequency."
+
+      "The best we can offer is management. The booths. The rituals. The controlled exposure. These do not free people. They stabilize them."
+
+      "If you are reading this, you are already part of the experiment. You have always been part of the experiment."
+
+      "Welcome."
+
+    choice:
+      prompt: "The original file explains everything—and changes nothing."
+      options:
+        - text: "Accept your role in the experiment"
+          description: "You can't undo what's done"
+          next_node: "acceptance_path"
+          consequences:
+            - type: "set_flag"
+              flag: "knows_dj_secret"
+              value: true
+
+        - text: "Burn the file and try to escape"
+          description: "Refuse to be part of this"
+          next_node: "systematic_escape"
+          consequences:
+            - type: "modify_trait"
+              trait: "paranoia_level"
+              delta: 2

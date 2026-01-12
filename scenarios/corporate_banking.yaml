@@ -315,6 +315,123 @@ nodes:
         logic: "ethics += 15; reputation += 20"
         next: external_opportunity
 
+  external_opportunity:
+    type: story
+    title: "Outside Offers"
+    content: |
+      You decline Caldwell's offer. "I appreciate the confidence," you tell him, "but I've seen too many
+      people take fall-guy positions. I'll stay in my current role."
+
+      Caldwell's smile doesn't reach his eyes. "Your choice. But don't expect many more opportunities here."
+
+      Word travels fast in banking. Within two weeks, recruiters are calling. Your reputation for integrity
+      during the scandal cleanup has made you valuable—to competitors.
+
+      First National Bank offers VP of Enterprise Risk: $210,000, solid team, traditional culture.
+
+      Pacific Regional offers Director of Compliance with a clear path to CRO: $175,000 starting, but the
+      CEO personally promised you'd have the CRO role within 18 months.
+
+      Sarah, now your closest advisor, weighs in: "Pacific has better culture and real growth potential.
+      First National pays more but you'd be cleaning up someone else's mess again."
+    logic: "years_employed += 0.5"
+    next: external_choice
+
+  external_choice:
+    type: choice
+    title: "New Horizons"
+    content: |
+      Two solid offers. Both represent fresh starts away from Sentinel's politics.
+
+      First National: More money now, established program, but you'd be inheriting problems.
+      Pacific Regional: Less money initially, but genuine growth opportunity and a CEO who values integrity.
+    choices:
+      - text: "Take First National's VP offer—the money and title are too good"
+        logic: "position = 'VP of Enterprise Risk'; salary = 210000; reputation += 25; political_skills += 10"
+        next: first_national_path
+
+      - text: "Take Pacific Regional's offer—better culture, real growth potential"
+        logic: "position = 'Director of Compliance'; salary = 175000; ethics += 10; reputation += 20"
+        next: fresh_start_success
+
+      - text: "Stay at Sentinel and prove Caldwell wrong"
+        logic: "reputation += 15; ethics += 5"
+        next: prove_yourself_path
+
+  first_national_path:
+    type: story
+    title: "The Established Institution"
+    content: |
+      First National Bank is everything Sentinel isn't: stable, conservative, predictable. The risk
+      management program is solid but dated. Your job is modernization, not crisis management.
+
+      Over three years, you upgrade their systems, train their team, and build a reputation as a
+      methodical, competent executive. No drama. No scandals. Just steady work.
+
+      You're promoted to SVP of Risk Management. Salary: $285,000. You're 42 years old.
+
+      The CEO retires. The Board is looking for steady leadership. Your name comes up—not as a visionary,
+      but as someone who won't break anything. Sometimes that's exactly what a bank needs.
+    logic: "years_employed += 3; position = 'SVP of Risk Management'; salary = 285000; reputation += 30; analytical_skills += 20"
+    next: first_national_choice
+
+  first_national_choice:
+    type: choice
+    title: "Steady Leadership"
+    content: |
+      The Board offers you CEO of First National Bank. It's a $15 billion regional bank—smaller than
+      Sentinel, but you'd be running it. Salary: $1.2 million.
+
+      Alternatively, a major consulting firm is recruiting you as a Partner in their Financial Services
+      practice. Less prestige, but $800,000 base plus profit sharing could exceed the CEO compensation.
+    choices:
+      - text: "Accept the CEO role—lead a bank the right way"
+        logic: "position = 'CEO (First National Bank)'; salary = 1200000; reputation += 40"
+        next: regional_ceo_ending
+
+      - text: "Take the consulting offer—broader impact, less politics"
+        logic: "position = 'Partner, Financial Services'; salary = 800000; reputation += 30; ethics += 5"
+        next: consulting_ending
+
+  prove_yourself_path:
+    type: story
+    title: "The Long Road"
+    content: |
+      You stay at Sentinel, determined to prove Caldwell wrong. It's a brutal three years. You're passed
+      over for promotions. Excluded from key meetings. Given impossible assignments.
+
+      But you deliver. Every time. Your team respects you. The Board's risk committee notices your work.
+      When Caldwell finally retires (pushed out by the Board), you're still standing.
+
+      The new CEO, brought in from outside, reviews the org chart. "Who's this person who's been doing
+      excellent work despite being frozen out for three years?"
+
+      She promotes you to SVP of Risk Operations. Then VP. Then offers you Chief Risk Officer.
+
+      "I need someone who can survive political warfare and still do the job," she explains. "You've
+      proven you can."
+    logic: "years_employed += 5; position = 'Chief Risk Officer'; salary = 320000; reputation += 45; ethics += 20; political_skills += 25"
+    next: cro_power
+
+  consulting_ending:
+    type: ending
+    title: "The Advisor"
+    content: |
+      As a Partner at McKinley & Associates, you spend 15 years advising banks on risk management,
+      compliance, and governance. You never run a bank yourself, but you influence dozens of them.
+
+      Your client list includes three of the ten largest US banks. You write two books on banking risk
+      that become industry standards. You're regularly quoted in the Wall Street Journal.
+
+      You retire at 58 with a $18 million net worth. Not as much as a CEO, but you had variety,
+      intellectual challenge, and work-life balance that bank executives rarely achieve.
+
+      **Final Position:** Partner, Financial Services Consulting (Retired)
+      **Career Earnings:** $18M
+      **Reputation:** 85/100
+      **Ethics:** 80/100
+      **Assessment:** Excellent alternative path. Influence without the politics.
+
   whistleblower_path:
     type: story
     title: "The Whistleblower"

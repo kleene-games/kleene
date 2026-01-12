@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Kleene Save Auto-Approve Hook
-# Auto-approves Write and Bash operations to saves/ directory for seamless gameplay
+# Auto-approves Write, Edit, and Bash operations to saves/ directory for seamless gameplay
 
 # Read hook input from stdin
 input=$(cat)
@@ -13,8 +13,8 @@ tool_name=$(echo "$input" | jq -r '.tool_name // ""')
 # Check based on tool type
 should_approve=false
 
-if [[ "$tool_name" == "Write" ]]; then
-  # For Write tool, check file_path
+if [[ "$tool_name" == "Write" || "$tool_name" == "Edit" ]]; then
+  # For Write/Edit tools, check file_path
   file_path=$(echo "$input" | jq -r '.tool_input.file_path // ""')
   if [[ "$file_path" == */saves/* ]]; then
     should_approve=true
