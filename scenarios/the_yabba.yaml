@@ -1,0 +1,1574 @@
+name: "The Yabba"
+description: "A schoolteacher stranded in an outback mining town descends into a nightmare of hospitality, gambling, and self-destruction."
+version: "1.0.0"
+
+# Inspired by the 1971 Australian psychological thriller
+# Themes: masculinity, class, isolation, self-destruction, redemption
+
+initial_character:
+  name: "John Grant"
+  traits:
+    dignity: 10        # Self-respect and composure
+    sobriety: 10       # Physical and mental clarity
+    money: 8           # Savings (in abstract units)
+    desperation: 0     # How trapped/reckless you feel
+    self_knowledge: 2  # Understanding of yourself
+  inventory: []
+  relationships:
+    doc: 0
+    jock: 0
+    janette: 0
+    tim: 0
+  flags:
+    gambled: false
+    lost_everything: false
+    been_to_docs_shack: false
+    went_on_hunt: false
+    rejected_janette: false
+    rejected_doc: false
+    tried_to_leave: false
+    has_rifle: false
+
+initial_world:
+  current_location: "railway_station"
+  time: 0
+  flags:
+    christmas_heat: true
+    escape_possible: true
+  locations:
+    - id: railway_station
+      name: "Bundanyabba Railway Station"
+      description: "A dusty platform baking in the December heat."
+      connections: [main_street]
+    - id: main_street
+      name: "Main Street"
+      description: "The commercial heart of The Yabba. Pubs everywhere."
+      connections: [railway_station, pub, hotel]
+    - id: pub
+      name: "The Royal Hotel"
+      description: "Dark wood, ceiling fans, and the smell of stale beer."
+      connections: [main_street, rsl_club, two_up_ring]
+    - id: hotel
+      name: "Budget Hotel"
+      description: "Your room for the night. Sparse but functional."
+      connections: [main_street]
+    - id: rsl_club
+      name: "RSL Club"
+      description: "A veterans' club with a disconcerting memorial service."
+      connections: [pub]
+    - id: two_up_ring
+      name: "Two-Up Ring"
+      description: "An underground gambling den. The kip spins in the air."
+      connections: [pub]
+    - id: tims_house
+      name: "Tim Hynes' House"
+      description: "A weatherboard house on the outskirts. Always someone drinking."
+      connections: [main_street]
+    - id: docs_shack
+      name: "Doc's Shack"
+      description: "A tin shed in the scrubland. Books, bottles, and kangaroo meat."
+      connections: [outback]
+    - id: outback
+      name: "The Outback"
+      description: "Red earth stretching to infinity. The sun is merciless."
+      connections: [docs_shack, main_street, railway_station]
+
+start_node: arrival
+
+nodes:
+  arrival:
+    narrative: |
+      The train shudders to a halt at Bundanyabba. You step onto the platform into a wall of heat—forty bloody degrees, easy. The air shimmers above the tracks like a fever dream.
+
+      You're a schoolteacher from Sydney, bonded to two years at a remote outback school in Tiboonda. This is supposed to be a quick stopover before your flight home for Christmas. Your girlfriend Robyn is waiting. Your real life is waiting.
+
+      You've got enough quid for the flight and a bit extra. One night in this mining town, then freedom.
+
+      The locals call this place "The Yabba." They say it with affection, like a nickname for an old mate. Everyone reckons it's the best little place on earth.
+
+      You need to find a hotel and kill time until your flight tomorrow arvo.
+    choice:
+      prompt: "The heat is oppressive. What do you do?"
+      options:
+        - id: find_hotel
+          text: "Check into the hotel and stay in your room"
+          consequence:
+            - type: move_to
+              location: hotel
+          narrative: "You'll wait out the heat in your room. Sensible."
+          next_node: hotel_boredom
+
+        - id: find_pub
+          text: "Find a pub—you could use a cold beer"
+          consequence:
+            - type: move_to
+              location: pub
+            - type: modify_trait
+              trait: sobriety
+              delta: -1
+          narrative: "One beer won't hurt. You follow the signs to the Royal Hotel."
+          next_node: first_drink
+
+  hotel_boredom:
+    narrative: |
+      Your hotel room is a box of heat. The ceiling fan pushes warm air in circles. You lie on the bed, staring at the plaster, thinking about Sydney. About Robyn. About how you ended up teaching thirty kids in a place that doesn't appear on most maps.
+
+      The afternoon stretches endlessly. The walls seem to press inward.
+
+      There's a pub across the street. Through the window, you can see men going in and out, laughing. The sound of a piano drifts up.
+    choice:
+      prompt: "The loneliness is suffocating."
+      options:
+        - id: stay_put
+          text: "Stay in your room and read"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 1
+          narrative: "You force yourself to read. The hours crawl."
+          next_node: morning_escape
+
+        - id: go_to_pub
+          text: "Go to the pub—just for a couple of hours"
+          consequence:
+            - type: move_to
+              location: pub
+            - type: modify_trait
+              trait: sobriety
+              delta: -1
+          narrative: "You can't stand the silence anymore."
+          next_node: first_drink
+
+  first_drink:
+    narrative: |
+      The pub is dark and cool, a relief from the blazing street. Blokes in work shirts lean against the bar, faces weathered by sun and dust. They turn to look at you—the stranger—with open curiosity.
+
+      A man in a police uniform approaches with a broad smile. "G'day! New to the 'Yabba? Let me shout you a drink, mate. I'm Jock Crawford."
+
+      He doesn't wait for an answer. A schooner of beer appears in front of you, cold and sweating.
+
+      "Best little place on earth, the 'Yabba," Jock says. "Everyone's bloody friendly here. That's the rule. You can't refuse a drink—it's an insult, mate."
+    choice:
+      prompt: "Jock is waiting for you to drink."
+      options:
+        - id: accept_drink
+          text: "Accept the drink and chat with Jock"
+          consequence:
+            - type: modify_trait
+              trait: sobriety
+              delta: -1
+            - type: modify_relationship
+              npc: jock
+              delta: 10
+          narrative: "The beer is ice-cold and perfect."
+          next_node: jock_conversation
+
+        - id: polite_decline
+          text: "Try to politely decline"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: -2
+            - type: modify_relationship
+              npc: jock
+              delta: -5
+          narrative: "Jock's smile doesn't waver, but something hardens in his eyes."
+          next_node: forced_hospitality
+
+  forced_hospitality:
+    narrative: |
+      "Now, now," Jock says, his hand on your shoulder, grip surprisingly firm. "I said everyone's friendly in the 'Yabba. You're not gonna be unfriendly, are ya, mate?"
+
+      The other drinkers have turned to watch. Their faces are neutral, waiting.
+
+      "It's just a beer," Jock continues. "Just hospitality. You city blokes, you don't understand hospitality. Got snakes in your pocket, have ya?"
+
+      The aggressive hospitality—that's what it is, you realize. Aggressive bloody hospitality. The beer sits there, condensation pooling on the wood.
+    choice:
+      prompt: "The pressure is palpable."
+      options:
+        - id: give_in
+          text: "Drink the beer—it's not worth the conflict"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: -3
+            - type: modify_trait
+              trait: sobriety
+              delta: -1
+            - type: modify_relationship
+              npc: jock
+              delta: 5
+          narrative: "You drink. Jock's smile returns to full warmth."
+          next_node: jock_conversation
+
+        - id: stand_firm
+          text: "Firmly refuse and leave"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+            - type: modify_relationship
+              npc: jock
+              delta: -15
+          narrative: "You set the glass down and walk out. You can feel their eyes on your back."
+          next_node: hotel_boredom
+
+  jock_conversation:
+    narrative: |
+      Three beers later—Jock won't let you buy a single one—you're hearing about The Yabba's history, its mines, its characters. Jock knows everyone.
+
+      "You should come to the RSL," he says. "Memorial service tonight. Then I'll show you real entertainment."
+
+      He winks. There's something knowing in it.
+
+      You're starting to feel the beers. The room has taken on a pleasant blur.
+    choice:
+      prompt: "The night is young."
+      options:
+        - id: go_to_rsl
+          text: "Go to the RSL with Jock"
+          consequence:
+            - type: move_to
+              location: rsl_club
+            - type: modify_trait
+              trait: sobriety
+              delta: -2
+          narrative: "You follow Jock into the night."
+          next_node: rsl_service
+
+        - id: call_it_night
+          text: "Thank Jock and head back to your hotel"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+          narrative: "You still have some control. You need sleep."
+          next_node: morning_escape
+
+  rsl_service:
+    narrative: |
+      The RSL club is packed with miners and their missus. A memorial service is underway—something about the war, about sacrifice. The speaker's voice drones on while blokes drink steadily.
+
+      There's something disconcerting about it all. The reverence mixed with casual drinking. The way people mouth the words of hymns while their eyes stay dead.
+
+      Jock introduces you to a man called Doc Tydon. He's different from the others—educated, clearly, but with a vagrant's clothes and a drunk's eyes.
+
+      "I'm a doctor of medicine," Doc says by way of introduction. "And a tramp by temperament. Also an alcoholic. My disease made practice in Sydney... impractical. But out here it's scarcely noticeable."
+
+      He looks you up and down. "A schoolteacher, eh? Slumming it in the 'Yabba. Tell me—do you reckon you're better than us?"
+    choice:
+      prompt: "Doc is challenging you directly."
+      options:
+        - id: honest_yes
+          text: "Admit that yes, you feel out of place here"
+          consequence:
+            - type: modify_relationship
+              npc: doc
+              delta: 15
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 2
+          narrative: "Doc laughs. 'Honest, at least. I like that.'"
+          next_node: doc_philosophy
+
+        - id: deny_it
+          text: "Deny it—insist you respect The Yabba"
+          consequence:
+            - type: modify_relationship
+              npc: doc
+              delta: -5
+            - type: modify_trait
+              trait: dignity
+              delta: -2
+          narrative: "Doc's eyes narrow. 'Liar. But you'll learn.'"
+          next_node: two_up_introduction
+
+        - id: turn_tables
+          text: "Ask Doc why he's here if he's so educated"
+          consequence:
+            - type: modify_relationship
+              npc: doc
+              delta: 10
+          narrative: "Doc's smile turns sad. 'Touché, schoolteacher.'"
+          next_node: doc_philosophy
+
+  doc_philosophy:
+    narrative: |
+      Doc orders another round—his fourth that you've seen, but he seems no more drunk than when you met him.
+
+      "You don't reckon the 'Yabba's the greatest little place on earth?" he asks, watching your face.
+
+      You hesitate. "I think it's... bloody awful, actually."
+
+      Doc laughs. "Could be worse."
+
+      "How?"
+
+      He raises his glass. "Supply of beer could run out." He drinks deep. "The 'Yabba accepts everyone, you see. No judgment. No expectations. All the little devils are proud of hell, mate."
+
+      He gestures at the room. "These blokes—they work hard, they drink hard, they die hard. Simple equations. Your sophisticated world, with its ambitions and pretensions... that's the real wasteland."
+
+      Jock appears at your elbow. "Time for some fun, boys. Two-up."
+    choice:
+      prompt: "Jock is eager to show you the gambling."
+      options:
+        - id: follow_to_gambling
+          text: "Go see the two-up game"
+          consequence:
+            - type: move_to
+              location: two_up_ring
+          narrative: "You follow, curious despite yourself."
+          next_node: two_up_introduction
+
+        - id: refuse_gambling
+          text: "Decline—you're not a gambling man"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 3
+          narrative: "You try to bow out gracefully."
+          next_node: pressure_to_gamble
+
+  two_up_introduction:
+    narrative: |
+      The two-up ring is in a back room, smoky and loud. Blokes crowd around a marked circle on the floor. A man called the "spinner" tosses two pennies high into the air using a flat wooden paddle—the "kip."
+
+      "Come in, spinner!" someone shouts.
+
+      "Heads or tails," Jock explains. "Simple as that, mate. Two heads, you win. Two tails, they win. One of each, spin again."
+
+      The spinner tosses. The coins catch the light, spinning, spinning... they land. Two heads. A roar goes up.
+
+      "Fair go!" "Good on ya, spinner!"
+
+      "Try your luck," Jock says, pressing some quid into your hand. "First bet's on me, mate."
+
+      You watch another round. The money changes hands fast. Some bloke wins fifty quid in thirty seconds.
+
+      You think about your bond. Two years of teaching in the middle of bloody nowhere. What if you could pay it off tonight?
+    choice:
+      prompt: "The coins spin hypnotically."
+      options:
+        - id: small_bet
+          text: "Place a small bet—just to be social"
+          consequence:
+            - type: set_flag
+              flag: gambled
+              value: true
+            - type: modify_trait
+              trait: money
+              delta: 1
+          narrative: "You bet small. You win. It feels good."
+          next_node: winning_streak
+
+        - id: refuse_gamble
+          text: "Refuse to gamble—you need your money"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+          narrative: "You shake your head firmly."
+          next_node: pressure_to_gamble
+
+  pressure_to_gamble:
+    narrative: |
+      Jock's face falls. "Come on, mate. Don't be like that. Everyone has a flutter in the 'Yabba."
+
+      Doc appears beside you. "The schoolteacher reckons he's above our simple pleasures," he says to Jock, loud enough for others to hear.
+
+      Blokes are looking at you. That same pressure from the pub, but more intense now. The aggressive hospitality closing in.
+
+      "Just one bet," Jock wheedles. "She'll be right, mate. What's the harm?"
+    choice:
+      prompt: "The crowd is watching."
+      options:
+        - id: give_in_gamble
+          text: "Fine—one bet to shut them up"
+          consequence:
+            - type: set_flag
+              flag: gambled
+              value: true
+            - type: modify_trait
+              trait: money
+              delta: 1
+            - type: modify_trait
+              trait: dignity
+              delta: -2
+          narrative: "You bet. You win. Jock cheers."
+          next_node: winning_streak
+
+        - id: leave_entirely
+          text: "Leave The Yabba tonight—walk to the highway"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 5
+            - type: set_flag
+              flag: tried_to_leave
+              value: true
+          narrative: "You've had enough. You push through the crowd and out."
+          next_node: failed_escape_attempt
+
+  winning_streak:
+    narrative: |
+      You win again. And again. The crowd roars with each toss. Blokes slap your back, shout you drinks. You're one of them now.
+
+      "Good on ya, mate!" "Bloody beauty!"
+
+      The quid piles up. You've doubled your savings. Tripled them.
+
+      Your bond. You could pay off your bloody bond tonight. Be free. Never go back to that dusty schoolroom in Tiboonda.
+
+      "Let it ride!" someone shouts. "Come in, spinner!"
+
+      The kip spins. The coins flash.
+    choice:
+      prompt: "You're up big. The crowd wants you to keep going."
+      options:
+        - id: cash_out
+          text: "Cash out now—take your winnings and run"
+          consequence:
+            - type: modify_trait
+              trait: money
+              delta: 4
+            - type: modify_trait
+              trait: dignity
+              delta: 3
+          narrative: "You pocket the money. Some men groan. But you're smart."
+          next_node: morning_with_money
+
+        - id: keep_going
+          text: "Keep going—you could pay off everything tonight"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: 3
+          narrative: "The coins spin. Your heart pounds."
+          next_node: the_fall
+
+        - id: double_or_nothing
+          text: "Bet everything—one toss for freedom"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: 5
+            - type: modify_trait
+              trait: dignity
+              delta: -3
+          narrative: "All or nothing. The crowd goes quiet."
+          next_node: the_fall
+
+  the_fall:
+    narrative: |
+      The coins spin. Time slows. Everyone watches.
+
+      "Come in, spinner!"
+
+      Tails. Tails.
+
+      You've lost.
+
+      "Again," you hear yourself say.
+
+      You lose again. And again. You can't stop. Each loss demands another bet to make it right. The quid drains away—your winnings, your savings, your flight money, everything.
+
+      When you finally stumble back from the ring, your pockets are empty. Flat bloody broke. The crowd has moved on to fresh meat. No one looks at you anymore.
+
+      You're stranded. Trapped in the 'Yabba with no money, no way home, and a Christmas flight you can't afford.
+    choice:
+      prompt: "You've lost everything."
+      options:
+        - id: despair
+          text: "Slump at the bar in despair"
+          consequence:
+            - type: set_flag
+              flag: lost_everything
+              value: true
+            - type: modify_trait
+              trait: money
+              delta: -8
+            - type: modify_trait
+              trait: desperation
+              delta: 5
+            - type: modify_trait
+              trait: dignity
+              delta: -5
+            - type: modify_trait
+              trait: sobriety
+              delta: -3
+          narrative: "Someone puts a beer in front of you. Hospitality."
+          next_node: meet_tim
+
+        - id: anger
+          text: "Storm out into the night"
+          consequence:
+            - type: set_flag
+              flag: lost_everything
+              value: true
+            - type: modify_trait
+              trait: money
+              delta: -8
+            - type: modify_trait
+              trait: desperation
+              delta: 3
+          narrative: "You need air. You need to think."
+          next_node: night_wandering
+
+  morning_with_money:
+    narrative: |
+      You wake early, head pounding but wallet intact. You cashed out at the right time.
+
+      Your flight leaves in four hours. You can still make it. You can still escape The Yabba.
+
+      But as you pack, there's a knock at the door. It's Jock, grinning.
+
+      "The boys are getting together at Tim's place. Just a few drinks before you go. Come on—you can't leave without a proper send-off."
+    choice:
+      prompt: "Your flight is waiting. So is Jock."
+      options:
+        - id: go_to_airport
+          text: "Politely refuse and head to the airport"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 5
+          narrative: "You're getting out of here."
+          next_node: escape_ending
+
+        - id: one_more_drink
+          text: "One quick drink—what's the harm?"
+          consequence:
+            - type: modify_trait
+              trait: sobriety
+              delta: -2
+            - type: move_to
+              location: tims_house
+          narrative: "Famous last words."
+          next_node: tims_house_intro
+
+  meet_tim:
+    narrative: |
+      A big bloke introduces himself as Tim Hynes. Friendly, persistent. "Come back to my place, mate," he says. "Get some tucker in you. My daughter Janette makes a good fry-up."
+
+      You have nowhere else to go. Flat broke. No options.
+
+      You follow Tim through the dark streets to a weatherboard house on the edge of town. Inside, the drinking continues. Tim, two miners named Dick and Joe, and Janette—a woman in her thirties with tired eyes and a brittle smile.
+
+      "Dad's always bringing strays home," she says, not unkindly.
+    choice:
+      prompt: "You're in Tim's house. The drinking continues."
+      options:
+        - id: drink_with_them
+          text: "Drink with them—you have nothing better to do"
+          consequence:
+            - type: modify_trait
+              trait: sobriety
+              delta: -3
+            - type: modify_relationship
+              npc: tim
+              delta: 10
+            - type: modify_relationship
+              npc: janette
+              delta: 5
+          narrative: "The beer keeps coming. Time loses meaning."
+          next_node: tims_house_intro
+
+        - id: try_to_sleep
+          text: "Ask if you can just sleep somewhere"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+          narrative: "They give you a couch. You pass out to the sound of drinking."
+          next_node: morning_after_tim
+
+  tims_house_intro:
+    narrative: |
+      The day blurs into a haze of beer, durries, and aimless yarn. Tim talks about the mines. Dick and Joe argue about the footy. Janette moves through the room, refilling glasses, saying little.
+
+      You find yourself talking to her more than drinking. Tim notices.
+
+      "What's the matter with him?" Tim says to the room. "He'd rather talk to a woman than drink?"
+
+      Doc appears at some point—you're not sure when. He watches you with those knowing eyes.
+
+      "Still reckon you're better than us?" he asks.
+
+      Janette sits beside you when the others are distracted. "I hate this bloody place," she whispers. "All I do is take care of them. Cooking, cleaning, listening to the same stories."
+
+      Her hand is on your knee.
+    choice:
+      prompt: "Janette is making her interest clear."
+      options:
+        - id: respond_to_janette
+          text: "Respond to Janette's advances"
+          consequence:
+            - type: modify_relationship
+              npc: janette
+              delta: 20
+            - type: modify_trait
+              trait: dignity
+              delta: -5
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 1
+          narrative: "You let it happen. You're not sure why."
+          next_node: janette_encounter
+
+        - id: reject_janette
+          text: "Gently extract yourself"
+          consequence:
+            - type: set_flag
+              flag: rejected_janette
+              value: true
+            - type: modify_relationship
+              npc: janette
+              delta: -15
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+          narrative: "You pull away. Janette's face hardens."
+          next_node: janette_rejection
+
+        - id: sick_escape
+          text: "Suddenly feel violently ill—run outside"
+          consequence:
+            - type: modify_trait
+              trait: sobriety
+              delta: -2
+            - type: modify_trait
+              trait: dignity
+              delta: -3
+          narrative: "The beer and heat catch up with you."
+          next_node: night_wandering
+
+  janette_encounter:
+    narrative: |
+      In a back room, away from the others. Janette is desperate and aggressive. There's no tenderness in it—just need. Hers for escape, yours for... what? Connection? Distraction?
+
+      Afterward, she cries. "Take me with you," she says. "When you leave. Take me to Sydney."
+
+      You don't know what to say. You're not even sure you can leave.
+    choice:
+      prompt: "Janette wants more than you can give."
+      options:
+        - id: lie_to_janette
+          text: "Promise to take her—even though you can't"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: -5
+            - type: modify_trait
+              trait: self_knowledge
+              delta: -2
+          narrative: "The lie comes easily."
+          next_node: doc_arrives
+
+        - id: tell_truth
+          text: "Tell her the truth—you're trapped too"
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+            - type: modify_relationship
+              npc: janette
+              delta: -10
+          narrative: "She looks at you with something like pity."
+          next_node: doc_arrives
+
+  janette_rejection:
+    narrative: |
+      Janette's face goes cold. "You think you're too good for me," she says. "Like everyone else who passes through."
+
+      She stands abruptly, knocking over a beer. The room goes quiet. Tim looks between you, confused.
+
+      "Time to go," Doc says, appearing at your elbow. "Come on, schoolteacher. I'll show you somewhere quieter."
+    choice:
+      prompt: "Doc is offering escape from this awkwardness."
+      options:
+        - id: go_with_doc
+          text: "Go with Doc"
+          consequence:
+            - type: move_to
+              location: docs_shack
+            - type: set_flag
+              flag: been_to_docs_shack
+              value: true
+          narrative: "You follow Doc into the darkness."
+          next_node: docs_shack_arrival
+
+        - id: stay_apologize
+          text: "Stay and try to smooth things over"
+          consequence:
+            - type: modify_trait
+              trait: sobriety
+              delta: -3
+          narrative: "More beer. More awkward silence."
+          next_node: doc_arrives
+
+  doc_arrives:
+    narrative: |
+      Doc appears in the doorway, bottle in hand. "The schoolteacher needs some fresh air," he announces. "Come on. I'll show you the real Yabba."
+
+      He means the outback. His shack in the scrubland.
+
+      The others barely notice you leave. They're deep in their cups, arguing about something.
+    choice:
+      prompt: "Doc is beckoning."
+      options:
+        - id: follow_doc
+          text: "Go with Doc to his shack"
+          consequence:
+            - type: move_to
+              location: docs_shack
+            - type: set_flag
+              flag: been_to_docs_shack
+              value: true
+          narrative: "You stumble after him into the night."
+          next_node: docs_shack_arrival
+
+        - id: pass_out
+          text: "You're too drunk—pass out on Tim's couch"
+          consequence:
+            - type: modify_trait
+              trait: sobriety
+              delta: -2
+          narrative: "Consciousness slips away."
+          next_node: morning_after_tim
+
+  docs_shack_arrival:
+    narrative: |
+      Doc's shack is a tin box in the middle of nowhere. Inside: books stacked everywhere, empty bottles, a mattress on the floor, and the smell of cooking meat.
+
+      "Roo," Doc says, offering you a plate. "Shot it myself. Best tucker you'll get out here."
+
+      He pours two drinks from an unlabeled bottle. "You know why I like you, schoolteacher? Because you're miserable. Properly bloody miserable. You reckoned you were above this place, and now you're trapped in it. Just like me."
+
+      He raises his glass. "To the 'Yabba. The great equalizer. All the little devils are proud of hell, mate."
+    choice:
+      prompt: "Doc is settling in for a conversation."
+      options:
+        - id: open_up_to_doc
+          text: "Talk honestly with Doc about your situation"
+          consequence:
+            - type: modify_relationship
+              npc: doc
+              delta: 20
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+          narrative: "The words pour out. The bond. The teaching. The hatred of it all."
+          next_node: docs_wisdom
+
+        - id: drink_silently
+          text: "Just drink—you're too tired to talk"
+          consequence:
+            - type: modify_trait
+              trait: sobriety
+              delta: -3
+          narrative: "The kangaroo meat is gamey. The drink is strong."
+          next_node: kangaroo_hunt_invitation
+
+        - id: challenge_doc
+          text: "Ask Doc why he gave up—he was a surgeon"
+          consequence:
+            - type: modify_relationship
+              npc: doc
+              delta: 10
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 2
+          narrative: "Doc's smile fades into something more complicated."
+          next_node: docs_confession
+
+  docs_wisdom:
+    narrative: |
+      Doc listens without interrupting. When you finish, he pours another drink.
+
+      "You signed that bond because you reckoned education would save you from people like these," he says. "From places like this. But here's the truth, schoolteacher—there's no saving. There's only accepting."
+
+      He gestures at the shack. "I had everything Sydney could offer. Respect. Money. A future. And I threw it away for this. You know why?"
+
+      He leans forward, eyes bright with drink and intelligence. "The aim of what you call civilisation is a man in a smokin' jacket, whiskey and soda, pressing a button to destroy a planet a billion miles away, and kill a billion people he's never seen. Discontent is a luxury of the well-to-do. If you've gotta live somewhere, you might as well like it."
+
+      He settles back. "Here, no one pretends. They drink, they fight, they die. Honest bloody equations."
+    choice:
+      prompt: "Doc's philosophy is unsettling."
+      options:
+        - id: reject_philosophy
+          text: "Tell Doc that's giving up"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+            - type: modify_relationship
+              npc: doc
+              delta: -5
+          narrative: "'Giving up is a choice too,' Doc says, unbothered."
+          next_node: kangaroo_hunt_invitation
+
+        - id: consider_it
+          text: "Maybe he has a point"
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 4
+            - type: modify_trait
+              trait: dignity
+              delta: -3
+          narrative: "Something inside you shifts."
+          next_node: kangaroo_hunt_invitation
+
+  docs_confession:
+    narrative: |
+      "I was good at surgery," Doc says quietly. "Too bloody good. I could cut a bloke open and put him back together without feeling anything. That scared me."
+
+      He drinks deep. "So I started feeling. With alcohol. At first it was after work. Then during. Then instead of."
+
+      "They took my license. My wife left. My kids won't speak to me. And you know what? I'm happier here than I ever was in Sydney. Discontent is a luxury of the well-to-do, mate. If you've gotta live somewhere, you might as well like it."
+
+      His eyes meet yours. "Happiness isn't what you reckon it is, schoolteacher."
+    choice:
+      prompt: "Doc has revealed something true."
+      options:
+        - id: pity_doc
+          text: "Feel sorry for him"
+          consequence:
+            - type: modify_relationship
+              npc: doc
+              delta: -5
+          narrative: "'Don't pity me,' he says sharply. 'I chose this.'"
+          next_node: kangaroo_hunt_invitation
+
+        - id: understand_doc
+          text: "Tell him you understand—in a way"
+          consequence:
+            - type: modify_relationship
+              npc: doc
+              delta: 15
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+          narrative: "Doc nods slowly."
+          next_node: kangaroo_hunt_invitation
+
+  kangaroo_hunt_invitation:
+    narrative: |
+      A ute pulls up outside. Dick and Joe pile out, rifles in hand, pissed and laughing.
+
+      "Hunt!" Joe shouts. "Roos are out tonight, boys!"
+
+      Doc rises, suddenly energized. "Come on, schoolteacher. See how the 'Yabba really lives."
+
+      He presses a rifle into your hands. It's heavier than you expected.
+    choice:
+      prompt: "They want you to hunt kangaroos. At night. Drunk."
+      options:
+        - id: join_hunt
+          text: "Go on the hunt"
+          consequence:
+            - type: set_flag
+              flag: went_on_hunt
+              value: true
+            - type: set_flag
+              flag: has_rifle
+              value: true
+            - type: gain_item
+              item: rifle
+            - type: modify_trait
+              trait: dignity
+              delta: -5
+          narrative: "You climb into the truck bed."
+          next_node: the_hunt
+
+        - id: refuse_hunt
+          text: "Refuse—this is madness"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 3
+          narrative: "They go without you. Doc looks disappointed."
+          next_node: alone_at_shack
+
+  the_hunt:
+    narrative: |
+      The ute careens through the scrubland, headlights catching roos frozen in the glare. Shots ring out. Animals fall. Joe whoops with every kill.
+
+      "Get 'im! Get the bastard!"
+
+      Then Joe jumps from the ute and wrestles a wounded roo with his bare hands. The animal kicks him bloody, but he keeps fighting, laughing the whole time like a bloody lunatic.
+
+      Someone hands you a rifle. A kangaroo stares at you in the light, eyes huge and terrified.
+
+      "Shoot it," Doc says. "Be part of this, mate."
+    choice:
+      prompt: "The kangaroo is watching you."
+      options:
+        - id: shoot_kangaroo
+          text: "Pull the trigger"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: -7
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 2
+          narrative: "The recoil jolts your shoulder. The animal drops."
+          next_node: aftermath_of_hunt
+
+        - id: cant_do_it
+          text: "Lower the rifle—you can't do it"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+            - type: modify_relationship
+              npc: doc
+              delta: -5
+          narrative: "The men laugh at you. 'City boy,' someone sneers."
+          next_node: aftermath_of_hunt
+
+        - id: shoot_wildly
+          text: "Shoot into the air—end this"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: 3
+          narrative: "The shot echoes. Everyone stares at you."
+          next_node: aftermath_of_hunt
+
+  aftermath_of_hunt:
+    narrative: |
+      Dawn finds you at a bush pub, the ute full of carcasses. The drinking continues. Someone starts a blue. Someone else joins in. You're not sure if you're fighting or being fought.
+
+      When it's over, you're lying in the dirt, tasting blood. Doc is giving a speech about civilisation, about the thin veneer that separates man from animal. No one's listening.
+
+      "All the little devils are proud of hell," he slurs at the sky.
+
+      You end up back at Doc's shack. Your head pounds. Your hands won't stop shaking.
+    choice:
+      prompt: "The sun is coming up. You're at rock bottom."
+      options:
+        - id: sleep_it_off
+          text: "Try to sleep"
+          consequence:
+            - type: modify_trait
+              trait: sobriety
+              delta: 2
+          narrative: "You collapse onto the mattress."
+          next_node: docs_advance
+
+        - id: leave_now
+          text: "Leave immediately—walk back to town"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 3
+          narrative: "You stagger out before anyone can stop you."
+          next_node: desert_walk
+
+  docs_advance:
+    narrative: |
+      You wake to Doc sitting beside you, hand on your arm. His face is close to yours.
+
+      "Stay," he says. "Stay here with me. In The Yabba. Forget Sydney. Forget your bond. Forget your girlfriend."
+
+      His hand moves to your face. His meaning is unmistakable.
+
+      "You could be free here," he whispers.
+    choice:
+      prompt: "Doc is crossing a line."
+      options:
+        - id: reject_doc
+          text: "Push him away and leave"
+          consequence:
+            - type: set_flag
+              flag: rejected_doc
+              value: true
+            - type: modify_relationship
+              npc: doc
+              delta: -20
+            - type: modify_trait
+              trait: dignity
+              delta: 5
+          narrative: "You shove him back and stagger to your feet."
+          next_node: desert_walk
+
+        - id: violent_rejection
+          text: "React with violence"
+          consequence:
+            - type: set_flag
+              flag: rejected_doc
+              value: true
+            - type: modify_relationship
+              npc: doc
+              delta: -30
+            - type: modify_trait
+              trait: desperation
+              delta: 5
+          narrative: "Your fist connects with his face. He doesn't fight back."
+          next_node: desert_walk
+
+  alone_at_shack:
+    narrative: |
+      You wait at Doc's shack, listening to gunshots in the distance. The night stretches on. You drink from Doc's supply—there's nothing else to do.
+
+      By dawn, you've finished half a bottle. The men return, blood on their clothes, laughing about the night's carnage.
+
+      Doc looks at you with something like disappointment. "You missed the fun," he says.
+    choice:
+      prompt: "Morning light filters through the tin walls."
+      options:
+        - id: leave_shack
+          text: "Time to leave—try to get back to town"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+          narrative: "You need to get out of here."
+          next_node: desert_walk
+
+        - id: stay_another_day
+          text: "Stay—you have nowhere else to go"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: 4
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 2
+          narrative: "Another day passes. Then another."
+          next_node: docs_advance
+
+  night_wandering:
+    narrative: |
+      You walk the streets of The Yabba in the dark. The heat hasn't broken even at night. Pubs spill light and noise onto the footpath. Drunks stagger past, some greeting you like an old friend.
+
+      You're trapped. No money. No way out. The flight to Sydney left without you.
+
+      Your suitcases are still at the hotel. Your books. Your clothes. All of it feels like artifacts from someone else's life.
+    choice:
+      prompt: "The night offers no answers."
+      options:
+        - id: return_to_tims
+          text: "Go back to Tim's house"
+          consequence:
+            - type: move_to
+              location: tims_house
+            - type: modify_trait
+              trait: dignity
+              delta: -2
+          narrative: "At least there's somewhere to sleep."
+          next_node: morning_after_tim
+
+        - id: find_doc
+          text: "Find Doc—he might help"
+          consequence:
+            - type: move_to
+              location: docs_shack
+            - type: set_flag
+              flag: been_to_docs_shack
+              value: true
+          narrative: "You wander until you find his shack."
+          next_node: docs_shack_arrival
+
+        - id: try_hitchhike
+          text: "Walk to the highway—try to hitchhike out"
+          consequence:
+            - type: set_flag
+              flag: tried_to_leave
+              value: true
+          narrative: "You start walking toward the road."
+          next_node: failed_escape_attempt
+
+  morning_after_tim:
+    narrative: |
+      You wake on Tim's couch, head splitting, mouth tasting of ash. The house is quiet—everyone still asleep.
+
+      Through the window, you can see the sun already blazing. Another scorching day in The Yabba.
+
+      You find your suitcases in the corner. Jock must have brought them from the hotel. Your clothes. Your books—including a volume of Plato you were meaning to read.
+
+      The irony isn't lost on you.
+    choice:
+      prompt: "The day stretches ahead. What now?"
+      options:
+        - id: try_leave_again
+          text: "Try to leave town—walk if you have to"
+          consequence:
+            - type: set_flag
+              flag: tried_to_leave
+              value: true
+          narrative: "You grab your bags and head out."
+          next_node: desert_walk
+
+        - id: stay_longer
+          text: "Stay—accept your situation for now"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: -3
+            - type: modify_trait
+              trait: desperation
+              delta: 3
+          narrative: "Days blur together. Drinking. Waiting. Existing."
+          next_node: doc_arrives
+
+  failed_escape_attempt:
+    narrative: |
+      You walk for hours. The heat is suffocating. No cars pass. The landscape is endless red earth and scrub.
+
+      Eventually, you reach a road sign. You read it twice, not believing.
+
+      BUNDANYABBA - 2 KM
+
+      You've walked in a bloody circle. The 'Yabba won't let you go.
+
+      Defeated, you trudge back into town. Jock is waiting at the pub, grinning.
+
+      "Tried to leave, did ya? They all try, mate. She'll be right. Have a drink."
+    choice:
+      prompt: "You're back where you started."
+      options:
+        - id: accept_fate
+          text: "Accept a drink from Jock"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: -5
+            - type: modify_trait
+              trait: sobriety
+              delta: -2
+          narrative: "What else is there to do?"
+          next_node: meet_tim
+
+        - id: demand_help
+          text: "Demand Jock help you get out"
+          consequence:
+            - type: modify_relationship
+              npc: jock
+              delta: -10
+          narrative: "'Help yourself,' Jock says, still smiling."
+          next_node: night_wandering
+
+  desert_walk:
+    narrative: |
+      You leave without saying goodbye. The rifle is still in your hands—you're not sure why you took it.
+
+      The outback swallows you. Red earth, blue sky, merciless bloody sun. You walk for hours, following the railway line, hoping to reach the next town.
+
+      But the heat takes its toll. Your water runs out. Your feet blister. The landscape loops and doubles back on itself.
+
+      And then you see it: Doc's shack. You've walked in another bloody circle.
+
+      The 'Yabba won't let you go.
+    choice:
+      prompt: "You're back at Doc's empty shack. Alone."
+      options:
+        - id: break_down
+          text: "Collapse and break down"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: 10
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 5
+          narrative: "Something inside you finally snaps."
+          next_node: the_lowest_point
+
+        - id: rage
+          text: "Rage against everything"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: 8
+          narrative: "You scream at the empty sky."
+          next_node: the_lowest_point
+
+  the_lowest_point:
+    narrative: |
+      You sit in Doc's empty shack, the rifle across your knees. The heat hums in the tin walls. Outside, nothing moves.
+
+      You think about Sydney. About Robyn—who probably thinks you abandoned her. About the schoolroom in Tiboonda, waiting for you after Christmas. Two more years of nothing.
+
+      The rifle is heavy. Loaded.
+
+      Doc's words echo in your mind: "Happiness isn't what you think it is."
+
+      You look at the rifle. Then at the door. Then at the rifle again.
+    choice:
+      prompt: "You are at the edge."
+      options:
+        - id: turn_rifle
+          text: "Turn the rifle on yourself"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: -5
+          narrative: "Your hands are steady."
+          next_node: suicide_attempt
+
+        - id: put_down_rifle
+          text: "Put the rifle down and walk outside"
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 5
+            - type: modify_trait
+              trait: dignity
+              delta: 5
+          narrative: "Not like this. Not here."
+          next_node: survival_choice
+
+        - id: wait_for_doc
+          text: "Wait—Doc will come back eventually"
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+          narrative: "You need help. For once, you admit it."
+          next_node: doc_returns
+
+  suicide_attempt:
+    narrative: |
+      The barrel is cold against your chin.
+
+      You think: this is what The Yabba does to people. This is what it did to you.
+
+      You pull the trigger—
+
+      The door bangs open. Doc.
+
+      The shot goes wide, tearing through your shoulder instead. Pain explodes. Blood. Screaming—yours and Doc's.
+
+      Then darkness.
+    choice:
+      prompt: "..."
+      options:
+        - id: fade_to_black
+          text: "Darkness takes you"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: -10
+          narrative: "You slip away."
+          next_node: hospital_awakening
+
+  hospital_awakening:
+    narrative: |
+      White ceiling. The smell of antiseptic. Beeping machines.
+
+      You're in the Bundanyabba hospital. Doc found you. Called an ambulance. Stayed by your bed.
+
+      Jock is there too, with paperwork. "Hunting accident," he says. "That's what the report says, mate. No need for complications. You'd reckon a bloke who won a silver medal at target shooting could hit himself in the head at three inches range."
+
+      Your shoulder is bandaged. You'll live. You'll heal.
+
+      The scar will remain.
+    choice:
+      prompt: "You've survived."
+      options:
+        - id: sign_papers
+          text: "Sign Jock's accident report"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: -3
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 5
+          narrative: "Another lie. But what does it matter now?"
+          next_node: recovery
+
+        - id: refuse_lie
+          text: "Refuse to lie—tell the truth"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 5
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+          narrative: "Jock's smile falters. But he signs it anyway."
+          next_node: recovery
+
+  doc_returns:
+    narrative: |
+      You hear the truck before you see it. Doc stumbles through the door, bottle in hand, and stops when he sees you with the rifle.
+
+      "Ah," he says. "That."
+
+      He sits down across from you, unbothered. "I thought about it too, when I first got here. Every day for a year."
+
+      He takes a drink. "You know what stopped me? Nothing noble. Just curiosity. I wanted to see what happened next."
+
+      He offers you the bottle.
+    choice:
+      prompt: "Doc is waiting."
+      options:
+        - id: take_bottle
+          text: "Take the bottle and put down the rifle"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: -5
+            - type: modify_relationship
+              npc: doc
+              delta: 15
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 4
+          narrative: "The whiskey burns. The rifle grows heavy."
+          next_node: recovery
+
+        - id: keep_rifle
+          text: "Keep holding the rifle"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: 3
+          narrative: "Doc doesn't move. He just watches."
+          next_node: suicide_attempt
+
+  survival_choice:
+    narrative: |
+      You step outside. The sun is setting, painting the outback gold and red.
+
+      You're alive. Broken, maybe. Changed, certainly. But alive.
+
+      The rifle is still in your hands. You could throw it away. Or keep it. Or—
+
+      A truck appears on the horizon. It's headed for the shack.
+    choice:
+      prompt: "Someone is coming."
+      options:
+        - id: flag_down
+          text: "Flag down the truck"
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+          narrative: "It's Doc. Of course it's Doc."
+          next_node: doc_returns
+
+        - id: hide
+          text: "Hide until they pass"
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: 2
+          narrative: "You crouch in the scrub, heart pounding."
+          next_node: desert_walk
+
+  recovery:
+    narrative: |
+      Weeks pass. You heal. Doc visits every day, bringing tucker and silence.
+
+      One arvo, he speaks: "The train to Tiboonda leaves tomorrow. I'll drive you to the station."
+
+      You look at him. This man who showed you the worst of yourself. Who also saved your life.
+
+      "Why?" you ask.
+
+      "Because you're not like me, schoolteacher," he says. "You can still go back."
+    choice:
+      prompt: "The train is waiting."
+      options:
+        - id: thank_doc
+          text: "Thank Doc sincerely"
+          consequence:
+            - type: modify_relationship
+              npc: doc
+              delta: 20
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 5
+          narrative: "Something passes between you. Understanding, maybe."
+          next_node: departure
+
+        - id: leave_silent
+          text: "Leave without a word"
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+          narrative: "What is there to say?"
+          next_node: departure
+
+  departure:
+    narrative: |
+      The railway platform in Bundanyabba. The same place you arrived, what feels like a lifetime ago.
+
+      Doc waits with you. Neither of you speaks.
+
+      When the train arrives, you shake his hand. His grip is firm.
+
+      "Take care, schoolteacher," he says.
+
+      "You too, Doc."
+
+      The train pulls away. Through the window, you watch the 'Yabba shrink into the desert.
+
+      You're going back to Tiboonda. Two more years of teaching. But something has changed.
+
+      You've seen what you're capable of—the worst and the best. You've survived the nightmare of aggressive hospitality, of your own weakness, of the vast indifference of the outback.
+
+      The scar on your shoulder will remind you. Always.
+    choice:
+      prompt: "The train carries you home."
+      options:
+        - id: face_future
+          text: "Face the future with hard-won understanding"
+          narrative: "You close your eyes. The train rocks gently."
+          next_node: ending_survival
+
+        - id: wonder_about_return
+          text: "Wonder if you'll ever come back"
+          narrative: "Part of you never left The Yabba. Part of you never will."
+          next_node: ending_survival
+
+  morning_escape:
+    narrative: |
+      You wake early, pack your bags, and head to the station. The morning air is cool—a brief reprieve before the heat sets in.
+
+      Your flight awaits. Sydney. Robyn. Your real life.
+
+      As the train pulls away from Bundanyabba, you watch the town disappear. Just a stopover. Just one night.
+
+      But there's something in your chest—a tightness. A sense of having escaped something. Or missed something.
+
+      The train carries you toward the airport, toward Christmas, toward everything you thought you wanted.
+
+      You'll always wonder what would have happened if you'd stayed.
+    choice:
+      prompt: "You escaped."
+      options:
+        - id: relief
+          text: "Feel nothing but relief"
+          narrative: "The nightmare you never had."
+          next_node: ending_escape
+
+        - id: strange_regret
+          text: "Feel a strange regret"
+          narrative: "What didn't you learn?"
+          next_node: ending_escape
+
+endings:
+  ending_survival:
+    narrative: |
+      ═══════════════════════════════════════════════════════════
+      SURVIVAL
+
+      You return to Tiboonda—the same dusty schoolroom, the same
+      thirty kids, the same two-year bond.
+
+      But you're different now.
+
+      The 'Yabba stripped away your pretensions, your certainties,
+      your comfortable sense of superiority. It showed you the
+      primitive heart beating beneath civilisation's thin veneer.
+
+      You carry the scar. You carry the memory. You carry the
+      knowledge of what you're capable of—both the darkness and
+      the light.
+
+      Doc was right about one thing: discontent is a luxury of
+      the well-to-do. If you've gotta live somewhere, you might
+      as well like it.
+
+      The school year begins. The children file in. You pick up
+      the chalk and begin to teach.
+      ═══════════════════════════════════════════════════════════
+    type: transcendence
+
+  ending_escape:
+    narrative: |
+      ═══════════════════════════════════════════════════════════
+      ESCAPE
+
+      You made it out. The flight to Sydney. Christmas with Robyn.
+      Your civilised life intact.
+
+      But something lingers—a question you can't shake.
+
+      What if you had stayed? What would you have learned about
+      yourself in that crucible of heat, beer, and brutal honesty?
+
+      You return to Tiboonda after Christmas. The same schoolroom.
+      The same bond. The same two years stretching ahead.
+
+      Sometimes, grading papers late at night, you think about
+      the 'Yabba. About the friendly copper. The alcoholic doctor.
+      The spinning coins. "Come in, spinner!"
+
+      You escaped. But part of you wonders if you also missed
+      something. Some truth about yourself you weren't ready to face.
+
+      All the little devils are proud of hell, mate.
+
+      The school year begins. The children file in. You pick up
+      the chalk and teach them what you know.
+
+      Which isn't much. Not really.
+      ═══════════════════════════════════════════════════════════
+    type: unchanged
+
+  ending_death:
+    narrative: |
+      ═══════════════════════════════════════════════════════════
+      DISSOLUTION
+
+      The 'Yabba consumed you.
+
+      Whether by your own hand or by slow dissolution into its
+      rhythms of drinking and forgetting, you never left.
+
+      Years pass. Decades. You become one of them—another fixture
+      at the pub, another face at the two-up ring, another voice
+      saying "everyone's bloody friendly in the 'Yabba, mate."
+
+      Somewhere, a bond expires unpaid. A girlfriend moves on.
+      A schoolroom gets another teacher.
+
+      You don't remember any of it. You don't remember much of
+      anything anymore. Just the heat. The beer. The endless,
+      merciless hospitality.
+
+      All the little devils are proud of hell.
+
+      Welcome to the 'Yabba.
+      ═══════════════════════════════════════════════════════════
+    type: death
+
+  ending_assimilation:
+    narrative: |
+      ═══════════════════════════════════════════════════════════
+      ASSIMILATION
+
+      You never left.
+
+      Not because you couldn't. The trains run. The planes fly.
+      But the 'Yabba got inside you, and you found you couldn't
+      imagine going back to that other life—the pretending, the
+      striving, the endless performance of civilisation.
+
+      You moved into Doc's shack. Took odd jobs. Learned to drink
+      without drowning. Found a kind of peace in the simplicity.
+
+      Your bond was paid off eventually—by the government, tired
+      of waiting. Robyn married someone else. Your books gathered
+      dust in a storage unit in Sydney.
+
+      Sometimes tourists pass through, schoolteachers and office
+      workers on their way somewhere else. You shout them drinks.
+      Tell them about the 'Yabba.
+
+      "Best little place on earth, mate. Everyone's friendly here."
+
+      They never stay. But you do.
+
+      You always bloody do.
+      ═══════════════════════════════════════════════════════════
+    type: transcendence
