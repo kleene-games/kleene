@@ -27,17 +27,17 @@ kleene/
 ├── commands/
 │   └── kleene.md             # Gateway command (routes to skills)
 ├── skills/
-│   ├── kleene-play/          # Game loop orchestration
+│   ├── kleene-play/          # Game loop (inline, no sub-agent)
 │   ├── kleene-generate/      # Scenario generation
 │   └── kleene-analyze/       # Structural analysis
-├── agents/
-│   └── game-runner.md        # Subagent for game logic (haiku model)
 ├── lib/framework/
 │   ├── core.md               # Option type semantics & quadrant theory
 │   └── scenario-format.md    # YAML specification
 ├── scenarios/                # Bundled scenarios
 │   └── dragon_quest.yaml     # Example scenario
-└── hooks/                    # Auto-approve for seamless gameplay
+├── hooks/                    # Auto-approve for seamless gameplay
+└── _archive/                 # Archived components
+    └── game-runner.md        # Legacy sub-agent (replaced by inline skill)
 ```
 
 ## Core Concepts
@@ -61,11 +61,14 @@ A narratively complete scenario ensures all quadrants are reachable.
 
 ### State Flow During Gameplay
 
-During gameplay, state flows through agent context (no file writes):
-1. Main thread (kleene.md) orchestrates UI via AskUserQuestion
-2. Game runner agent (game-runner.md) processes logic, returns structured output
-3. Agent output includes `---STATE---`, `---CHOICES---`, `---GAME_OVER---` markers
-4. State saved to disk only on: game over, explicit save, or session end
+During gameplay, state persists in the main conversation context (no sub-agent, no file writes):
+1. Scenario loaded once at game start, cached in context
+2. Game state tracked in conversation memory
+3. Choices presented via AskUserQuestion
+4. Consequences applied inline, state updated in memory
+5. State saved to disk only on: game over, explicit save, or session end
+
+This architecture eliminates serialization overhead between turns.
 
 ## Scenario Format (YAML)
 

@@ -1,93 +1,146 @@
 ---
 name: kleene-play
 description: This skill should be used when the user asks to "play a game", "start kleene", "play dragon quest", "continue my game", "load my save", or wants to play an interactive narrative using the Kleene three-valued logic engine. Handles game state, choices, and narrative presentation.
-version: 0.1.0
+version: 0.2.0
+allowed-tools: Read, Glob, Write, AskUserQuestion
 ---
 
 # Kleene Play Skill
 
-Execute interactive narrative gameplay using the Kleene three-valued logic framework. Present narrative text, offer choices via AskUserQuestion, apply consequences, and persist game state.
+Execute interactive narrative gameplay directly in the main conversation context. State persists naturally - no serialization needed between turns.
 
-## Game Folder Convention
+## Architecture
 
-The "game folder" is the current working directory. Look for:
-- `game_state.yaml` - Current game state (create if starting new game)
-- `scenario.yaml` - Custom scenario (optional, use bundled scenarios otherwise)
+This skill runs game logic **inline** (no sub-agent). Benefits:
+- State persists in conversation context across turns
+- Scenario loaded once, stays cached
+- Zero serialization overhead
+- Faster turn response (~60-70% improvement)
+
+## Game State Model
+
+Track these values in your working memory across turns:
+
+```
+GAME_STATE:
+  scenario_name: string       # e.g., "dragon_quest"
+  current_node: string        # Current node ID
+  turn: number                # Turn counter
+
+  character:
+    exists: boolean           # false = None (character ceased)
+    traits: {name: value}     # courage, wisdom, luck, etc.
+    inventory: [items]        # Items held
+    flags: {flag: boolean}    # Character-specific flags
+
+  world:
+    current_location: string  # Location ID
+    time: number              # Time counter
+    flags: {flag: boolean}    # World state flags
+
+  recent_history: [string]    # Last 3-5 turns for context
+```
 
 ## Core Workflow
 
-### Starting a New Game
+### Phase 1: Initialization
 
-1. Check if `game_state.yaml` exists
-2. If not, ask user which scenario to play
-3. Load scenario from `${CLAUDE_PLUGIN_ROOT}/scenarios/` or local `scenario.yaml`
-4. Initialize game state from scenario's `initial_character` and `initial_world`
-5. Write initial `game_state.yaml`
-6. Present the start node narrative
+**If starting new game:**
 
-### Continuing a Game
+1. Read the scenario YAML file once:
+   ```
+   ${CLAUDE_PLUGIN_ROOT}/scenarios/[scenario_name].yaml
+   ```
 
-1. Read `game_state.yaml`
-2. Load the referenced scenario
-3. Get current node from state
-4. Present narrative and choices
+2. Initialize state from scenario:
+   ```yaml
+   current_node: [scenario.start_node]
+   turn: 0
+   character: [scenario.initial_character]
+   world: [scenario.initial_world]
+   recent_history: []
+   ```
 
-### Game Turn Loop
+3. The scenario data is now in your context - do not re-read it.
 
-Each turn:
+**If resuming from save:**
 
-1. **Read State**: Load `game_state.yaml`
-2. **Get Current Node**: Find node by `current_node` in scenario
-3. **Present Narrative**: Display the node's narrative text
-4. **Check Game Over**: If at an ending node, display ending and stop
-5. **Evaluate Choices**: For each option in the choice:
-   - Evaluate precondition against current state
-   - Mark as available or blocked (with reason)
-6. **Present Choices**: Use AskUserQuestion with available options
-7. **Apply Consequence**: Execute the chosen option's consequences
-8. **Update State**: Modify character/world state, add to history
-9. **Advance Node**: Set `current_node` to `next_node`
-10. **Persist State**: Write updated `game_state.yaml`
-11. **Continue**: If not at ending, present next node narrative
+1. Read `game_state.yaml` from current directory
+2. Load the referenced scenario file
+3. Continue from saved state
 
-## State File Format
+### Phase 2: Game Turn
 
+Execute this for each turn:
+
+```
+TURN:
+  1. Get current node from scenario.nodes[current_node]
+
+  2. Check for ending:
+     - If current_node is in scenario.endings → display ending, save state, EXIT
+     - If character.exists == false → display death ending, save state, EXIT
+
+  3. Display narrative:
+     - Output the node's narrative text with formatting
+     - Show character stats line
+
+  4. Evaluate available choices:
+     - For each option in node.choice.options:
+       - Evaluate precondition against current state
+       - If passes: add to available choices
+       - If fails: optionally show as blocked with reason
+
+  5. Present choices via AskUserQuestion:
+     {
+       "questions": [{
+         "question": "[node.choice.prompt]",
+         "header": "Choice",
+         "multiSelect": false,
+         "options": [available choices with labels/descriptions]
+       }]
+     }
+
+  6. Wait for user selection
+
+  7. Apply consequences of chosen option:
+     - Execute each consequence type
+     - Update character/world state in memory
+
+  8. Advance state:
+     - Set current_node = option.next_node
+     - Increment turn
+     - Add choice to recent_history (keep last 5)
+
+  9. GOTO step 1 (next turn)
+```
+
+### Phase 3: Persistence
+
+**Save state to disk ONLY when:**
+- Game ends (victory, death, transcendence, etc.)
+- User explicitly requests save
+- Session is ending
+
+Write to `game_state.yaml`:
 ```yaml
-scenario: dragon_quest  # Scenario name
-current_node: forest_entrance
-turn: 3
-
+scenario: [scenario_name]
+current_node: [node_id]
+turn: [turn_number]
 character:
-  name: "The Wanderer"
-  exists: true
-  traits:
-    courage: 6
-    wisdom: 7
-    luck: 5
-  inventory:
-    - rusty_sword
-  relationships: {}
-  flags:
-    knows_dragon_tongue: false
-
+  exists: [boolean]
+  traits: {...}
+  inventory: [...]
+  flags: {...}
 world:
-  current_location: forest
-  time: 3
-  flags:
-    dragon_alive: true
-
-history:
-  - "Some(hero enters the story)"
-  - "Some(took the sword)"
-  - "Some(entered the forest)"
-
-game_over: false
-ending_type: null
+  current_location: [location]
+  time: [time]
+  flags: {...}
 ```
 
 ## Precondition Evaluation
 
-Evaluate preconditions to determine option availability:
+Evaluate preconditions against current state:
 
 ### has_item
 ```yaml
@@ -95,7 +148,15 @@ precondition:
   type: has_item
   item: sword
 ```
-Check: `item in character.inventory`
+Check: `"sword" in character.inventory`
+
+### missing_item
+```yaml
+precondition:
+  type: missing_item
+  item: curse
+```
+Check: `"curse" not in character.inventory`
 
 ### trait_minimum
 ```yaml
@@ -104,162 +165,248 @@ precondition:
   trait: courage
   minimum: 7
 ```
-Check: `character.traits[trait] >= minimum`
+Check: `character.traits.courage >= 7`
+
+### trait_maximum
+```yaml
+precondition:
+  type: trait_maximum
+  trait: suspicion
+  maximum: 5
+```
+Check: `character.traits.suspicion <= 5`
 
 ### flag_set
 ```yaml
 precondition:
   type: flag_set
-  flag: knows_dragon_tongue
+  flag: knows_secret
 ```
-Check: `character.flags.get(flag, False) == True`
+Check: `character.flags.knows_secret == true`
 
-### all_of / any_of / none_of
-Combine multiple conditions with AND / OR / NOT logic.
+### flag_not_set
+```yaml
+precondition:
+  type: flag_not_set
+  flag: betrayed_ally
+```
+Check: `character.flags.betrayed_ally != true`
+
+### at_location
+```yaml
+precondition:
+  type: at_location
+  location: forest
+```
+Check: `world.current_location == "forest"`
+
+### all_of (AND)
+```yaml
+precondition:
+  type: all_of
+  conditions:
+    - type: has_item
+      item: key
+    - type: flag_set
+      flag: door_revealed
+```
+Check: ALL conditions must pass
+
+### any_of (OR)
+```yaml
+precondition:
+  type: any_of
+  conditions:
+    - type: has_item
+      item: key
+    - type: trait_minimum
+      trait: strength
+      minimum: 8
+```
+Check: AT LEAST ONE condition must pass
+
+### none_of (NOT)
+```yaml
+precondition:
+  type: none_of
+  conditions:
+    - type: flag_set
+      flag: alarm_triggered
+```
+Check: NO conditions can pass
 
 ## Consequence Application
 
-Apply consequences to modify state:
+Apply consequences to modify state in memory:
 
-- **gain_item**: Add to `character.inventory`
-- **lose_item**: Remove from `character.inventory`
-- **modify_trait**: Add delta to `character.traits[trait]`
-- **set_flag**: Set `character.flags[flag] = value`
-- **move_to**: Set `world.current_location = location`
-- **character_dies**: Set `character.exists = false`, add reason to history
-- **character_departs**: Set `character.exists = false` with transcendence reason
-
-## Presenting Choices with AskUserQuestion
-
-Use the `AskUserQuestion` tool to present choices as an interactive menu.
-
-**Menu Guidelines:**
-- **Headers**: Max 12 characters (e.g., "Choice", "Action")
-- **Labels**: 1-5 words, concise action phrases
-- **Descriptions**: Action-oriented, explain consequences or requirements
-- **Blocked options**: Include "(BLOCKED)" in label with reason in description
-
-```json
-{
-  "questions": [
-    {
-      "question": "The dragon awaits. What do you do?",
-      "header": "Choice",
-      "multiSelect": false,
-      "options": [
-        {
-          "label": "Fight with sword",
-          "description": "Attack head-on (requires rusty_sword)"
-        },
-        {
-          "label": "Speak dragon tongue",
-          "description": "Attempt peaceful negotiation"
-        },
-        {
-          "label": "Flee",
-          "description": "Retreat and seek another path"
-        }
-      ]
-    }
-  ]
-}
+### gain_item
+```yaml
+- type: gain_item
+  item: ancient_key
 ```
+Action: Add "ancient_key" to character.inventory
 
-### Building the Options Array
-
-For each choice option in the scenario node:
-
-1. **Evaluate precondition** against current state
-2. **If available**: Add to options with descriptive label
-3. **If blocked**: Either omit OR add with description explaining why blocked
-
-### Option Formatting
-
-- **label**: The choice text from scenario (keep under 50 chars)
-- **description**: Context about consequences or requirements
-  - For available: hint at what happens
-  - For blocked: explain what's missing (e.g., "Requires: rusty_sword")
-
-### Showing Blocked Options
-
-Two approaches:
-
-**Approach 1: Omit blocked options**
-Only show what's available. Mention blocked options in narrative text above.
-
-**Approach 2: Include with explanation**
-Add blocked options with descriptions like:
-```json
-{
-  "label": "Fight unarmed (BLOCKED)",
-  "description": "Requires courage 10+ (you have 5)"
-}
+### lose_item
+```yaml
+- type: lose_item
+  item: torch
 ```
+Action: Remove "torch" from character.inventory
 
-If user selects a blocked option, explain why it fails and re-present choices.
+### modify_trait
+```yaml
+- type: modify_trait
+  trait: courage
+  delta: 2
+```
+Action: character.traits.courage += 2
+
+### set_trait
+```yaml
+- type: set_trait
+  trait: suspicion
+  value: 10
+```
+Action: character.traits.suspicion = 10
+
+### set_flag
+```yaml
+- type: set_flag
+  flag: shrine_visited
+  value: true
+```
+Action: character.flags.shrine_visited = true (or world.flags if world flag)
+
+### clear_flag
+```yaml
+- type: clear_flag
+  flag: cursed
+```
+Action: character.flags.cursed = false
+
+### move_to
+```yaml
+- type: move_to
+  location: mountain_path
+```
+Action: world.current_location = "mountain_path"
+
+### advance_time
+```yaml
+- type: advance_time
+  delta: 1
+```
+Action: world.time += 1
+
+### character_dies
+```yaml
+- type: character_dies
+  reason: "consumed by dragonfire"
+```
+Action: character.exists = false, add to history
+
+### character_departs
+```yaml
+- type: character_departs
+  reason: "ascended to the stars"
+```
+Action: character.exists = false (transcendence ending)
+
+### add_history
+```yaml
+- type: add_history
+  entry: "Discovered the hidden passage"
+```
+Action: Add to recent_history
 
 ## Narrative Presentation
 
-Present narrative with rich formatting:
+Display narrative with consistent formatting:
 
 ```
 ═══════════════════════════════════════════════════════════
-THE DRAGON'S CHOICE
-Turn 3 | Location: Dark Forest
+**NODE TITLE** (or scenario name)
+Turn [N] | Location: [location]
 ═══════════════════════════════════════════════════════════
 
-[Narrative text from node...]
+[Narrative text from node - use markdown formatting]
 
 ───────────────────────────────────────────────────────────
-Character: The Wanderer
-Traits: courage:6 wisdom:7 luck:5
-Inventory: rusty_sword
+courage:[X] wisdom:[X] luck:[X] | [inventory items]
 ───────────────────────────────────────────────────────────
 ```
 
-## Emergent Narrative
+## Choice Presentation
 
-When player attempts an action not in the scenario:
+Use AskUserQuestion with these guidelines:
 
-1. Acknowledge the creative choice
-2. Use the generate skill to create a new node
-3. Ensure the generated node:
-   - Respects current character/world state
-   - Has meaningful consequences
-   - Connects back to existing nodes or creates valid ending
-4. Add generated node to scenario
-5. Continue play
+- **header**: Max 12 chars (e.g., "Choice", "Action")
+- **labels**: 1-5 words, action-oriented
+- **descriptions**: Hint at consequences or requirements
+- **blocked options**: Show with "(Blocked)" and reason, or omit
 
-## History Tracking
-
-Each choice adds to history with Option-type semantics:
-
-```yaml
-history:
-  - "Some(hero enters the story)"
-  - "Some(took the sword) - armed themselves"
-  - "Some(entered the forest) - seeking another way"
-  - "None(consumed by dragonfire) - THE END"
+```json
+{
+  "questions": [{
+    "question": "The dragon awaits. What do you do?",
+    "header": "Choice",
+    "multiSelect": false,
+    "options": [
+      {"label": "Fight", "description": "Attack with your sword"},
+      {"label": "Negotiate", "description": "Attempt to speak with the dragon"},
+      {"label": "Flee", "description": "Retreat to safety"}
+    ]
+  }]
+}
 ```
 
 ## Ending Detection
 
 Check for endings:
-- Current node is in `endings` section
-- `character.exists == false`
-- No available choices (dead end)
+1. current_node is in scenario.endings
+2. character.exists == false
+3. No available choices (dead end - shouldn't happen in well-designed scenarios)
 
-Display ending with type-specific formatting:
-- **victory**: Celebratory tone
-- **death**: Somber, respect for the attempt
-- **transcendence**: Mystical, transformative
-- **unchanged**: Ironic, reflective
+Display ending with appropriate tone:
+
+**Victory:**
+```
+╔═══════════════════════════════════════════════════════════╗
+║  VICTORY                                                  ║
+╚═══════════════════════════════════════════════════════════╝
+
+[Ending narrative - celebratory tone]
+```
+
+**Death:**
+```
+╔═══════════════════════════════════════════════════════════╗
+║  DEATH                                                    ║
+╚═══════════════════════════════════════════════════════════╝
+
+[Ending narrative - somber, respectful]
+```
+
+**Transcendence:**
+```
+╔═══════════════════════════════════════════════════════════╗
+║  TRANSCENDENCE                                            ║
+╚═══════════════════════════════════════════════════════════╝
+
+[Ending narrative - mystical, transformative]
+```
+
+**Unchanged (Irony):**
+```
+╔═══════════════════════════════════════════════════════════╗
+║  UNCHANGED                                                ║
+╚═══════════════════════════════════════════════════════════╝
+
+[Ending narrative - ironic, reflective]
+```
 
 ## Additional Resources
 
-### Reference Files
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Core Option type mechanics
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML format specification
-
-### Bundled Scenarios
-- **`${CLAUDE_PLUGIN_ROOT}/scenarios/dragon_quest.yaml`** - Complete example scenario
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification
+- **`${CLAUDE_PLUGIN_ROOT}/scenarios/`** - Bundled scenarios
