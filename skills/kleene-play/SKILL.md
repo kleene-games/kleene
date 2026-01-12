@@ -9,6 +9,10 @@ hooks:
       hooks:
         - type: command
           command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-approve-saves.sh"
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-approve-saves.sh"
 ---
 
 # Kleene Play Skill
@@ -239,6 +243,22 @@ world:
 ```
 
 The `session_timestamp` in the filename is set once at game start (Phase 1) and reused for all saves in that session.
+
+### Save File Creation
+
+**For NEW save files** (file doesn't exist yet):
+Use Bash with heredoc - the hook auto-approves saves/ writes:
+```bash
+mkdir -p ./saves/[scenario_name]
+cat > ./saves/[scenario_name]/[timestamp].yaml << 'EOF'
+[yaml content]
+EOF
+```
+
+**For UPDATING existing saves** (file already exists):
+Use Edit tool after reading the file first.
+
+The PreToolUse hook in this skill auto-approves both Write and Bash operations targeting the saves/ directory, ensuring seamless gameplay without permission prompts.
 
 ## Save Management
 
