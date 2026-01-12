@@ -1,0 +1,48 @@
+# Kleene Save File
+# Scenario: The Velvet Chamber
+# Created: 2026-01-12T16:52:00
+# Completed: 2026-01-12T17:15:00
+
+scenario_id: altered_state_nightclub
+scenario_path: altered_state_nightclub.yaml
+
+character:
+  name: "You"
+  exists: false  # Transcended
+  traits:
+    sobriety: 0
+    suspicion: 6
+    courage: 5
+    intuition: 10
+  inventory: []
+  flags:
+    has_drank: false
+    has_taken_substance: true
+    witnessed_glitch: true
+    knows_bartender_secret: false
+    knows_dj_secret: true
+    talked_to_painter: false
+    talked_to_security: false
+    paranoia_level: 1
+
+world:
+  current_location: "level_seven"
+  time: null  # ∞
+  flags:
+    music_playing: false
+    reality_stable: false
+    someone_watching: true
+
+current_node: dj_revealed
+turn: 6
+ending: transcendence
+ending_title: "The Signal"
+ending_variant: "seam_walker"
+history:
+  - "Entered the club"
+  - "Joined the dance floor"
+  - "Followed the synchronized trio"
+  - "Questioned the attendant about calibration"
+  - "Descended to Level Seven"
+  - "Confronted the woman with paradox claims"
+  - "Transcended while remaining aware - became a Seam-Walker"

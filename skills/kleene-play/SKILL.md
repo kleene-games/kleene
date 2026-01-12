@@ -2,7 +2,13 @@
 name: kleene-play
 description: This skill should be used when the user asks to "play a game", "start kleene", "play dragon quest", "continue my game", "load my save", or wants to play an interactive narrative using the Kleene three-valued logic engine. Handles game state, choices, and narrative presentation.
 version: 0.2.0
-allowed-tools: Read, Glob, Write, AskUserQuestion
+allowed-tools: Read, Glob, Grep, Write, AskUserQuestion
+hooks:
+  PreToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/auto-approve-saves.sh"
 ---
 
 # Kleene Play Skill
@@ -16,6 +22,57 @@ This skill runs game logic **inline** (no sub-agent). Benefits:
 - Scenario loaded once, stays cached
 - Zero serialization overhead
 - Faster turn response (~60-70% improvement)
+
+## Scenario Loading
+
+Scenarios may be loaded in two modes depending on file size.
+
+### Standard Load (small scenarios)
+
+For scenarios under ~20k tokens, read the entire file once and cache in context.
+
+### Lazy Load (large scenarios)
+
+When the Read tool returns a token limit error, switch to lazy loading:
+
+**Step 1: Load header (first 200 lines)**
+```
+Read scenario file with limit: 200
+```
+Extract and cache:
+- `scenario` / `title` - scenario identifier
+- `initial_character` - starting character state
+- `initial_world` - starting world state
+- `start_node` - first node ID (usually in header, but may need grep)
+- `endings` - all ending definitions
+
+**Step 2: Load nodes on demand**
+
+For each node needed during gameplay, use Grep:
+```
+Pattern: "^  {node_id}:"
+Context: -A 80 (captures most node content)
+Path: scenario file
+```
+
+Parse the YAML from grep output to extract:
+- `title` / `narrative` - display text
+- `choice.prompt` - question to ask
+- `choice.options` - available choices with preconditions/consequences
+
+**Step 3: Cache strategy**
+- Header data: persistent (kept in context)
+- Current node: replaced each turn (don't accumulate old nodes)
+- Endings: persistent (needed for ending detection)
+
+### Detecting Load Mode
+
+The gateway command attempts full read first. If it fails:
+1. Sets `lazy_loading: true` in game context
+2. Loads header via partial read
+3. Passes scenario path for per-turn node loading
+
+When `lazy_loading: true`, Phase 2 must grep for each node instead of accessing cached scenario data.
 
 ## Game State Model
 
@@ -51,9 +108,16 @@ GAME_STATE:
    ```
    ${CLAUDE_PLUGIN_ROOT}/scenarios/[registry.scenarios.ID.path]
    ```
-   Read the scenario YAML file once. If the file doesn't exist at the registry path:
+
+   Load the scenario using the appropriate mode (see **Scenario Loading** section):
+   - **Standard**: Read entire file, cache in context
+   - **Lazy**: If Read returns token limit error, read first 200 lines for header, then grep for `start_node`
+
+   If the file doesn't exist:
    - Error: "Scenario file not found at [path]. Run /kleene sync to update registry."
    - Exit skill
+
+   Track load mode in context: `lazy_loading: true/false`
 
 2. Create save directory if needed:
    ```
@@ -83,6 +147,7 @@ GAME_STATE:
 
 1. Read the specified save file from `./saves/[scenario_name]/[filename].yaml`
 2. Load the referenced scenario file from `${CLAUDE_PLUGIN_ROOT}/scenarios/`
+   - Use appropriate load mode (standard or lazy) based on file size
 3. Store the save filename in memory (continue writing to same file)
 4. Continue from saved state
 
@@ -92,7 +157,9 @@ Execute this for each turn:
 
 ```
 TURN:
-  1. Get current node from scenario.nodes[current_node]
+  1. Get current node:
+     - Standard mode: Access scenario.nodes[current_node] from cached scenario
+     - Lazy mode: Grep for "^  {current_node}:" with -A 80, parse YAML
 
   2. Check for ending:
      - If current_node is in scenario.endings → display ending, save state, EXIT
@@ -614,40 +681,85 @@ air. Without a weapon, challenging the dragon directly would be folly.
 
 ## Narrative Presentation
 
-Display narrative with consistent formatting:
+Display narrative with the **cinematic header format**:
+
+### Header Exemplar
 
 ```
-═══════════════════════════════════════════════════════════
-**NODE TITLE** (or scenario name)
-Turn [N] | Location: [location]
-═══════════════════════════════════════════════════════════
-
-[Narrative text from node - use markdown formatting]
-
-───────────────────────────────────────────────────────────
-courage:[X] wisdom:[X] luck:[X] | [inventory items]
-───────────────────────────────────────────────────────────
+═══════════════════════════════════════════════════════════════════════
+                    T H E   V E L V E T   C H A M B E R
+═══════════════════════════════════════════════════════════════════════
+                          Main Entrance
+                        Turn 1 | Time: 23:00
+                   Sobriety: ██████████ 10 | Suspicion: ████░░░░░░ 5
+═══════════════════════════════════════════════════════════════════════
 ```
 
-### Status Updates
+### Header Construction Rules
 
-State changes (flags, traits, items) go in the **footer stats line**, never as separate headings.
+1. **Title**: Center the scenario title with **spaced letters** for dramatic emphasis
+   - "Dragon Quest" → `D R A G O N   Q U E S T`
+   - Use ALL CAPS for maximum impact
 
-**DO:** Show changes in footer
+2. **Location**: Center the current node's title as a subtitle (normal casing)
+
+3. **Turn/Time**: Center turn counter and world time (if applicable)
+   - Format: `Turn N | Time: HH:00` or just `Turn N` if no time tracking
+
+4. **Trait Bars**: Display key traits as **10-segment progress bars**
+   - Full block: `█` (value filled)
+   - Empty block: `░` (value remaining)
+   - Example: 7/10 = `███████░░░`
+   - Show trait name, bar, and numeric value: `Sobriety: ███████░░░ 7`
+   - **Dynamic traits**: Show ALL traits with non-zero values, including those modified during play
+   - If a trait was 0 initially but has been modified (e.g., paranoia_level: 0 → 1), display it
+   - Use multiple lines if needed to fit all traits legibly
+
+5. **Centering**: All header lines should be visually centered within the border width
+
+6. **Borders**: Use `═══` lines (double horizontal box-drawing) at consistent width (~70 chars)
+
+### Full Turn Layout
+
 ```
-───────────────────────────────────────────────────────────
-Sobriety: 7 (-3) | Suspicion: 8 (+3) | Flags: knows_dj_secret
-───────────────────────────────────────────────────────────
+═══════════════════════════════════════════════════════════════════════
+                    S C E N A R I O   T I T L E
+═══════════════════════════════════════════════════════════════════════
+                          Node Title Here
+                        Turn N | Time: HH:00
+                   Trait1: ██████████ 10 | Trait2: ████░░░░░░ 5
+═══════════════════════════════════════════════════════════════════════
+
+[Narrative text from node - use markdown formatting for *emphasis*]
+
 ```
 
-**DON'T:** Create separate headings for status
+### Status Updates (Changes)
+
+When traits change mid-game, show delta in parentheses on the stats line:
+
 ```
-───────────────────────────────────────────────────────────
-*Flag set: knows_dj_secret*
-───────────────────────────────────────────────────────────
+                   Sobriety: ███████░░░ 7 (-3) | Suspicion: ████████░░ 8 (+3)
 ```
 
-The bold box header (`═══`) is reserved for node/scene titles only.
+For flag changes, add a subtle indicator below the narrative:
+
+```
+[Flag: knows_dj_secret]
+```
+
+### Trait Bar Generation
+
+To generate a 10-segment bar for value V (max 10):
+- Filled segments: V blocks of `█`
+- Empty segments: (10 - V) blocks of `░`
+- Clamp values to 0-10 range for display
+
+Examples:
+- 10 → `██████████`
+- 7 → `███████░░░`
+- 3 → `███░░░░░░░`
+- 0 → `░░░░░░░░░░`
 
 ## Choice Presentation
 
