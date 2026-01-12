@@ -468,11 +468,43 @@ Match the scenario's established voice:
 
 Read the current node's narrative for guidance.
 
+### Improvised Action Presentation
+
+Display improvised action responses with the same bold box format as regular nodes. Generate a creative title based on the player's action:
+
+```
+═══════════════════════════════════════════════════════════
+**[CREATIVE TITLE]**
+Turn [N] | Location: [location]
+═══════════════════════════════════════════════════════════
+
+[Narrative response to player's improvised action]
+
+───────────────────────────────────────────────────────────
+[trait changes, e.g., +1 wisdom - Attention to detail]
+───────────────────────────────────────────────────────────
+```
+
+**Title Generation Guidelines:**
+
+| Player Action | Bad Title | Good Title |
+|--------------|-----------|------------|
+| "Pick up baggie and snort it" | Improvised Action | The Quick Fix |
+| "I examine the bartender's tattoos" | Improvised Action | Ink and Suspicion |
+| "Try talking to the woman with cold skin" | Improvised Action | Cold Conversation |
+| "I climb the wall to look for an exit" | Improvised Action | The Desperate Ascent |
+
+The title should:
+- Be evocative/atmospheric (2-5 words)
+- Reflect what the player is actually doing
+- Match the scenario's tone
+- NOT be generic ("Improvised Action", "Custom Choice", etc.)
+
 ### After Improvisation
 
 After generating the response:
 1. Apply any soft consequences
-2. Display the response with trait change indicators if applicable
+2. Display the response using the bold box format (see Improvised Action Presentation above)
 3. Present the current node's original options AGAIN
 4. Do NOT advance `current_node` or increment `turn`
 
