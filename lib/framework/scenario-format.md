@@ -8,6 +8,29 @@ Scenarios are defined in YAML with the following structure.
 name: "Scenario Title"
 description: "Brief description of the scenario"
 version: "1.0.0"
+```
+
+### Required Metadata Fields
+
+| Field | Purpose | Used By |
+|-------|---------|---------|
+| `name` | Display name for play menus | Registry, play skill |
+| `description` | 1-2 sentence summary | Registry, play skill |
+
+### Legacy Field Compatibility
+
+Some older scenarios use different field names. The registry sync process handles these variations:
+
+| Standard | Legacy Alternatives |
+|----------|---------------------|
+| `name` | `title`, `metadata.title` |
+| `description` | `metadata.description` |
+
+New scenarios should always use `name` and `description` at the top level.
+
+### Full Example
+
+```yaml
 
 # Initial state
 initial_character:

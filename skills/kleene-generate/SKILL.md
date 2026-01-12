@@ -160,6 +160,41 @@ Verify the scenario has paths to:
 
 Output complete scenario in proper format.
 
+### Step 7: Register Generated Scenario
+
+After writing the scenario file to `${CLAUDE_PLUGIN_ROOT}/scenarios/[filename].yaml`:
+
+1. **Read the saved file** to extract canonical metadata:
+   - `name` field (or `title`, or `metadata.title`)
+   - `description` field (or `metadata.description`)
+
+2. **Derive scenario ID** from filename (e.g., `haunted_mansion` from `haunted_mansion.yaml`)
+
+3. **Load existing registry**:
+   - Read `${CLAUDE_PLUGIN_ROOT}/scenarios/registry.yaml`
+   - If registry doesn't exist, create empty structure:
+     ```yaml
+     version: 1
+     last_synced: null
+     scenarios: {}
+     ```
+
+4. **Add new entry** to registry:
+   ```yaml
+   haunted_mansion:
+     name: "The Haunted Mansion"
+     description: "Explore a decrepit estate filled with mystery and horror"
+     path: haunted_mansion.yaml
+     enabled: true
+     tags: ["generated", "user-created"]
+   ```
+
+5. **Write updated registry** back to disk
+
+6. **Confirm** to user: "Scenario saved and registered as 'The Haunted Mansion'"
+
+This ensures generated scenarios immediately appear in `/kleene play` menus without requiring manual `/kleene sync`.
+
 ## Emergent Node Generation
 
 > **Note**: Mode 2 is now handled **inline by kleene-play** via its "Improvised Action Handling" section. This documentation provides reference guidance for that implementation.

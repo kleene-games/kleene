@@ -1,0 +1,28 @@
+# Kleene Scenario Registry
+# Maintains metadata for all available scenarios
+# Run /kleene sync to update after adding/removing scenario files
+
+version: 1
+last_synced: 2026-01-12T16:45:00Z
+
+scenarios:
+  dragon_quest:
+    name: "The Dragon's Choice"
+    description: "A hero must decide how to face the dragon threatening their village."
+    path: dragon_quest.yaml
+    enabled: true
+    tags: ["fantasy", "bundled"]
+
+  altered_state_nightclub:
+    name: "The Velvet Chamber"
+    description: "An underground nightclub where everyone is visibly altered, but no one will say what they're on. Reality bends."
+    path: altered_state_nightclub.yaml
+    enabled: true
+    tags: ["mystery", "surreal", "bundled"]
+
+  corporate_banking:
+    name: "The Rise and Fall: A Banking Career"
+    description: "Navigate the treacherous waters of corporate banking from junior analyst to your ultimate destiny."
+    path: corporate_banking.yaml
+    enabled: true
+    tags: ["drama", "career", "bundled"]

@@ -47,12 +47,26 @@ GAME_STATE:
 
 **If starting new game:**
 
-1. Read the scenario YAML file once:
+1. The gateway command provides the scenario path from `registry.yaml`:
    ```
-   ${CLAUDE_PLUGIN_ROOT}/scenarios/[scenario_name].yaml
+   ${CLAUDE_PLUGIN_ROOT}/scenarios/[registry.scenarios.ID.path]
+   ```
+   Read the scenario YAML file once. If the file doesn't exist at the registry path:
+   - Error: "Scenario file not found at [path]. Run /kleene sync to update registry."
+   - Exit skill
+
+2. Create save directory if needed:
+   ```
+   ./saves/[scenario_name]/
    ```
 
-2. Initialize state from scenario:
+3. Generate session save filename with current timestamp:
+   ```
+   YYYY-MM-DD_HH-MM-SS.yaml
+   ```
+   Store this filename in memory - all saves this session use the same file.
+
+4. Initialize state from scenario:
    ```yaml
    current_node: [scenario.start_node]
    turn: 0
@@ -61,13 +75,16 @@ GAME_STATE:
    recent_history: []
    ```
 
-3. The scenario data is now in your context - do not re-read it.
+5. Write initial save file immediately (so session has a file from start).
+
+6. The scenario data is now in your context - do not re-read it.
 
 **If resuming from save:**
 
-1. Read `game_state.yaml` from current directory
-2. Load the referenced scenario file
-3. Continue from saved state
+1. Read the specified save file from `./saves/[scenario_name]/[filename].yaml`
+2. Load the referenced scenario file from `${CLAUDE_PLUGIN_ROOT}/scenarios/`
+3. Store the save filename in memory (continue writing to same file)
+4. Continue from saved state
 
 ### Phase 2: Game Turn
 
@@ -89,7 +106,7 @@ TURN:
      - For each option in node.choice.options:
        - Evaluate precondition against current state
        - If passes: add to available choices
-       - If fails: optionally show as blocked with reason
+       - If fails: EXCLUDE from choices (do not show)
 
   5. Present choices via AskUserQuestion:
      {
@@ -132,9 +149,15 @@ TURN:
 - User explicitly requests save
 - Session is ending
 
-Write to `game_state.yaml`:
+Write to `./saves/[scenario_name]/[session_timestamp].yaml`:
 ```yaml
+# Save metadata
+save_version: 2
 scenario: [scenario_name]
+session_started: "[ISO timestamp from game start]"
+last_saved: "[current ISO timestamp]"
+
+# Game state
 current_node: [node_id]
 turn: [turn_number]
 character:
@@ -147,6 +170,55 @@ world:
   time: [time]
   flags: {...}
 ```
+
+The `session_timestamp` in the filename is set once at game start (Phase 1) and reused for all saves in that session.
+
+## Save Management
+
+### Save Directory Structure
+
+```
+./saves/
+├── dragon_quest/
+│   ├── 2026-01-12_14-30-22.yaml
+│   └── 2026-01-10_09-15-00.yaml
+├── altered_state_nightclub/
+│   └── 2026-01-11_22-45-33.yaml
+└── corporate_banking/
+    └── 2026-01-09_18-00-00.yaml
+```
+
+### Listing Saves
+
+When user requests to see saves for a scenario:
+
+1. Glob `./saves/[scenario_name]/*.yaml`
+2. Read each file's metadata:
+   - `last_saved` timestamp
+   - `turn` number
+   - `current_node` ID
+3. Sort by `last_saved` (most recent first)
+4. Present as numbered list with summary:
+
+```
+Found 3 saved games for "The Dragon's Choice":
+
+1. Jan 12, 2:30 PM - Turn 12 at mountain_approach
+2. Jan 10, 9:15 AM - Turn 5 at forest_entrance
+3. Jan 8, 7:00 PM - Turn 3 at sword_taken
+
+Which save would you like to load?
+```
+
+### Loading a Save
+
+When user selects a save to load:
+
+1. Read the specified YAML file from `./saves/[scenario_name]/[filename].yaml`
+2. Extract `scenario` field to identify which scenario definition to load
+3. Load scenario definition from `${CLAUDE_PLUGIN_ROOT}/scenarios/[scenario].yaml`
+4. Store the save filename in memory (continue writing to same file)
+5. Resume gameplay from the saved `current_node`
 
 ## Precondition Evaluation
 
@@ -557,6 +629,26 @@ courage:[X] wisdom:[X] luck:[X] | [inventory items]
 ───────────────────────────────────────────────────────────
 ```
 
+### Status Updates
+
+State changes (flags, traits, items) go in the **footer stats line**, never as separate headings.
+
+**DO:** Show changes in footer
+```
+───────────────────────────────────────────────────────────
+Sobriety: 7 (-3) | Suspicion: 8 (+3) | Flags: knows_dj_secret
+───────────────────────────────────────────────────────────
+```
+
+**DON'T:** Create separate headings for status
+```
+───────────────────────────────────────────────────────────
+*Flag set: knows_dj_secret*
+───────────────────────────────────────────────────────────
+```
+
+The bold box header (`═══`) is reserved for node/scene titles only.
+
 ## Choice Presentation
 
 Use AskUserQuestion with these guidelines:
@@ -564,7 +656,7 @@ Use AskUserQuestion with these guidelines:
 - **header**: Max 12 chars (e.g., "Choice", "Action")
 - **labels**: 1-5 words, action-oriented
 - **descriptions**: Hint at consequences or requirements
-- **blocked options**: Show with "(Blocked)" and reason, or omit
+- **blocked options**: NEVER show. Filter out before presenting choices.
 
 ```json
 {
