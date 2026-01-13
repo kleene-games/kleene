@@ -1,4 +1,4 @@
-# Kleene - Adaptive AI Text Adventure Engine
+# Kleene - Adaptive AI Text Adventure Engine for Claude Code
 
 **Text adventures that actually adapt to your choices.** Built specifically for Claude Code.
 
