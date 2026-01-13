@@ -4,6 +4,22 @@
 
 ---
 
+## Installation
+
+First, install the plugin in Claude Code:
+
+```bash
+# Add the marketplace
+/plugin marketplace add kleene-games/kleene
+
+# Install the plugin
+/plugin install kleene@kleene-games
+```
+
+**Verify installation:** Run `/kleene` - you should see the command menu.
+
+---
+
 ## Play Your First Game (5 minutes)
 
 1. **Run `/kleene play`**
