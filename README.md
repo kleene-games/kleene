@@ -1,4 +1,4 @@
-# Kleene - Adaptive AI Text Adventure Engine
+# Kleene - Adaptive AI Text Adventure Engine for Claude Code
 
 **Text adventures that actually adapt to your choices.** Built specifically for Claude Code.
 
@@ -32,10 +32,15 @@ Unlike traditional choice-based games, Kleene responds to free-form actions and 
 
 ## Installation
 
-1. **Install the plugin** in Claude Code
-2. **Verify installation:** Run `/kleene` to see the menu
-3. **Play your first game:** `/kleene play` → choose Dragon Quest
-4. **Have fun!** Start at temp 0, then experiment with higher temps
+```bash
+# Add the marketplace
+/plugin marketplace add kleene-games/kleene
+
+# Install the plugin
+/plugin install kleene@kleene-games
+```
+
+**Verify installation:** Run `/kleene` to see the menu, then `/kleene play` to start your first game!
 
 ---
 
