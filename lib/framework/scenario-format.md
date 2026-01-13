@@ -8,6 +8,29 @@ Scenarios are defined in YAML with the following structure.
 name: "Scenario Title"
 description: "Brief description of the scenario"
 version: "1.0.0"
+```
+
+### Required Metadata Fields
+
+| Field | Purpose | Used By |
+|-------|---------|---------|
+| `name` | Display name for play menus | Registry, play skill |
+| `description` | 1-2 sentence summary | Registry, play skill |
+
+### Legacy Field Compatibility
+
+Some older scenarios use different field names. The registry sync process handles these variations:
+
+| Standard | Legacy Alternatives |
+|----------|---------------------|
+| `name` | `title`, `metadata.title` |
+| `description` | `metadata.description` |
+
+New scenarios should always use `name` and `description` at the top level.
+
+### Full Example
+
+```yaml
 
 # Initial state
 initial_character:
@@ -96,6 +119,124 @@ endings:
       The dragon's fire consumes you.
       Your story ends here.
     type: death
+```
+
+## Option Properties
+
+### Standard Options
+
+Options normally specify `next_node` to advance the story:
+
+```yaml
+options:
+  - id: take_sword
+    text: "Take the sword"
+    precondition: { type: at_location, location: armory }
+    consequence:
+      - type: gain_item
+        item: sword
+    narrative: "Steel in hand, you feel ready."
+    next_node: armed_and_ready
+```
+
+### Grid Cell Classification
+
+Options can specify which Nine Cells grid cell they represent. This helps the analyze skill track coverage:
+
+```yaml
+options:
+  - id: fight_dragon
+    text: "Draw your sword and attack"
+    cell: chooses        # Player actively engages
+    next_node: dragon_fight
+
+  - id: flee_dragon
+    text: "Turn and run"
+    cell: avoids         # Player retreats/refuses
+    next_node: attempt_flee
+```
+
+Valid `cell` values: `chooses`, `unknown`, `avoids`
+
+### Improvise Options (Unknown Row)
+
+For the "Player Unknown" row of the Nine Cells (Discovery, Limbo, Revelation), options can trigger improvisation instead of advancing to a fixed node:
+
+```yaml
+options:
+  - id: observe_dragon
+    text: "Wait and observe the dragon"
+    cell: unknown
+    next: improvise
+    improvise_context:
+      theme: "patient observation of an ancient being"
+      permits: ["scales", "inscriptions", "breathing", "eyes", "watch"]
+      blocks: ["attack", "charge", "sneak", "steal"]
+      limbo_fallback: "Time stretches in the dragon's presence..."
+    outcome_nodes:
+      discovery: dragon_notices_patience
+      revelation: dragon_dismisses_hesitation
+      # limbo: omitted = stay at current node
+```
+
+#### `next: improvise`
+
+Replaces `next_node`. When selected, triggers a sub-prompt asking "What specifically do you do?" The response is processed through improvisation handling.
+
+#### `improvise_context`
+
+Guides AI interpretation of the player's free-text response:
+
+| Field | Purpose |
+|-------|---------|
+| `theme` | Thematic context for generating narrative responses |
+| `permits` | Regex patterns that indicate Discovery (world permits action) |
+| `blocks` | Regex patterns that indicate Revelation (world blocks action) |
+| `limbo_fallback` | Narrative shown when response is ambiguous (Limbo cell) |
+
+#### `outcome_nodes`
+
+Maps grid cells to destination nodes. Cell-dependent advancement:
+
+| Cell | Behavior |
+|------|----------|
+| `discovery` | If matched and node specified, advance to that node |
+| `revelation` | If matched and node specified, advance to that node |
+| `limbo` | If matched and node specified, advance; otherwise stay at current node |
+
+If an outcome has no node specified, player stays at the current decision point.
+
+### Improvise Option Example
+
+```yaml
+intro:
+  narrative: |
+    The elder grips your arm. "The dragon has returned..."
+  choice:
+    prompt: "What do you do?"
+    options:
+      - id: take_sword
+        text: "Take the sword from the blacksmith"
+        cell: chooses
+        next_node: sword_taken
+
+      - id: ask_elder
+        text: "Ask the elder what she knows"
+        cell: unknown
+        next: improvise
+        improvise_context:
+          theme: "seeking wisdom before action"
+          permits: ["history", "weakness", "legend", "why", "story"]
+          blocks: ["demand", "threaten", "force", "lie"]
+          limbo_fallback: "The elder watches you, waiting for a real question..."
+        outcome_nodes:
+          discovery: elder_lore
+          revelation: elder_silence
+
+      - id: flee_village
+        text: "Leave the village to its fate"
+        cell: avoids
+        next_node: abandoned_village
 ```
 
 ## Precondition Types

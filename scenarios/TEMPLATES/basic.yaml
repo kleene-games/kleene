@@ -1,0 +1,182 @@
+# Basic Kleene Scenario Template
+# Demonstrates branching paths, multiple endings, and basic features
+# ~15-20 minutes of gameplay
+
+name: "Basic Template"
+description: "A simple branching adventure demonstrating core Kleene features"
+
+initial_character:
+  name: "Adventurer"
+  traits:
+    courage: 5
+    wisdom: 5
+    luck: 5
+  inventory:
+    - torch
+  flags:
+    found_treasure: false
+
+initial_world:
+  current_location: "forest_entrance"
+  time: 0
+  flags:
+    night_fallen: false
+
+start_node: forest_entrance
+
+nodes:
+  forest_entrance:
+    narrative: |
+      You stand at the edge of a dark forest. Two paths diverge ahead.
+
+      The left path is overgrown but leads toward distant lights.
+      The right path is clear but descends into darkness.
+    choice:
+      prompt: "Which path do you take?"
+      options:
+        - id: left_path
+          text: "Take the overgrown left path"
+          consequence:
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+          next_node: village_approach
+
+        - id: right_path
+          text: "Take the clear right path"
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 1
+          next_node: cave_entrance
+
+  village_approach:
+    narrative: |
+      The path leads to a small village. Friendly faces peek from windows.
+
+      An elder approaches with a warm smile.
+    choice:
+      prompt: "The elder offers you shelter. How do you respond?"
+      options:
+        - id: accept
+          text: "Gratefully accept their hospitality"
+          next_node: ending_peaceful
+
+        - id: continue
+          text: "Thank them but continue your journey"
+          consequence:
+            - type: modify_trait
+              trait: luck
+              delta: -1
+          next_node: ending_wanderer
+
+  cave_entrance:
+    narrative: |
+      A cave mouth yawns before you. Your torch flickers in the breeze.
+
+      Deep within, you hear the clink of metal on stone.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: enter_cave
+          text: "Enter the cave boldly"
+          precondition:
+            type: trait_minimum
+            trait: courage
+            minimum: 6
+          next_node: cave_interior
+
+        - id: sneak
+          text: "Sneak in quietly"
+          consequence:
+            - type: modify_trait
+              trait: luck
+              delta: 1
+          next_node: cave_interior
+
+        - id: turn_back
+          text: "Turn back to the forest"
+          next_node: forest_entrance
+
+  cave_interior:
+    narrative: |
+      The cave opens into a vast chamber. In the center sits a chest,
+      unguarded and gleaming.
+
+      It seems too easy.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: open_chest
+          text: "Open the chest"
+          consequence:
+            - type: gain_item
+              item: treasure
+            - type: set_flag
+              flag: found_treasure
+              value: true
+          next_node: treasure_result
+
+        - id: examine_first
+          text: "Examine the chest carefully"
+          precondition:
+            type: trait_minimum
+            trait: wisdom
+            minimum: 6
+          consequence:
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+          narrative: |
+            Your wisdom pays off - you spot a trap mechanism!
+            You disarm it carefully.
+          next_node: treasure_result
+
+  treasure_result:
+    narrative: |
+      The chest contains ancient gold coins and jewels beyond count.
+
+      You've found the legendary treasure!
+    choice:
+      prompt: "Now what?"
+      options:
+        - id: keep_all
+          text: "Keep all the treasure for yourself"
+          next_node: ending_wealthy
+
+        - id: share
+          text: "Return to the village to share the wealth"
+          precondition:
+            type: flag_set
+            flag: found_treasure
+            value: true
+          next_node: ending_hero
+
+endings:
+  ending_peaceful:
+    narrative: |
+      You spend a warm night with the villagers, sharing stories and song.
+
+      Sometimes the greatest treasures are the friends we make along the way.
+    type: unchanged
+
+  ending_wanderer:
+    narrative: |
+      You continue walking into the night, guided only by the stars.
+
+      The path stretches on, endless and free.
+    type: unchanged
+
+  ending_wealthy:
+    narrative: |
+      You emerge from the forest laden with treasure, wealthy beyond measure.
+
+      But the gold feels heavy, and you wonder what you left behind.
+    type: victory
+
+  ending_hero:
+    narrative: |
+      You return to the village bearing treasure to share with all.
+
+      They hail you as a hero, and the village prospers for generations.
+    type: victory

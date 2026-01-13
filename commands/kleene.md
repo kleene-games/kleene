@@ -49,19 +49,38 @@ Then route based on selection.
 
 ## Action Routing
 
-If action is provided, parse to determine intent:
+Parse the action to determine intent:
 
 ### Play Actions
-Keywords: "play", "start", "continue", "load", "resume", "my game"
+Keywords: "play", "start", "continue", "load", "resume", "my game", "list saves"
 
-**Step 1: List available scenarios**
+**Step 1: Determine game mode**
 
-Use Glob to find all `.yaml` files in `${CLAUDE_PLUGIN_ROOT}/scenarios/`
-Read each scenario's `name` and `description` fields to build the menu.
+Parse user intent:
+- `play [scenario]` → New game (default)
+- `continue [scenario]` or `resume [scenario]` → List saves for that scenario
+- `list saves [scenario]` → Show available saves without starting
 
-**Step 2: Present scenario menu**
+**Step 2: For new games**
 
-Use AskUserQuestion with the scenarios found. Example:
+1. **Load the registry:**
+   - Read `${CLAUDE_PLUGIN_ROOT}/scenarios/registry.yaml`
+   - If registry doesn't exist, perform auto-sync first (see Registry Actions below)
+
+2. **Check for unregistered scenarios:**
+   - Glob `${CLAUDE_PLUGIN_ROOT}/scenarios/*.yaml`
+   - Exclude `registry.yaml` from results
+   - Compare against registry paths
+   - Track any files not in registry as "unregistered"
+
+3. **Build scenario menu:**
+   - Include all enabled scenarios from registry
+   - Add unregistered scenarios with `[new]` indicator
+   - Add missing scenarios with `[missing]` warning (file not found)
+   - Skip disabled scenarios
+
+4. Present scenario menu via AskUserQuestion:
+
 ```json
 {
   "questions": [
@@ -75,8 +94,8 @@ Use AskUserQuestion with the scenarios found. Example:
           "description": "Face the dragon and choose your fate"
         },
         {
-          "label": "The Velvet Chamber",
-          "description": "Unravel a nightclub mystery"
+          "label": "My New Scenario [new]",
+          "description": "Unregistered - will be added to registry"
         }
       ]
     }
@@ -84,105 +103,68 @@ Use AskUserQuestion with the scenarios found. Example:
 }
 ```
 
-**Step 3: Game Loop (YOU orchestrate this)**
+5. **On selection:**
+   - If unregistered: auto-register (extract metadata, add to registry), then load
+   - If missing: warn user, offer to run `/kleene sync` to clean up registry
+   - Otherwise: load scenario using path from registry
 
-Run this loop. YOU handle user interaction; agent handles game logic.
+6. **Load scenario (handle large files):**
 
-**State tracking** (maintain across turns in YOUR context):
-- `agent_id`: Saved from Task response, used for resume
-- `scenario_path`: Full path to scenario YAML (for fresh launches)
-- `scenario_name`: Scenario name extracted from YAML (for resume turns)
-- `game_state`: Parsed from agent's `---STATE---` output block
-- `resume_failed`: Set to true when API error detected, cleared on successful fresh launch
+   Attempt to read the scenario file:
+   ```
+   Read: ${CLAUDE_PLUGIN_ROOT}/scenarios/[path]
+   ```
 
-**IMPORTANT: No file writes during gameplay.** State flows through agent output, not disk.
+   If Read succeeds: standard mode (full scenario cached)
 
-```
-GAME_LOOP:
-  1. Launch or resume agent with error recovery:
+   If Read returns **token limit error** (file too large):
+   - Switch to **lazy loading mode**
+   - Read first 200 lines only: `Read with limit: 200`
+   - Extract header: `initial_character`, `initial_world`, `endings`
+   - Grep for start node: `Grep "^  {start_node}:" -A 80`
+   - Set context flag: `lazy_loading: true`
 
-     IF first turn OR resume_failed:
-       Launch FRESH agent with FULL scenario path:
-       Task(subagent_type: kleene:kleene-game-runner,
-            prompt: "SCENARIO: [path]\nUSER_CHOICE: [option_id]")
+   The `kleene-play` skill will use this flag to load nodes on demand.
 
-       Save agent_id from response for future resume
-       Set resume_failed = false
+7. The `kleene-play` skill:
+   - Creates `./saves/[scenario_name]/` directory if needed
+   - Generates timestamped save file: `YYYY-MM-DD_HH-MM-SS.yaml`
+   - Initializes fresh state and writes initial save
+   - Runs the game loop
 
-     ELSE (subsequent turn, resume available):
-       ATTEMPT resume with SCENARIO_NAME and current STATE:
-       Task(subagent_type: kleene:kleene-game-runner,
-            prompt: "SCENARIO_NAME: [name]\nUSER_CHOICE: [option_id]",
-            resume: agent_id)
+**Step 3: For continue/resume**
 
-       The agent uses cached scenario from context - no file re-read needed.
-       State is also in agent context from previous turn.
+1. Check if `./saves/[scenario_name]/` directory exists
+2. If no saves found: "No saved games found for [scenario]. Starting new game."
+3. If saves found, list them via AskUserQuestion:
 
-       Check response for API errors:
-       - If contains "API Error" OR "unexpected tool_use_id" OR "orphaned":
-         → Set resume_failed = true
-         → Immediately launch FRESH agent with SCENARIO: [path]
-         → Save new agent_id
-         → Set resume_failed = false
-         → Continue with fresh agent's response
-
-  2. Parse agent response:
-     - Everything BEFORE "---STATE---" = narrative
-     - Parse the ---STATE--- block and store as game_state
-     - Parse the ---CHOICES--- block for options
-     - If "---GAME_OVER---" found: display ending, save state, EXIT loop
-
-  3. **DISPLAY THE NARRATIVE** (CRITICAL - do not skip this!)
-     Write the narrative text directly to the user as your response text.
-     Do NOT use any tool for this - just output the text in your message.
-     Example: If agent returned "You enter the dark forest...",
-     you write "You enter the dark forest..." in your response.
-     Include ALL formatting (═══, ───, **bold**, stats line, etc.)
-     This is the story itself - the user MUST see it before making a choice.
-
-  4. Present choices to user:
-     Call AskUserQuestion with parsed options:
-     {
-       "questions": [
-         {
-           "question": "[prompt from ---CHOICES--- block]",
-           "header": "Choice",
-           "multiSelect": false,
-           "options": [
-             {
-               "label": "[1-5 word action phrase]",
-               "description": "[consequence or requirement]"
-             }
-           ]
-         }
-       ]
-     }
-
-     Menu Guidelines:
-     - Headers: max 12 chars
-     - Labels: 1-5 words, concise
-     - Descriptions: action-oriented, explain what happens
-
-  5. Map user selection back to option id
-
-  6. Save agent_id and game_state for next turn (in YOUR context, not disk)
-
-  7. GOTO step 1 with USER_CHOICE
+```json
+{
+  "questions": [
+    {
+      "question": "Found 3 saved games for 'The Dragon's Choice':",
+      "header": "Load Save",
+      "multiSelect": false,
+      "options": [
+        {
+          "label": "Jan 12, 2:30 PM",
+          "description": "Turn 12 at mountain_approach"
+        },
+        {
+          "label": "Jan 10, 9:15 AM",
+          "description": "Turn 5 at forest_entrance"
+        },
+        {
+          "label": "Start new game",
+          "description": "Begin fresh playthrough"
+        }
+      ]
+    }
+  ]
+}
 ```
 
-**In-Context State Architecture**
-- **First turn**: Agent receives `SCENARIO: [path]`, reads scenario, initializes state
-- **Resume turns**: Agent has scenario and state in context from previous turns
-- **Agent output**: Always includes `---STATE---` block with current game state
-- **Main thread (YOU)**: Tracks state in context, displays narrative, calls AskUserQuestion
-- **No file I/O during gameplay** - eliminates permission prompts
-
-**State is saved to disk ONLY on:**
-- Game over (`---GAME_OVER---` detected)
-- User explicitly says "save" or runs `/kleene save`
-- Session ends (offer to save)
-
-This optimization avoids per-turn file writes and permission prompts.
+4. Load selected save and resume gameplay
 
 ### Generate Actions
 Keywords: "generate", "create", "make", "new scenario", "new quest", "about"
@@ -229,11 +211,6 @@ Ask for a filename, then save to: `${CLAUDE_PLUGIN_ROOT}/scenarios/[name].yaml`
 
 This makes the scenario available in the Play menu for all future sessions.
 
-**Expand Current**:
-- Load existing scenario from `${CLAUDE_PLUGIN_ROOT}/scenarios/`
-- Use `kleene-generate` to add branches
-- Save back to same location
-
 ### Analyze Actions
 Keywords: "analyze", "check", "validate", "coverage", "structure", "paths"
 
@@ -241,6 +218,83 @@ Keywords: "analyze", "check", "validate", "coverage", "structure", "paths"
 - Load scenario from current directory or bundled scenarios
 - Use `kleene-analyze` skill
 - Display comprehensive report
+
+### Registry Actions
+Keywords: "sync", "registry", "enable", "disable", "list scenarios"
+
+**Sync Registry** (`/kleene sync`):
+1. Read existing `${CLAUDE_PLUGIN_ROOT}/scenarios/registry.yaml` (or create empty structure if missing)
+2. Glob all `.yaml` files in `scenarios/` (excluding `registry.yaml`)
+3. For each scenario file found:
+   - If already in registry and file exists: validate metadata is current
+   - If in registry but file missing: set `missing: true`
+   - If not in registry: extract metadata, add with `tags: ["discovered"]`
+4. Extract metadata using priority order:
+   - Name: `name` → `title` → `metadata.title` → filename
+   - Description: `description` → `metadata.description` → "No description"
+5. Update `last_synced` timestamp to current ISO datetime
+6. Write updated `registry.yaml`
+7. Report changes:
+```
+Registry synced:
+  Added: 2 scenarios
+  Removed: 1 missing entry
+  Updated: 0 scenarios
+```
+
+**Registry Status** (`/kleene registry`):
+Display summary of registry state:
+```
+Kleene Scenario Registry
+Last synced: 2026-01-12 14:30
+
+Registered scenarios: 4
+  - The Dragon's Choice (dragon_quest) [enabled]
+  - The Velvet Chamber (altered_state_nightclub) [enabled]
+  - Corporate Banking (corporate_banking) [disabled]
+  - Old Scenario (old_scenario) [missing]
+
+Unregistered files: 1
+  - new_scenario.yaml
+```
+
+**Enable Scenario** (`/kleene enable [scenario]`):
+1. Load registry
+2. Find scenario by ID or name (fuzzy match)
+3. Set `enabled: true`
+4. Write registry
+5. Confirm: "Enabled 'The Dragon's Choice'"
+
+**Disable Scenario** (`/kleene disable [scenario]`):
+1. Load registry
+2. Find scenario by ID or name (fuzzy match)
+3. Set `enabled: false`
+4. Write registry
+5. Confirm: "Disabled 'Corporate Banking' - will not appear in play menu"
+
+### Temperature Actions
+Keywords: "temperature", "temp", "improv", "adaptation"
+
+**Set Temperature** (`/kleene temperature [0-10]`):
+1. Parse temperature value (0-10)
+2. Update `settings.improvisation_temperature` in current game state
+3. Confirm: "Improvisation temperature set to [N]"
+
+If no value provided, show current setting and explain scale:
+```
+Current improvisation temperature: 0 (Verbatim)
+
+Scale:
+  0     Verbatim    - Scenario text exactly as written (default)
+  1-3   Subtle      - Faint echoes of discoveries
+  4-6   Balanced    - Direct references woven in
+  7-9   Immersive   - Rich integration + bonus options
+  10    Adaptive    - Narrative shaped by exploration
+
+Use: /kleene temperature [0-10]
+```
+
+**Note:** Temperature only applies during active gameplay. The setting is saved with game state and persists across sessions.
 
 ### Help Actions
 Keywords: "help", "how", "what", "?"
@@ -253,9 +307,13 @@ KLEENE - Three-Valued Narrative Engine
 ═══════════════════════════════════════════════════════════
 
 PLAY
-  /kleene play                    Start or continue a game
-  /kleene play dragon_quest       Play specific scenario
-  /kleene continue                Resume saved game
+  /kleene play                    Start a new game (shows scenario menu)
+  /kleene play dragon_quest       New game of specific scenario
+
+SAVES
+  /kleene continue [scenario]     List and load saves for scenario
+  /kleene list saves [scenario]   Show all saves for a scenario
+  /kleene save                    Save current game to disk
 
 GENERATE
   /kleene generate [theme]        Create new scenario
@@ -266,91 +324,39 @@ ANALYZE
   /kleene analyze                 Check current scenario
   /kleene analyze dragon_quest    Analyze specific scenario
 
-Game state is kept in memory during play. Save on game over
-or with /kleene save.
+REGISTRY
+  /kleene sync                    Sync registry with scenarios folder
+  /kleene registry                Show registry status
+  /kleene enable [scenario]       Enable a disabled scenario
+  /kleene disable [scenario]      Hide scenario from play menu
+
+SETTINGS
+  /kleene temperature             Show current improvisation temperature
+  /kleene temperature [0-10]      Set adaptation level (0=verbatim, 10=fully adaptive)
+
+Saves: ./saves/[scenario]/[timestamp].yaml
+Registry: scenarios/registry.yaml
 
 ═══════════════════════════════════════════════════════════
 ```
 
-## Game Folder Convention
+## Persistence
 
-The current working directory is the "game folder". Files used:
+> **Reference:** See `lib/framework/saves.md` for game folder conventions, save format, and persistence rules.
 
-| File | Purpose |
-|------|---------|
-| `game_state.yaml` | Saved game state (written on game over or explicit save) |
-| `scenario.yaml` | Custom scenario (optional) |
-
-If no local `scenario.yaml` exists, use bundled scenarios from:
-`${CLAUDE_PLUGIN_ROOT}/scenarios/`
-
-## Workflow Examples
-
-### Example 1: Start New Game
-```
-User: /kleene play
-
-1. Check for scenario.yaml → not found
-2. List available scenarios from plugin
-3. Ask user which to play
-4. Launch agent with SCENARIO path
-5. Parse response, track state in context
-6. Display narrative, present choices
-7. Loop until game over
-```
-
-### Example 2: Continue Game
-```
-User: /kleene continue
-
-1. Load game_state.yaml from game folder
-2. Load referenced scenario
-3. Launch agent with state
-4. Continue game loop
-```
-
-### Example 3: Generate Scenario
-```
-User: /kleene generate a cyberpunk heist
-
-1. Extract theme: "cyberpunk heist"
-2. Use kleene-generate skill
-3. Ask clarifying questions
-4. Generate complete scenario
-5. Save as scenario.yaml
-6. Offer to play immediately
-```
-
-### Example 4: Analyze Scenario
-```
-User: /kleene analyze
-
-1. Load scenario.yaml (or bundled scenario)
-2. Use kleene-analyze skill
-3. Build graph and analyze
-4. Display quadrant coverage
-5. Show structural issues
-6. Provide recommendations
-```
+Saves are stored at `./saves/[scenario]/[timestamp].yaml` in the game folder.
+Bundled scenarios loaded from: `${CLAUDE_PLUGIN_ROOT}/scenarios/`
 
 ## Error Handling
 
-**No game state found**:
-"No saved game found. Would you like to start a new game?"
+**No saves found for scenario**:
+"No saved games found for [scenario]. Starting new game."
 
 **Invalid scenario**:
 "Could not load scenario. Validation errors: [list errors]"
 
+**Large scenario (token limit)**:
+Automatically switch to lazy loading mode. No error shown to user - this is transparent.
+
 **Unknown action**:
 "I didn't understand that action. Try '/kleene help' for available commands."
-
-## State Persistence
-
-**During gameplay**: State flows through agent context - no file writes.
-
-**Save points** (when game_state.yaml is written):
-1. Game ends (victory/death/etc)
-2. User requests save (`/kleene save`)
-3. Session ends (offer to save)
-
-This eliminates permission prompts during normal gameplay while preserving the ability to resume across sessions.

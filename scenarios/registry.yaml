@@ -1,0 +1,47 @@
+# Kleene Scenario Registry
+# Maintains metadata for all available scenarios
+# Run /kleene sync to update after adding/removing scenario files
+
+version: 1
+last_synced: 2026-01-13T00:08:00Z
+
+scenarios:
+  dragon_quest:
+    name: "The Dragon's Choice"
+    description: "A hero must decide how to face the dragon threatening their village."
+    path: dragon_quest.yaml
+    enabled: true
+    tags: ["fantasy", "bundled"]
+    difficulty: "beginner"
+    estimated_playtime: "15-20"
+    content_warnings: []
+
+  altered_state_nightclub:
+    name: "Altered State Nightclub"
+    description: "An underground nightclub where everyone is visibly altered, but no one will say what they're on. Reality bends."
+    path: altered_state_nightclub.yaml
+    enabled: true
+    tags: ["mystery", "surreal", "bundled"]
+    difficulty: "intermediate"
+    estimated_playtime: "20-40"
+    content_warnings: ["surreal themes", "substance references"]
+
+  corporate_banking:
+    name: "The Rise and Fall: A Banking Career"
+    description: "Navigate the treacherous waters of corporate banking from junior analyst to your ultimate destiny."
+    path: corporate_banking.yaml
+    enabled: true
+    tags: ["drama", "career", "bundled"]
+    difficulty: "intermediate"
+    estimated_playtime: "25-35"
+    content_warnings: []
+
+  the_yabba:
+    name: "The Yabba"
+    description: "A schoolteacher stranded in an outback mining town descends into a nightmare of hospitality, gambling, and self-destruction."
+    path: the_yabba.yaml
+    enabled: true
+    tags: ["psychological", "thriller", "bundled"]
+    difficulty: "advanced"
+    estimated_playtime: "30-60"
+    content_warnings: ["psychological themes", "substance use", "moral ambiguity", "violence"]

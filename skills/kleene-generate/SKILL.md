@@ -1,12 +1,12 @@
 ---
 name: kleene-generate
-description: This skill should be used when the user asks to "generate a scenario", "create a new quest", "make me a game about...", "expand the story", "generate a new path", or when the player ventures beyond known scenario boundaries during gameplay. Generates narratively complete scenarios using Option type semantics.
-version: 0.1.0
+description: This skill should be used when the user asks to "generate a scenario", "create a new quest", "make me a game about...", "expand the story", "generate a new path", or when the player ventures beyond known scenario boundaries during gameplay. Generates narratively complete scenarios using Option type semantics and the Nine Cells framework.
+version: 0.2.0
 ---
 
 # Kleene Generate Skill
 
-Generate new scenarios or expand existing ones using LLM capabilities while maintaining Option type semantics and narrative completeness.
+Generate new scenarios or expand existing ones using LLM capabilities while maintaining Option type semantics and narrative completeness according to the Nine Cells framework.
 
 ## Generation Modes
 
@@ -26,10 +26,10 @@ Generate new nodes when player ventures beyond known paths.
 
 ### Mode 3: Branch Expansion
 
-Add new branches to an existing scenario to improve quadrant coverage.
+Add new branches to an existing scenario to improve grid coverage and raise tier level.
 
-**Input**: Existing scenario, analysis showing missing quadrants
-**Output**: New nodes that fill narrative gaps
+**Input**: Existing scenario, analysis showing missing cells
+**Output**: New nodes that fill narrative gaps and advance tier
 
 ## Full Scenario Generation
 
@@ -52,13 +52,13 @@ Use `AskUserQuestion` to gather key decisions. Group related choices in a single
       ]
     },
     {
-      "question": "How complex should the narrative be?",
-      "header": "Complexity",
+      "question": "What completeness tier should we target?",
+      "header": "Tier",
       "multiSelect": false,
       "options": [
-        {"label": "Simple (Recommended)", "description": "5-10 nodes, clear path to endings"},
-        {"label": "Medium", "description": "15-20 nodes, multiple branching paths"},
-        {"label": "Complex", "description": "25+ nodes, interconnected story threads"}
+        {"label": "Bronze (Recommended)", "description": "4 corner cells - focused, clear narrative"},
+        {"label": "Silver", "description": "6+ cells - adds uncertainty and exploration"},
+        {"label": "Gold", "description": "All 9 cells - full chaos, improv-friendly"}
       ]
     }
   ]
@@ -93,20 +93,35 @@ For protagonist archetype, use a separate call (progressive disclosure):
 
 ### Step 2: Design the Narrative Skeleton
 
-Create the core structure ensuring all quadrants:
+Create the core structure based on target tier:
 
+**Bronze (4 corners):**
 ```
 START
-  ├── Path A (action path)
-  │   ├── A1: Player chooses, world permits → Victory
-  │   └── A2: Player chooses, world blocks → Blocked/Death
-  ├── Path B (knowledge path)
-  │   ├── B1: Alternative victory → Transcendence
-  │   └── B2: Partial success → Different outcome
-  └── Path C (avoidance path)
-      ├── C1: Player avoids, world permits → Escape/Unchanged
-      └── C2: Player avoids, world blocks → Forced consequence
+  ├── Path A (decisive action)
+  │   ├── A1: Triumph (Chooses + Permits) → Victory
+  │   └── A2: Barrier (Chooses + Blocks) → Blocked/Death
+  └── Path B (avoidance)
+      ├── B1: Escape (Avoids + Permits) → Unchanged
+      └── B2: Fate (Avoids + Blocks) → Forced consequence
 ```
+
+**Silver (Bronze + middle cells):**
+```
+START
+  ├── Path A (decisive action)
+  │   ├── A1: Triumph → Victory
+  │   ├── A2: Commitment (Chooses + Indeterminate) → Pending outcome
+  │   └── A3: Barrier → Blocked
+  ├── Path B (exploration/hesitation)
+  │   └── B1: Discovery (Unknown + Permits) → Insight gained
+  └── Path C (avoidance)
+      ├── C1: Escape → Unchanged
+      └── C2: Deferral (Avoids + Indeterminate) → Tension building
+```
+
+**Gold (all 9 cells):**
+Include explicit nodes for all cells. The "Unknown" row (Discovery, Limbo, Revelation) can be reached through exploration options or improvised play.
 
 ### Step 3: Define Key Elements
 
@@ -146,77 +161,113 @@ For each node, ensure:
 4. **Consequences**: State changes that matter
 5. **Connections**: Clear paths to other nodes
 
-### Step 5: Ensure Quadrant Coverage
+### Step 5: Ensure Grid Coverage
 
-Verify the scenario has paths to:
-- [ ] Player chooses + world permits (victory)
-- [ ] Player chooses + world blocks (blocked path)
-- [ ] Player avoids + world permits (escape)
-- [ ] Player avoids + world blocks (forced consequence)
-- [ ] NONE_DEATH (mortality)
-- [ ] SOME_TRANSFORMED (growth)
+Verify scenario coverage based on target tier:
+
+**Bronze (Required):**
+- [ ] Triumph (Chooses + Permits) - victory/transformation
+- [ ] Barrier (Chooses + Blocks) - blocked path
+- [ ] Escape (Avoids + Permits) - unchanged/survival
+- [ ] Fate (Avoids + Blocks) - forced consequence
+- [ ] At least one NONE_DEATH path (mortality)
+- [ ] At least one SOME_TRANSFORMED path (growth)
+
+**Silver (Bronze + 2 of these):**
+- [ ] Commitment (Chooses + Indeterminate) - action with pending outcome
+- [ ] Discovery (Unknown + Permits) - exploration rewarded
+- [ ] Revelation (Unknown + Blocks) - hesitation reveals constraint
+- [ ] Deferral (Avoids + Indeterminate) - avoidance postpones consequence
+- [ ] Limbo (Unknown + Indeterminate) - typically via improvisation
+
+**Gold:** All nine cells represented
 
 ### Step 6: Write YAML
 
 Output complete scenario in proper format.
 
+### Step 7: Register Generated Scenario
+
+After writing the scenario file to `${CLAUDE_PLUGIN_ROOT}/scenarios/[filename].yaml`:
+
+1. **Read the saved file** to extract canonical metadata:
+   - `name` field (or `title`, or `metadata.title`)
+   - `description` field (or `metadata.description`)
+
+2. **Derive scenario ID** from filename (e.g., `haunted_mansion` from `haunted_mansion.yaml`)
+
+3. **Load existing registry**:
+   - Read `${CLAUDE_PLUGIN_ROOT}/scenarios/registry.yaml`
+   - If registry doesn't exist, create empty structure:
+     ```yaml
+     version: 1
+     last_synced: null
+     scenarios: {}
+     ```
+
+4. **Add new entry** to registry:
+   ```yaml
+   haunted_mansion:
+     name: "The Haunted Mansion"
+     description: "Explore a decrepit estate filled with mystery and horror"
+     path: haunted_mansion.yaml
+     enabled: true
+     tags: ["generated", "user-created"]
+   ```
+
+5. **Write updated registry** back to disk
+
+6. **Confirm** to user: "Scenario saved and registered as 'The Haunted Mansion'"
+
+This ensures generated scenarios immediately appear in `/kleene play` menus without requiring manual `/kleene sync`.
+
 ## Emergent Node Generation
 
-When player attempts an unscripted action during play:
+> **Note**: Mode 2 is now handled **inline by kleene-play** via its "Improvised Action Handling" section. This documentation provides reference guidance for that implementation.
 
-### Context Gathering
+When a player provides free-text input via "Other", kleene-play generates a narrative response inline rather than calling this skill separately. The approach is **flavor text + soft consequences** - the game acknowledges the player's action creatively without creating permanent new nodes.
 
-Collect from game state:
-- Current location and description
+### How It Works (in kleene-play)
+
+1. Player selects "Other" and types custom action
+2. kleene-play classifies intent (Explore/Interact/Act/Meta)
+3. Checks feasibility against current state
+4. Generates narrative response matching scenario tone
+5. Applies soft consequences only (trait ±1, history, improv_* flags)
+6. Returns to current node's predefined options
+
+See: `kleene-play` skill → "Improvised Action Handling" section
+
+### Context for Response Generation
+
+When generating improvised responses, consider:
+- Current location and its description
 - Character traits, inventory, flags
 - World flags and time
 - Recent history (last 3-5 entries)
-- The attempted action
+- What the player is attempting
 
 ### Generation Constraints
 
-The generated node must:
+Improvised responses must:
 
 1. **Respect State**: Only reference items/flags that exist
-2. **Be Reachable**: Player can actually get here from current state
-3. **Have Consequences**: Meaningful state changes
-4. **Connect Forward**: Lead to existing nodes or valid endings
-5. **Maintain Tone**: Match the scenario's established voice
+2. **Stay Local**: Don't advance the story, enrich the current moment
+3. **Soft Consequences Only**: trait ±1, add_history, improv_* flags
+4. **Maintain Tone**: Match the scenario's established voice
+5. **Return to Options**: After response, show current node's choices again
 
-### Generation Template
+### What's NOT Allowed in Improvisation
 
-```yaml
-generated_node_id:
-  narrative: |
-    [Describe the situation based on player's action]
-    [React to their choice with the world's response]
-    [Set up the next decision point]
-  choice:
-    prompt: "[Contextual prompt]"
-    options:
-      - id: continue_path
-        text: "[Option that advances the story]"
-        consequence:
-          - [Meaningful state change]
-        narrative: "[Brief result]"
-        next_node: [existing_node OR new_generated_node OR ending]
-
-      - id: retreat_option
-        text: "[Option to return to known territory]"
-        narrative: "[Result of retreating]"
-        next_node: [existing_node]
-```
-
-### Integration
-
-After generating:
-1. Add node to scenario's `nodes` section
-2. Update any referring nodes if needed
-3. Continue play from new node
+- Creating permanent new scenario nodes
+- Gaining/losing scenario items
+- Changing location
+- Killing or transcending the character
+- Bypassing major story gates
 
 ## Branch Expansion
 
-Given an analysis showing missing quadrants:
+Given an analysis showing missing cells or tier gaps:
 
 ### For Missing "Player Avoids" Paths
 
@@ -265,6 +316,52 @@ Add paths that transform rather than defeat:
   next_node: ending_transcendence
 ```
 
+### For Silver Tier: Middle Cells
+
+**Commitment (Chooses + Indeterminate)** - Action with pending outcome:
+```yaml
+- id: drink_potion
+  text: "Drink the mysterious liquid"
+  consequence:
+    - type: set_flag
+      flag: potion_consumed
+      value: true
+    - type: add_history
+      entry: "Drank the potion. Effects unknown..."
+  # Note: no immediate ending - outcome resolves later
+  next_node: await_potion_effects
+```
+
+**Discovery (Unknown + Permits)** - Exploration rewarded:
+```yaml
+- id: examine_surroundings
+  text: "Examine the chamber more closely"
+  # No preconditions - exploration always permitted
+  consequence:
+    - type: modify_trait
+      trait: wisdom
+      delta: 1
+    - type: set_flag
+      flag: noticed_secret_passage
+      value: true
+  next_node: same_node  # Stay here with new knowledge
+```
+
+**Deferral (Avoids + Indeterminate)** - Building tension:
+```yaml
+- id: hide_and_wait
+  text: "Find a hiding spot and wait it out"
+  consequence:
+    - type: set_flag
+      flag: tension_building
+      value: true
+    - type: advance_time
+      hours: 2
+    - type: add_history
+      entry: "Hid while danger passed... or did it?"
+  next_node: aftermath_unknown  # Could go either way
+```
+
 ## Quality Guidelines
 
 ### Narrative Voice
@@ -297,7 +394,7 @@ Add paths that transform rather than defeat:
 ## Additional Resources
 
 ### Reference Files
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics and Nine Cells
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification
 
 ### Example Scenarios

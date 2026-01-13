@@ -1,17 +1,17 @@
 ---
 name: kleene-analyze
-description: This skill should be used when the user asks to "analyze a scenario", "check narrative completeness", "find missing paths", "validate my scenario", "show quadrant coverage", or wants to understand the structure of a Kleene scenario. Performs graph analysis and quadrant coverage checking.
-version: 0.1.0
+description: This skill should be used when the user asks to "analyze a scenario", "check narrative completeness", "find missing paths", "validate my scenario", "show grid coverage", or wants to understand the structure of a Kleene scenario. Performs graph analysis and nine-cell grid coverage checking.
+version: 0.2.0
 ---
 
 # Kleene Analyze Skill
 
-Analyze scenario structure for narrative completeness, detecting missing quadrants, unreachable nodes, dead ends, and structural issues.
+Analyze scenario structure for narrative completeness, detecting missing cells in the 3x3 grid, unreachable nodes, dead ends, and structural issues.
 
 ## Analysis Types
 
-### 1. Quadrant Coverage Analysis
-Check if all four narrative quadrants are represented.
+### 1. Grid Coverage Analysis
+Check coverage of the nine narrative cells and determine completeness tier (Bronze/Silver/Gold).
 
 ### 2. Null Case Analysis
 Verify death, departure, and blocked paths exist.
@@ -61,17 +61,61 @@ Path 2: intro → forest_entrance → shrine_discovery → scroll_taken → ...
 
 Track path length and required preconditions.
 
-### Step 5: Classify Paths into Quadrants
+### Step 5: Classify Paths into Cells
 
-For each path, determine quadrant based on:
+For each path, determine cell in the 3x3 grid based on two axes:
 
-**Player Chooses vs Avoids**:
-- Chooses: Takes action toward goal (fight, speak, help)
-- Avoids: Retreats, refuses, flees
+**Player Axis (Chooses / Unknown / Avoids)**:
+- **Chooses**: Takes decisive action toward goal (fight, speak, help, take)
+- **Unknown**: Hesitates, explores, or improvises ("Other" selection, `improv_*` flags)
+- **Avoids**: Retreats, refuses, flees, ignores
 
-**World Permits vs Blocks**:
-- Permits: Path available, no blocking preconditions failed
-- Blocks: Precondition prevents progress
+**World Axis (Permits / Indeterminate / Blocks)**:
+- **Permits**: Path available, action succeeds, preconditions met
+- **Indeterminate**: Outcome pending, no ending reached, multiple continuations
+- **Blocks**: Precondition prevents progress, action fails
+
+**The Nine Cells**:
+|                    | World Permits | World Indeterminate | World Blocks |
+|--------------------|---------------|---------------------|--------------|
+| **Player Chooses** | Triumph       | Commitment          | Barrier      |
+| **Player Unknown** | Discovery     | Limbo               | Revelation   |
+| **Player Avoids**  | Escape        | Deferral            | Fate         |
+
+**Classification Signals**:
+- Triumph: Active option + success ending
+- Commitment: Active option + pending state/no ending
+- Barrier: Active option + precondition failure
+- Discovery: (scripted) option with `cell: unknown` + `outcome_nodes.discovery`
+- Discovery: (emergent) improv_* flag + positive outcome
+- Limbo: (scripted) option with `cell: unknown` + no outcome_nodes.limbo
+- Limbo: (emergent) improv_* flag + no state change
+- Revelation: (scripted) option with `cell: unknown` + `outcome_nodes.revelation`
+- Revelation: (emergent) improv_* flag + blocked by precondition
+- Escape: Retreat option + survival ending
+- Deferral: Retreat option + pending state
+- Fate: Retreat option + forced negative outcome
+
+**Detecting Scripted Unknown Options**:
+
+Scan all options for `next: improvise` attribute:
+
+```yaml
+options:
+  - id: observe_dragon
+    text: "Wait and observe"
+    cell: unknown           # ← Indicates Unknown row
+    next: improvise         # ← Triggers scripted improvisation
+    outcome_nodes:
+      discovery: node_id    # ← Scripted Discovery path
+      revelation: node_id   # ← Scripted Revelation path
+      # limbo: omitted      # ← Stays at node (default Limbo)
+```
+
+For each such option:
+- If `outcome_nodes.discovery` exists → count as scripted Discovery
+- If `outcome_nodes.revelation` exists → count as scripted Revelation
+- `outcome_nodes.limbo` is optional; Limbo is always possible as fallback
 
 ### Step 6: Classify Endings
 
@@ -99,21 +143,50 @@ KLEENE SCENARIO ANALYSIS
 Scenario: The Dragon's Choice
 ═══════════════════════════════════════════════════════════
 
-QUADRANT COVERAGE
+GRID COVERAGE
+─────────────
+             │ Permits     │ Indeterminate │ Blocks      │
+─────────────┼─────────────┼───────────────┼─────────────┤
+Chooses      │ ✓ Triumph   │ ✗ Commitment  │ ✓ Barrier   │
+             │   3 paths   │   0 paths     │   2 paths   │
+─────────────┼─────────────┼───────────────┼─────────────┤
+Unknown      │ ✓ Discovery │ ○ Limbo       │ ✓ Revelation│
+             │   1 scripted│   (fallback)  │   1 scripted│
+─────────────┼─────────────┼───────────────┼─────────────┤
+Avoids       │ ✓ Escape    │ ✗ Deferral    │ ✓ Fate      │
+             │   1 path    │   0 paths     │   1 path    │
+─────────────┴─────────────┴───────────────┴─────────────┘
+
+Legend: ✓ = scripted paths, ○ = via improvisation/fallback, ✗ = missing
+
+UNKNOWN ROW DETAILS
+───────────────────
+Scripted Unknown options found: 2
+  - intro/ask_elder → Discovery: elder_lore, Revelation: elder_silence
+  - mountain_approach/observe_dragon → Discovery: dragon_notices_patience, Revelation: dragon_dismisses_coward
+Limbo: Always available as fallback when no pattern matches
+
+COMPLETENESS TIER
 ─────────────────
-✓ Player chooses, world permits: 3 paths
+Bronze corners: 3/4 (Triumph ✓, Barrier ✓, Escape ✓, Fate ✗)
+Silver middle:  0/5 (no middle cells scripted)
+Tier achieved:  BRONZE (INCOMPLETE - missing Fate)
+
+PATH DETAILS
+────────────
+✓ Triumph (3 paths):
   - intro → sword_taken → mountain_approach → dragon_fight → ending_victory
   - intro → forest_entrance → shrine → dragon_dialogue → ending_transcendence
   - ...
 
-✓ Player chooses, world blocks: 2 paths
+✓ Barrier (2 paths):
   - mountain_approach → dragon_fight (blocked: missing sword)
   - mountain_approach → dragon_dialogue (blocked: missing dragon_tongue)
 
-✓ Player avoids, world permits: 1 path
+✓ Escape (1 path):
   - intro → mountain_approach → attempt_flee → ending_fled
 
-✗ Player avoids, world blocks: 0 paths
+✗ Fate (0 paths):
   MISSING: No forced consequence when player tries to avoid
 
 NULL CASES
@@ -136,19 +209,14 @@ STRUCTURAL ISSUES
 ! Railroad detected: intro → sword_taken → mountain_approach (3 nodes, 1 path)
 ✓ No illusory choices
 
-COMPLETENESS SCORE
-──────────────────
-Quadrants: 3/4 (75%)
-Null Cases: 2/3 (67%)
-Overall: MOSTLY COMPLETE
-
 RECOMMENDATIONS
 ───────────────
-1. Add a "Player avoids, world blocks" path:
+1. Add "Fate" path (required for Bronze):
    - Suggestion: When fleeing, dragon pursues and forces confrontation
 
-2. Add blocked ending paths:
-   - Suggestion: Option that requires impossible precondition
+2. For Silver tier, add 2+ middle cells:
+   - Commitment: Action with pending outcome (drink potion, send messenger)
+   - Deferral: Avoidance that builds tension (hide, postpone)
 
 ═══════════════════════════════════════════════════════════
 ```
@@ -239,11 +307,11 @@ When no specific analysis is requested, use `AskUserQuestion` to let the user ch
       "options": [
         {
           "label": "Full analysis (Recommended)",
-          "description": "Complete coverage, structure, and path analysis"
+          "description": "Complete grid coverage, structure, and path analysis"
         },
         {
-          "label": "Quadrant coverage",
-          "description": "Check all four narrative quadrants are represented"
+          "label": "Grid coverage",
+          "description": "Check all nine narrative cells and determine tier"
         },
         {
           "label": "Structural issues",
@@ -272,8 +340,11 @@ These keywords trigger specific analysis types without the menu:
 **Full analysis**:
 "Analyze this scenario for narrative completeness"
 
-**Quadrant check only**:
-"Check quadrant coverage for this scenario"
+**Grid check only**:
+"Check grid coverage for this scenario"
+
+**Tier check**:
+"What tier is this scenario?"
 
 **Find issues**:
 "Find structural problems in this scenario"
@@ -287,5 +358,5 @@ These keywords trigger specific analysis types without the menu:
 ## Additional Resources
 
 ### Reference Files
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Quadrant definitions
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Nine Cells and tier definitions
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML format

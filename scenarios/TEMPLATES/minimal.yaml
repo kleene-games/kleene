@@ -1,0 +1,37 @@
+# Minimal Kleene Scenario Template
+# The absolute minimum required for a working scenario
+# Use this for quick prototyping and learning
+
+name: "Minimal Template"
+description: "A minimal working scenario with one choice and one ending"
+
+initial_character:
+  name: "Hero"
+  traits:
+    courage: 5
+  inventory: []
+
+initial_world:
+  current_location: "start"
+
+start_node: intro
+
+nodes:
+  intro:
+    narrative: |
+      You stand at the beginning of your adventure.
+      A path stretches before you into the unknown.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_forward
+          text: "Walk forward confidently"
+          next_node: ending_brave
+
+endings:
+  ending_brave:
+    narrative: |
+      You walked the path and found your destiny!
+
+      Your courage carried you through.
+    type: victory
