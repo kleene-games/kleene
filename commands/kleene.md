@@ -312,40 +312,12 @@ Registry: scenarios/registry.yaml
 ═══════════════════════════════════════════════════════════
 ```
 
-## Game Folder Convention
+## Persistence
 
-The current working directory is the "game folder". Saves are organized by scenario:
+> **Reference:** See `lib/framework/saves.md` for game folder conventions, save format, and persistence rules.
 
-```
-./saves/
-├── dragon_quest/
-│   ├── 2026-01-12_14-30-22.yaml
-│   └── 2026-01-10_09-15-00.yaml
-├── altered_state_nightclub/
-│   └── 2026-01-11_22-45-33.yaml
-└── corporate_banking/
-    └── 2026-01-09_18-00-00.yaml
-```
-
-| Path | Purpose |
-|------|---------|
-| `./saves/` | Root save directory |
-| `./saves/[scenario]/` | Saves for specific scenario |
-| `./saves/[scenario]/YYYY-MM-DD_HH-MM-SS.yaml` | Individual save file |
-
+Saves are stored at `./saves/[scenario]/[timestamp].yaml` in the game folder.
 Bundled scenarios loaded from: `${CLAUDE_PLUGIN_ROOT}/scenarios/`
-
-## State Architecture
-
-**During gameplay**: State lives in conversation context. No file I/O between turns.
-
-**Save points** (when save file is written):
-1. Game starts (initial save created)
-2. Game ends (victory/death/transcendence)
-3. User requests save (`/kleene save`)
-4. Session ends (offer to save)
-
-Each gameplay session creates a new timestamped save file. Subsequent saves in the same session update that file.
 
 ## Error Handling
 

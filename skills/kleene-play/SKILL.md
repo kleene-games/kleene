@@ -220,489 +220,70 @@ TURN:
 
 ### Phase 3: Persistence
 
-**Save state to disk ONLY when:**
-- Game ends (victory, death, transcendence, etc.)
+> **Reference:** See `lib/framework/saves.md` for save format, file creation, and operations.
+
+Save to disk when:
+- Game ends (victory, death, transcendence)
 - User explicitly requests save
 - Session is ending
 
-Write to `./saves/[scenario_name]/[session_timestamp].yaml`:
-```yaml
-# Save metadata
-save_version: 2
-scenario: [scenario_name]
-session_started: "[ISO timestamp from game start]"
-last_saved: "[current ISO timestamp]"
+The PreToolUse hook auto-approves saves/ writes for seamless gameplay.
 
-# Game state
-current_node: [node_id]
-turn: [turn_number]
-character:
-  exists: [boolean]
-  traits: {...}
-  inventory: [...]
-  flags: {...}
-world:
-  current_location: [location]
-  time: [time]
-  flags: {...}
-```
+## Precondition & Consequence Evaluation
 
-The `session_timestamp` in the filename is set once at game start (Phase 1) and reused for all saves in that session.
+> **Schema Reference:** See `lib/framework/scenario-format.md` for all types and YAML syntax.
 
-### Save File Creation
-
-**For NEW save files** (file doesn't exist yet):
-Use Bash with heredoc - the hook auto-approves saves/ writes:
-```bash
-mkdir -p ./saves/[scenario_name]
-cat > ./saves/[scenario_name]/[timestamp].yaml << 'EOF'
-[yaml content]
-EOF
-```
-
-**For UPDATING existing saves** (file already exists):
-Use Edit tool after reading the file first.
-
-The PreToolUse hook in this skill auto-approves both Write and Bash operations targeting the saves/ directory, ensuring seamless gameplay without permission prompts.
-
-## Save Management
-
-### Save Directory Structure
-
-```
-./saves/
-├── dragon_quest/
-│   ├── 2026-01-12_14-30-22.yaml
-│   └── 2026-01-10_09-15-00.yaml
-├── altered_state_nightclub/
-│   └── 2026-01-11_22-45-33.yaml
-└── corporate_banking/
-    └── 2026-01-09_18-00-00.yaml
-```
-
-### Listing Saves
-
-When user requests to see saves for a scenario:
-
-1. Glob `./saves/[scenario_name]/*.yaml`
-2. Read each file's metadata:
-   - `last_saved` timestamp
-   - `turn` number
-   - `current_node` ID
-3. Sort by `last_saved` (most recent first)
-4. Present as numbered list with summary:
-
-```
-Found 3 saved games for "The Dragon's Choice":
-
-1. Jan 12, 2:30 PM - Turn 12 at mountain_approach
-2. Jan 10, 9:15 AM - Turn 5 at forest_entrance
-3. Jan 8, 7:00 PM - Turn 3 at sword_taken
-
-Which save would you like to load?
-```
-
-### Loading a Save
-
-When user selects a save to load:
-
-1. Read the specified YAML file from `./saves/[scenario_name]/[filename].yaml`
-2. Extract `scenario` field to identify which scenario definition to load
-3. Load scenario definition from `${CLAUDE_PLUGIN_ROOT}/scenarios/[scenario].yaml`
-4. Store the save filename in memory (continue writing to same file)
-5. Resume gameplay from the saved `current_node`
-
-## Precondition Evaluation
+### Precondition Evaluation
 
 Evaluate preconditions against current state:
 
-### has_item
-```yaml
-precondition:
-  type: has_item
-  item: sword
-```
-Check: `"sword" in character.inventory`
+| Type | Check |
+|------|-------|
+| `has_item` | `item in character.inventory` |
+| `missing_item` | `item not in character.inventory` |
+| `trait_minimum` | `character.traits[trait] >= minimum` |
+| `trait_maximum` | `character.traits[trait] <= maximum` |
+| `flag_set` | `character.flags[flag] == true` |
+| `flag_not_set` | `character.flags[flag] != true` |
+| `at_location` | `world.current_location == location` |
+| `relationship_minimum` | `character.relationships[npc] >= minimum` |
+| `all_of` | All nested conditions pass |
+| `any_of` | At least one nested condition passes |
+| `none_of` | No nested conditions pass |
 
-### missing_item
-```yaml
-precondition:
-  type: missing_item
-  item: curse
-```
-Check: `"curse" not in character.inventory`
-
-### trait_minimum
-```yaml
-precondition:
-  type: trait_minimum
-  trait: courage
-  minimum: 7
-```
-Check: `character.traits.courage >= 7`
-
-### trait_maximum
-```yaml
-precondition:
-  type: trait_maximum
-  trait: suspicion
-  maximum: 5
-```
-Check: `character.traits.suspicion <= 5`
-
-### flag_set
-```yaml
-precondition:
-  type: flag_set
-  flag: knows_secret
-```
-Check: `character.flags.knows_secret == true`
-
-### flag_not_set
-```yaml
-precondition:
-  type: flag_not_set
-  flag: betrayed_ally
-```
-Check: `character.flags.betrayed_ally != true`
-
-### at_location
-```yaml
-precondition:
-  type: at_location
-  location: forest
-```
-Check: `world.current_location == "forest"`
-
-### all_of (AND)
-```yaml
-precondition:
-  type: all_of
-  conditions:
-    - type: has_item
-      item: key
-    - type: flag_set
-      flag: door_revealed
-```
-Check: ALL conditions must pass
-
-### any_of (OR)
-```yaml
-precondition:
-  type: any_of
-  conditions:
-    - type: has_item
-      item: key
-    - type: trait_minimum
-      trait: strength
-      minimum: 8
-```
-Check: AT LEAST ONE condition must pass
-
-### none_of (NOT)
-```yaml
-precondition:
-  type: none_of
-  conditions:
-    - type: flag_set
-      flag: alarm_triggered
-```
-Check: NO conditions can pass
-
-## Consequence Application
+### Consequence Application
 
 Apply consequences to modify state in memory:
 
-### gain_item
-```yaml
-- type: gain_item
-  item: ancient_key
-```
-Action: Add "ancient_key" to character.inventory
-
-### lose_item
-```yaml
-- type: lose_item
-  item: torch
-```
-Action: Remove "torch" from character.inventory
-
-### modify_trait
-```yaml
-- type: modify_trait
-  trait: courage
-  delta: 2
-```
-Action: character.traits.courage += 2
-
-### set_trait
-```yaml
-- type: set_trait
-  trait: suspicion
-  value: 10
-```
-Action: character.traits.suspicion = 10
-
-### set_flag
-```yaml
-- type: set_flag
-  flag: shrine_visited
-  value: true
-```
-Action: character.flags.shrine_visited = true (or world.flags if world flag)
-
-### clear_flag
-```yaml
-- type: clear_flag
-  flag: cursed
-```
-Action: character.flags.cursed = false
-
-### move_to
-```yaml
-- type: move_to
-  location: mountain_path
-```
-Action: world.current_location = "mountain_path"
-
-### advance_time
-```yaml
-- type: advance_time
-  delta: 1
-```
-Action: world.time += 1
-
-### character_dies
-```yaml
-- type: character_dies
-  reason: "consumed by dragonfire"
-```
-Action: character.exists = false, add to history
-
-### character_departs
-```yaml
-- type: character_departs
-  reason: "ascended to the stars"
-```
-Action: character.exists = false (transcendence ending)
-
-### add_history
-```yaml
-- type: add_history
-  entry: "Discovered the hidden passage"
-```
-Action: Add to recent_history
+| Type | Action |
+|------|--------|
+| `gain_item` | Add to `character.inventory` |
+| `lose_item` | Remove from `character.inventory` |
+| `modify_trait` | `character.traits[trait] += delta` |
+| `set_trait` | `character.traits[trait] = value` |
+| `set_flag` | `character.flags[flag] = value` |
+| `clear_flag` | `character.flags[flag] = false` |
+| `move_to` | `world.current_location = location` |
+| `advance_time` | `world.time += delta` |
+| `modify_relationship` | `character.relationships[npc] += delta` |
+| `character_dies` | `character.exists = false`, add reason to history |
+| `character_departs` | `character.exists = false` (transcendence) |
+| `add_history` | Append entry to `recent_history` |
 
 ## Improvised Action Handling
 
-When a player selects "Other" and provides free-text input, react creatively rather than blocking. Generate a narrative response that acknowledges their action, then return to the current node's options.
+> **Reference:** See `lib/framework/improvisation.md` for complete handling rules.
 
-### Detection
+When a player selects "Other" and provides free-text input:
 
-After receiving user selection (step 6 in Core Workflow), check if the response matches any predefined option label. If NOT:
-- The user provided free-text via "Other"
-- Execute the Improvisation Handler below
-- Do NOT advance to a new node
+1. Classify intent (Explore/Interact/Act/Meta)
+2. Check feasibility against current state (Possible/Blocked/Impossible)
+3. Generate narrative response matching scenario tone
+4. Apply soft consequences only (trait +/-1, add_history, improv_* flags)
+5. Display response with bold box format (generate creative title)
+6. Present same choices again - do NOT advance node or turn
 
-### Intent Classification
-
-Classify the player's free-text action:
-
-| Intent | Keywords/Patterns | Example |
-|--------|-------------------|---------|
-| **Explore** | examine, look at, inspect, study, check | "I examine the dragon's scales" |
-| **Interact** | talk to, ask, speak with, approach | "I try talking to the shadow in the corner" |
-| **Act** | try to, attempt, I want to, I [verb] | "I try to climb the wall" |
-| **Meta** | save, help, what are my stats, rules | "save my game" |
-
-### Feasibility Check
-
-Given current state, evaluate if the action is:
-
-**Possible**: World permits this action
-- No preconditions block it
-- Makes sense in current location
-- Character has capability (traits, items)
-
-**Blocked**: World resists
-- Missing required item or trait
-- Wrong location
-- Contradicts established world rules
-
-**Impossible**: Breaks scenario logic
-- Tries to interact with non-existent entities
-- Attempts to skip major story beats
-- Would trivialize core challenges
-
-### Response Generation
-
-Generate a narrative response based on intent and feasibility:
-
-#### Explore (Possible)
-Provide atmospheric detail about what they examine. Add richness to the scene.
-```
-You study the dragon's scales more closely. In the flickering light,
-you notice patterns etched into each plate - not natural markings,
-but deliberate inscriptions. Writing, perhaps, in a language older
-than human speech.
-
-[+1 wisdom - Attention to detail]
-```
-
-#### Interact (Possible)
-Brief exchange or observation about the interaction attempt.
-```
-You call out to the shadow. It shifts, acknowledging you, but offers
-no words. A cold presence brushes past your mind - not hostile,
-but distinctly *other*. It seems to be waiting for something.
-
-[+1 intuition]
-```
-
-#### Act (Possible)
-Describe the attempt and its outcome. May succeed partially or reveal new information.
-```
-You attempt to scale the cavern wall. The rock is slick with moisture,
-but you find handholds. Halfway up, you spot something glinting in
-a crevice - a coin, ancient and tarnished. You pocket it before
-descending.
-
-[Gained: tarnished_coin (flavor item)]
-```
-
-#### Blocked Action
-Explain why the action fails. The world resists, but provide narrative context.
-```
-You try to push past the stone door, but it won't budge. The runes
-carved into its surface pulse faintly - whatever seal holds it closed
-requires more than brute force. Perhaps there's another way...
-```
-
-#### Impossible Action
-Gently redirect without breaking immersion.
-```
-The dragon fills the entire passage ahead. There's no path around it,
-no clever route to slip by unnoticed. Whatever happens next, it
-happens here, face to face with the wyrm.
-```
-
-#### Meta Request
-Handle directly, breaking the fourth wall briefly.
-```
-Game saved to game_state.yaml.
----
-[Continuing...]
-```
-
-### Soft Consequences
-
-Improvised actions may apply ONLY these consequence types:
-
-| Allowed | Not Allowed |
-|---------|-------------|
-| `modify_trait` (delta: -1 to +1) | `gain_item` (scenario items) |
-| `add_history` | `lose_item` |
-| `set_flag` (only `improv_*` prefix) | `move_to` |
-| | `character_dies` |
-| | `character_departs` |
-
-**Why these limits?** Improvisation enriches the current moment without derailing scenario balance. Major state changes (items, locations, death) are reserved for scripted paths.
-
-### Soft Flags Convention
-
-Improvised actions can set flags prefixed with `improv_`:
-```
-improv_examined_dragon_scales
-improv_spoke_to_shadow
-improv_attempted_wall_climb
-```
-
-These flags:
-- Track what the player has explored/attempted
-- Enable richer responses to repeated improvisation
-- Should NOT gate major scenario paths
-
-### Tone Matching
-
-Match the scenario's established voice:
-- **Perspective**: Use second person present ("You examine...")
-- **Vocabulary**: Match the scenario (archaic/modern/technical)
-- **Imagery**: Match the scenario's descriptive density
-- **Rhythm**: Match sentence length and pacing
-
-Read the current node's narrative for guidance.
-
-### Improvised Action Presentation
-
-Display improvised action responses with the same bold box format as regular nodes. Generate a creative title based on the player's action:
-
-```
-═══════════════════════════════════════════════════════════
-**[CREATIVE TITLE]**
-Turn [N] | Location: [location]
-═══════════════════════════════════════════════════════════
-
-[Narrative response to player's improvised action]
-
-───────────────────────────────────────────────────────────
-[trait changes, e.g., +1 wisdom - Attention to detail]
-───────────────────────────────────────────────────────────
-```
-
-**Title Generation Guidelines:**
-
-| Player Action | Bad Title | Good Title |
-|--------------|-----------|------------|
-| "Pick up baggie and snort it" | Improvised Action | The Quick Fix |
-| "I examine the bartender's tattoos" | Improvised Action | Ink and Suspicion |
-| "Try talking to the woman with cold skin" | Improvised Action | Cold Conversation |
-| "I climb the wall to look for an exit" | Improvised Action | The Desperate Ascent |
-
-The title should:
-- Be evocative/atmospheric (2-5 words)
-- Reflect what the player is actually doing
-- Match the scenario's tone
-- NOT be generic ("Improvised Action", "Custom Choice", etc.)
-
-### After Improvisation
-
-After generating the response:
-1. Apply any soft consequences
-2. Display the response using the bold box format (see Improvised Action Presentation above)
-3. Present the current node's original options AGAIN
-4. Do NOT advance `current_node` or increment `turn`
-
-The game stays at the same decision point, enriched by the player's exploration.
-
-### Edge Cases
-
-**Player tries to defeat boss via free-text:**
-```
-The dragon is vast - scales like ancient iron. A wild attack without
-preparation would be suicide. The wyrm's eyes track you, waiting to
-see what you'll actually do.
-```
-Then: Show original options.
-
-**Player tries to leave scenario bounds:**
-```
-You consider turning back, but the path behind has collapsed.
-Rocks and debris block any retreat. The only way is forward.
-```
-
-**Player repeats same improvisation:**
-Check `improv_*` flags. If already set:
-```
-You've already examined the scales closely. The inscriptions remain
-as mysterious as before. Perhaps action, not study, is needed now.
-```
-
-**Player action matches a blocked option:**
-If free-text describes an action that has a precondition they don't meet, explain WHY it's blocked:
-```
-You reach for where your sword should hang, but your hand finds only
-air. Without a weapon, challenging the dragon directly would be folly.
-```
+Soft consequences preserve scenario balance while rewarding exploration.
 
 ## Narrative Presentation
 
@@ -790,7 +371,9 @@ Display ending with appropriate tone:
 
 ## Additional Resources
 
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/presentation.md`** - Header, trait, and status line formatting conventions
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics, quadrant theory
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification, preconditions, consequences
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/presentation.md`** - Header, trait, and choice formatting
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/improvisation.md`** - Free-text action handling
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/saves.md`** - Game folder, save format, persistence rules
 - **`${CLAUDE_PLUGIN_ROOT}/scenarios/`** - Bundled scenarios

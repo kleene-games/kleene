@@ -3,7 +3,7 @@
 # Run /kleene sync to update after adding/removing scenario files
 
 version: 1
-last_synced: 2026-01-12T16:45:00Z
+last_synced: 2026-01-13T00:08:00Z
 
 scenarios:
   dragon_quest:
@@ -14,7 +14,7 @@ scenarios:
     tags: ["fantasy", "bundled"]
 
   altered_state_nightclub:
-    name: "The Velvet Chamber"
+    name: "Altered State Nighclub"
     description: "An underground nightclub where everyone is visibly altered, but no one will say what they're on. Reality bends."
     path: altered_state_nightclub.yaml
     enabled: true
@@ -26,3 +26,10 @@ scenarios:
     path: corporate_banking.yaml
     enabled: true
     tags: ["drama", "career", "bundled"]
+
+  the_yabba:
+    name: "The Yabba"
+    description: "A schoolteacher stranded in an outback mining town descends into a nightmare of hospitality, gambling, and self-destruction."
+    path: the_yabba.yaml
+    enabled: true
+    tags: ["discovered", "psychological", "thriller"]

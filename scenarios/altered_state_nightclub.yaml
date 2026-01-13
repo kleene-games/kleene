@@ -1,6 +1,6 @@
 scenario: "nightclub_mystery"
-title: "The Velvet Chamber"
-description: "An underground nightclub where everyone is visibly altered, but no one will say what they're on. Reality bends. Stakes are unclear. Welcome to The Velvet Chamber."
+title: "Altered State"
+description: "An underground nightclub where everyone is visibly altered, but no one will say what they're on. Reality bends. Stakes are unclear. Welcome to Altered State."
 
 initial_character:
   name: "You"
@@ -67,15 +67,15 @@ endings:
 
 nodes:
   entrance:
-    title: "The Velvet Chamber - Main Entrance"
+    title: "Altered State - Main Entrance"
     narrative: |
-      You push through heavy velvet curtains into sensory chaos. The bass hits your chest like a physical force—not unpleasant, just *present*. Strobe lights turn the crowd into a jerky silent film.
+      You push through heavy velvet curtains into sensory chaos. The bass hits your chest like a physical force — not unpleasant, just *present*. Strobe lights turn the crowd into a jerky silent film.
 
       What strikes you immediately isn't the music or the dancing. It's everyone's *pupils*.
 
       They're huge. Dilated to the edges of their irises. Every single person on that dance floor has the eyes of someone who has seen something, taken something, *become* something.
 
-      The air smells like sweat, perfume, and something else—something metallic you can't identify. Your throat feels dry already.
+      The air smells like sweat, perfume, and something else — something metallic you can't identify. Your throat feels dry already.
 
       A bartender with sleeve tattoos that seem to *move* in the strobe light catches your eye and nods. A woman dancing alone has her eyes closed and is smiling at something you can't see. A figure in the corner hasn't moved in at least thirty seconds.
 
@@ -109,7 +109,7 @@ nodes:
   bar_encounter:
     title: "The Bar - Beneath the Lights"
     narrative: |
-      The bartender looks up as you approach. His pupils are absolutely massive—a couple more millimeters and they'd consume his entire eye. His movements are precise, controlled, almost *too* controlled.
+      The bartender looks up as you approach. His pupils are absolutely massive — a couple more millimeters and they'd consume his entire eye. His movements are precise, controlled, almost *too* controlled.
 
       "First time?" he asks, not moving, not blinking.
 
@@ -117,7 +117,7 @@ nodes:
 
       He smiles. It lasts too long. "Everyone's first time is their best time. Drink?"
 
-      You notice his hands are gripping the bar edge with white knuckles. His jaw is clenching rhythmically. When he mixed the last customer's drink, he used only his left hand—his right hung at his side like deadweight.
+      You notice his hands are gripping the bar edge with white knuckles. His jaw is clenching rhythmically. When he mixed the last customer's drink, he used only his left hand — his right hung at his side like deadweight.
 
       "What would you recommend?" you ask.
 
@@ -167,13 +167,13 @@ nodes:
   dancefloor_observation:
     title: "The Dance Floor - Synaptic Rhythms"
     narrative: |
-      You move into the crowd, letting the bass guide your steps. Up close, the pupils are even worse—you can see individual blood vessels in the whites of their eyes.
+      You move into the crowd, letting the bass guide your steps. Up close, the pupils are even worse — you can see individual blood vessels in the whites of their eyes.
 
       A woman bumps into you. Her skin is cold and clammy. She smiles, and you notice her teeth are clenched so hard you can see the muscles in her jaw working. "The rhythm is food," she tells you, gripping your arm. Then she's gone, swallowed by the crowd.
 
-      A man nearby is dancing alone, but his movements follow someone else's—like he's watching an invisible partner. His eyes are tracking something that isn't there. When he spins, he doesn't get dizzy. When he jumps, he seems to hang slightly too long in the air.
+      A man nearby is dancing alone, but his movements follow someone else's — like he's watching an invisible partner. His eyes are tracking something that isn't there. When he spins, he doesn't get dizzy. When he jumps, he seems to hang slightly too long in the air.
 
-      Near the speakers, a trio is moving perfectly in sync—too perfectly. Their movements are identical. Same leg lift, same arm gesture, same head tilt. They're not coordinating. They're *synchronized*.
+      Near the speakers, a trio is moving perfectly in sync — too perfectly. Their movements are identical. Same leg lift, same arm gesture, same head tilt. They're not coordinating. They're *synchronized*.
 
       Your perception feels sharper than it should. You notice details: a bead of sweat reflecting the light in slow motion, the DJ's hand movements preceding the music by a fraction of a second, someone's shoelace that's been glowing faintly in the strobe.
 
@@ -200,7 +200,7 @@ nodes:
               trait: "paranoia_level"
               delta: 1
 
-        - text: "Grab the woman with the cold skin"
+        - text: "Confront the woman with the cold skin"
           description: "Force answers out of someone"
           next_node: "cold_woman_confrontation"
           consequences: []
@@ -216,15 +216,15 @@ nodes:
   corner_figure:
     title: "The Corner - Stillness in Motion"
     narrative: |
-      You weave through the crowd toward the unmoving figure. As you get closer, you realize they're not entirely unmoving—their chest is rising and falling with shallow breaths, and their fingers are moving in complex, intricate patterns. Like they're signing to an invisible audience.
+      You weave through the crowd toward the unmoving figure. As you get closer, you realize they're not entirely unmoving — their chest is rising and falling with shallow breaths, and their fingers are moving in complex, intricate patterns. Like they're signing to an invisible audience.
 
       Up close, you see their eyes. They're not dilated like everyone else's. They're almost normal. Almost. There's something *behind* them. Like someone looking out through a window from very far away.
 
-      "You see?" they say without looking at you. Their voice is layered—like two people are speaking in unison but slightly out of sync.
+      "You see?" they say without looking at you. Their voice is layered — like two people are speaking in unison but slightly out of sync.
 
       "See what?" you ask.
 
-      "That you're asking the wrong questions." They finally turn to you. Their expression doesn't change, but their eyes refocus—a visible shift in depth. "Everyone wants to know *what* they're on. You should want to know *when* they took it."
+      "That you're asking the wrong questions." They finally turn to you. Their expression doesn't change, but their eyes refocus — a visible shift in depth. "Everyone wants to know *what* they're on. You should want to know *when* they took it."
 
       "When?"
 
@@ -278,9 +278,9 @@ nodes:
 
       The lower level is different. No dance floor. No people dancing. Just booths along the walls, and in each booth, a person sitting perfectly still, head back, eyes closed. Seven of them. All in identical positions.
 
-      There's a low hum in the air—not the music from upstairs, but something underneath it. You feel it more than hear it. In your bones.
+      There's a low hum in the air — not the music from upstairs, but something underneath it. You feel it more than hear it. In your bones.
 
-      A man in an attendant's vest is standing by a control panel. His uniform hangs wrong—like it's three sizes too big and shrinking. He has a clipboard.
+      A man in an attendant's vest is standing by a control panel. His uniform hangs wrong — like it's three sizes too big and shrinking. He has a clipboard.
 
       "Name?" he asks without looking at you.
 
@@ -343,7 +343,7 @@ nodes:
 
       Then you notice something: nobody actually *consumes* their drinks very quickly. They hold them. They swirl them. They occasionally put them to their lips. But the levels don't go down.
 
-      Except for one guy. He's drained his in thirty seconds flat and is already ordering another. His eyes are the size of saucers and still growing. He's vibrating slightly. The bartender mixes his second drink with that same controlled precision, but this time you catch something—a small, almost imperceptible head shake. Like the bartender is saying no to himself.
+      Except for one guy. He's drained his in thirty seconds flat and is already ordering another. His eyes are the size of saucers and still growing. He's vibrating slightly. The bartender mixes his second drink with that same controlled precision, but this time you catch something — a small, almost imperceptible head shake. Like the bartender is saying no to himself.
 
       The guy who drained it sits down and stares at his hands. Not moving. Just staring.
 
@@ -398,13 +398,13 @@ nodes:
 
       "You made it."
 
-      "I assembled it," he corrects. "But I didn't invent it. Nobody here did. It arrives. I give it. That's the whole system." He leans forward, and you can see his pupils are moving independently—his left eye tracking the ceiling while his right tracks you. "But I'll tell you what I know: after your third one, you stop asking questions. After your fifth, you don't remember what questions are. After your seventh..."
+      "I assembled it," he corrects. "But I didn't invent it. Nobody here did. It arrives. I give it. That's the whole system." He leans forward, and you can see his pupils are moving independently — his left eye tracking the ceiling while his right tracks you. "But I'll tell you what I know: after your third one, you stop asking questions. After your fifth, you don't remember what questions are. After your seventh..."
 
       "What happens after the seventh?"
 
       "You become a bartender." He smiles. It's the saddest smile you've ever seen. "And you start serving people drinks."
 
-      A customer orders and he turns away, leaving you with the unsettling implication that he's currently on his seventh drink—or his seven-hundredth.
+      A customer orders and he turns away, leaving you with the unsettling implication that he's currently on his seventh drink — or his seven-hundredth.
 
       The drink sits in front of you, waiting.
 
@@ -435,9 +435,9 @@ nodes:
   bar_rejection:
     title: "The Refusal - Clarity Maintained"
     narrative: |
-      You leave the drink untouched on the bar and push away. The bartender doesn't react—doesn't even seem to notice you leaving.
+      You leave the drink untouched on the bar and push away. The bartender doesn't react — doesn't even seem to notice you leaving.
 
-      As you navigate back through the crowd, you catch your reflection in a mirror. Your pupils are still normal. You're the only one. It's striking—like you're looking at a different species than everyone else here.
+      As you navigate back through the crowd, you catch your reflection in a mirror. Your pupils are still normal. You're the only one. It's striking — like you're looking at a different species than everyone else here.
 
       An older woman with silver hair and a too-knowing expression intercepts you. "You didn't drink," she states. "Smart. Or cowardly. The results are the same."
 
@@ -486,7 +486,7 @@ nodes:
 
       Your stomach doesn't reject it. Your body doesn't react. Instead, your mind just... loosens.
 
-      Everything becomes more interesting. The music is no longer sound—it's a shape. A blue shape with edges that hum. You can *see* the bass. You can taste the treble.
+      Everything becomes more interesting. The music is no longer sound — it's a shape. A blue shape with edges that hum. You can *see* the bass. You can taste the treble.
 
       You look down at your hands and they seem to belong to you only provisionally. Like you're renting them.
 
@@ -533,7 +533,7 @@ nodes:
           consequences: []
 
         - text: "Head toward the DJ booth"
-          description: "The music controls everything—find the source"
+          description: "The music controls everything — find the source"
           next_node: "dj_booth"
           consequences: []
 
@@ -542,7 +542,7 @@ nodes:
     narrative: |
       The booth is elevated on a platform, surrounded by decks, controllers, and equipment you don't recognize. Most of it seems to be doing things without the DJ touching it.
 
-      The DJ themselves is young—maybe twenty-five, maybe forty, maybe ancient. Their hands move across the controls with precision that seems almost ritualistic. Every movement is followed by a change in the crowd's energy. Not the music changing causing the energy change—the opposite. The energy changing, then the DJ's hands moving to match it.
+      The DJ themselves is young — maybe twenty-five, maybe forty, maybe ancient. Their hands move across the controls with precision that seems almost ritualistic. Every movement is followed by a change in the crowd's energy. Not the music changing causing the energy change — the opposite. The energy changing, then the DJ's hands moving to match it.
 
       The DJ's eyes are closed. They have been closed the entire time you've been watching. Their pupils are moving rapidly behind their eyelids.
 
@@ -562,7 +562,7 @@ nodes:
 
       "Am I on something?" you ask desperately.
 
-      "You're always on something," the DJ says. "You're on gravity. You're on time. You're on the frequency that makes atoms cohere. The only question is whether you accept it consciously or unconsciously."
+      "You're always on something," the DJ says. "You're on Earth. You're on time. You're on the frequency that makes atoms cohere. The only question is whether you accept it consciously or unconsciously."
 
     choice:
       prompt: "The DJ remains perfectly still except for their hands. One eye is white. The music is alive."
@@ -626,7 +626,7 @@ nodes:
 
       "So there's no drug," you say slowly.
 
-      "There is," the DJ says. "The drug is that you believe there is. That belief, that story, that collective hallucination—that's what alters your perception. That's what rewires you. That's what makes you see the glitches."
+      "There is," the DJ says. "The drug is that you believe there is. That belief, that story, that collective hallucination — that's what alters your perception. That's what rewires you. That's what makes you see the glitches."
 
       "What glitches?"
 
@@ -668,7 +668,7 @@ nodes:
   painter_conversation:
     title: "The Painter - Documentation of Dissolution"
     narrative: |
-      You and the painter woman sit at a small booth in the corner. Her notebook is filled with sketches—faces in various states of alteration, bodies moving in impossible geometries, and repeated symbols that might mean nothing or everything.
+      You and the painter woman sit at a small booth in the corner. Her notebook is filled with sketches — faces in various states of alteration, bodies moving in impossible geometries, and repeated symbols that might mean nothing or everything.
 
       "I come here to study happiness," she explains, flipping through pages. "What it looks like when people access something deeper than their normal operating system. And I've been charting patterns."
 
@@ -680,7 +680,7 @@ nodes:
 
       "There's a state," she corrects. "Induced how? That's the interesting part. I've documented eleven different ways people enter it. Eleven different entry vectors. Same substance? Different pathways? Placebo? Actual chemistry?" She shrugs. "I've given up trying to figure out which."
 
-      She shows you a particular sketch—a figure that looks like it's phasing between different states of being. "This is my favorite. A guy who came here last month. He seemed to discover that he was remembering experiences he hadn't had yet. Or had forgotten. He claimed he could see Tuesday from inside Thursday."
+      She shows you a particular sketch — a figure that looks like it's phasing between different states of being. "This is my favorite. A guy who came here last month. He seemed to discover that he was remembering experiences he hadn't had yet. Or had forgotten. He claimed he could see Tuesday from inside Thursday."
 
       "What happened to him?"
 
@@ -711,13 +711,13 @@ nodes:
   find_security:
     title: "The Back Room - Security Checkpoint"
     narrative: |
-      You find the security office in a back hallway. The guard is exactly what you'd expect: large, imposing, professional looking—except for his eyes. They keep flickering. Switching focal depth. For a moment they're tracking you; the next moment they're looking at something a mile away.
+      You find the security office in a back hallway. The guard is exactly what you'd expect: large, imposing, professional looking — except for his eyes. They keep flickering. Switching focal depth. For a moment they're tracking you; the next moment they're looking at something a mile away.
 
       "Help you?" he asks, voice even.
 
       "I need to know what's happening in this club," you say. "What substance is everyone on?"
 
-      The guard is quiet for a long moment. His flickering eyes settle into one state—looking directly at you, but from very far away.
+      The guard is quiet for a long moment. His flickering eyes settle into one state — looking directly at you, but from very far away.
 
       "I used to ask that question," he finally says. "I was hired as security three weeks ago. Never touched the place. Maintained sobriety." He turns his head and you see a scar along his jawline you could fit a finger in. "But I did something stupid. Asked too many questions. Started creating problems."
 
@@ -731,7 +731,7 @@ nodes:
 
       "That I'm already on the drug," he says. "Always have been. Gravity. Time. Consensus reality. The club just makes the drug visible. Makes it audible. Makes it undeniable."
 
-      He walks past you—his movements are the same as the DJ's controlled motions. Ritualistic. Precise. In service to something larger.
+      He walks past you — his movements are the same as the DJ's controlled motions. Ritualistic. Precise. In service to something larger.
 
       "Welcome to Level Four," he says, closing the office door behind him.
 
@@ -860,7 +860,7 @@ nodes:
   acceptance_path:
     title: "The Acceptance - Surrender"
     narrative: |
-      You stop running. It's strangely difficult—your survival instinct screams to resist. But you sit down. You breathe. You stop trying to understand what's happening and just... observe.
+      You stop running. It's strangely difficult — your survival instinct screams to resist. But you sit down. You breathe. You stop trying to understand what's happening and just... observe.
 
       And everything becomes clear.
 
@@ -1070,7 +1070,7 @@ nodes:
 
       "Tell me."
 
-      "The substance is choice," they say. "Everyone here chose to come here. Everyone here chose to believe something strange was happening. That choice, that consensus—that becomes the reality. You're all making this together."
+      "The substance is choice," they say. "Everyone here chose to come here. Everyone here chose to believe something strange was happening. That choice, that consensus — that becomes the reality. You're all making this together."
 
     choice:
       prompt: "The DJ's explanation circles back to the beginning."
@@ -1099,11 +1099,11 @@ nodes:
 
       The bartender's eye twitches violently. His left hand grips the bar so hard you hear wood creak.
 
-      "In charge?" He laughs—a sound like breaking glass. "Nobody's in charge. That's the whole point. But if you want to understand the mechanism..." He leans close, and you smell something beneath the alcohol. Something like ozone. "Go downstairs. Level three. Ask for the Attendant."
+      "In charge?" He laughs — a sound like breaking glass. "Nobody's in charge. That's the whole point. But if you want to understand the mechanism..." He leans close, and you smell something beneath the alcohol. Something like ozone. "Go downstairs. Level three. Ask for the Attendant."
 
       "What will he tell me?"
 
-      "Nothing you'll want to hear." The bartender straightens, his expression suddenly blank. "But everything you need to know. The booths down there—they're not for sitting. They're for *listening*. To the frequency beneath the music."
+      "Nothing you'll want to hear." The bartender straightens, his expression suddenly blank. "But everything you need to know. The booths down there — they're not for sitting. They're for *listening*. To the frequency beneath the music."
 
       He turns away, already mixing another bruised drink for someone else.
 
@@ -1120,7 +1120,7 @@ nodes:
               flag: "knows_bartender_secret"
               value: true
 
-        - text: "This feels like a trap—find another way"
+        - text: "This feels like a trap — find another way"
           description: "Don't trust the bartender's directions"
           next_node: "bar_rejection"
           consequences: []
@@ -1132,7 +1132,7 @@ nodes:
 
       Behind a curtain you hadn't noticed before, there's a private room. Red velvet walls. A circular table. Three people sitting around it, each with an empty glass in front of them.
 
-      The woman sets down the three drinks—one for each person. They don't acknowledge her. They don't move. They're staring at the center of the table, where a small candle burns with a flame that's somehow *black*.
+      The woman sets down the three drinks — one for each person. They don't acknowledge her. They don't move. They're staring at the center of the table, where a small candle burns with a flame that's somehow *black*.
 
       "Sit," one of them says without looking at you. "Watch."
 
@@ -1180,7 +1180,7 @@ nodes:
   extreme_guy_confrontation:
     title: "The Fast Drinker"
     narrative: |
-      You approach the guy who drained his drink in thirty seconds. Up close, he's worse than you thought. His skin is translucent. You can see veins pulsing beneath it—not just blood vessels, but something else. Something that glows faintly with each pulse.
+      You approach the guy who drained his drink in thirty seconds. Up close, he's worse than you thought. His skin is translucent. You can see veins pulsing beneath it — not just blood vessels, but something else. Something that glows faintly with each pulse.
 
       "Hey," you say. "Are you okay?"
 
@@ -1203,7 +1203,7 @@ nodes:
     choice:
       prompt: "The fast drinker is dissolving in front of you."
       options:
-        - text: "Try to help him—call for help"
+        - text: "Try to help him — call for help"
           description: "Someone must be able to do something"
           next_node: "security_intervention"
           consequences: []
@@ -1219,7 +1219,7 @@ nodes:
               trait: "intuition"
               delta: 1
 
-        - text: "Do exactly what he did—drink fast"
+        - text: "Do exactly what he did — drink fast"
           description: "Maybe the quick path is the true path"
           next_node: "overdose_dissolution"
           consequences:
@@ -1236,7 +1236,7 @@ nodes:
   being_sketched:
     title: "The Last Portrait"
     narrative: |
-      You sit still while the painter works. Her pencil moves with impossible speed—not sketching, but *transcribing*. Like she's copying something she's seeing through you rather than drawing you.
+      You sit still while the painter works. Her pencil moves with impossible speed — not sketching, but *transcribing*. Like she's copying something she's seeing through you rather than drawing you.
 
       "Don't move," she murmurs. "I'm almost there."
 
@@ -1252,7 +1252,7 @@ nodes:
 
       And you see it. Your face from tonight, yes. But also your face from what looks like different nights. Different angles. Different states of awareness.
 
-      "I sketch everyone who comes through," she explains. "And sometimes—not often, but sometimes—I see the echoes. The previous visits. The ones you don't remember."
+      "I sketch everyone who comes through," she explains. "And sometimes — not often, but sometimes — I see the echoes. The previous visits. The ones you don't remember."
 
       She points to a version of your face that's smiling. Blissful. Completely altered.
 
@@ -1271,7 +1271,7 @@ nodes:
               flag: "witnessed_glitch"
               value: true
 
-        - text: "Reject this—it has to be a trick"
+        - text: "Reject this — it has to be a trick"
           description: "She's manipulating you"
           next_node: "panic_exit"
           consequences:
@@ -1296,7 +1296,7 @@ nodes:
 
       "Then what—"
 
-      "The brain changes," she interrupts. "Not the chemistry—the *patterns*. Neural pathway reorganization. Happens within hours of entering the club. The music does something to how we process reality. Not chemically. *Structurally*."
+      "The brain changes," she interrupts. "Not the chemistry — the *patterns*. Neural pathway reorganization. Happens within hours of entering the club. The music does something to how we process reality. Not chemically. *Structurally*."
 
       She shows you a brain scan comparison. Before and after.
 
@@ -1329,7 +1329,7 @@ nodes:
 
       The painter sets down her pencil. For the first time, she looks tired. Ancient. Like she's been carrying something heavy for far too long.
 
-      "Three years," she says quietly. "I've been here three years. Not fourteen months—three years. I lied earlier. I always lie about that."
+      "Three years," she says quietly. "I've been here three years. Not fourteen months — three years. I lied earlier. I always lie about that."
 
       "Why?"
 
@@ -1341,7 +1341,7 @@ nodes:
 
       "Then how do people leave?"
 
-      "They don't," she says simply. "They just forget they're still here. They go home, they go to work, they live their lives—and part of them is always in the club. Dancing. Drinking. Adding their attention to the collective."
+      "They don't," she says simply. "They just forget they're still here. They go home, they go to work, they live their lives — and part of them is always in the club. Dancing. Drinking. Adding their attention to the collective."
 
       She looks at you with something like compassion.
 
@@ -1358,7 +1358,7 @@ nodes:
               trait: "paranoia_level"
               delta: -2
 
-        - text: "Refuse—fight to keep your identity"
+        - text: "Refuse — fight to keep your identity"
           description: "You won't be absorbed"
           next_node: "resist_alteration"
           consequences: []
@@ -1370,7 +1370,7 @@ nodes:
   synchronized_trio:
     title: "The Templates"
     narrative: |
-      You follow the synchronized trio. They move through the crowd without breaking formation—three people moving as one organism. Other dancers part around them automatically, like water flowing around stones.
+      You follow the synchronized trio. They move through the crowd without breaking formation — three people moving as one organism. Other dancers part around them automatically, like water flowing around stones.
 
       They descend the stairs to the basement. You follow at a distance.
 
@@ -1382,7 +1382,7 @@ nodes:
 
       "They were the first three," he explains. "The first three to fully integrate with the frequency. Now they serve as... anchors. Reference points. The rest of us are tuned relative to them."
 
-      One of the trio opens their eyes and looks at you. Their gaze is infinite—like looking into a well that has no bottom.
+      One of the trio opens their eyes and looks at you. Their gaze is infinite — like looking into a well that has no bottom.
 
       "Join us," they say. All three of them, in unison, through one mouth. "We've been waiting for the fourth."
 
@@ -1460,7 +1460,7 @@ nodes:
               flag: "witnessed_glitch"
               value: true
 
-        - text: "Touch the arm to your ear—listen to its frequency"
+        - text: "Touch the arm to your ear — listen to its frequency"
           description: "Maybe this is the key"
           next_node: "overdose_dissolution"
           consequences:
@@ -1478,13 +1478,13 @@ nodes:
 
       The figure's layered voice harmonizes with itself as they speak.
 
-      "Time isn't linear inside the club. It never has been. The moment you walked through those curtains, you existed in every moment the club has ever had. Past, present, future—they're all happening simultaneously here."
+      "Time isn't linear inside the club. It never has been. The moment you walked through those curtains, you existed in every moment the club has ever had. Past, present, future — they're all happening simultaneously here."
 
       "That's impossible."
 
       "Is it?" They gesture at the room. "Watch the dancers. Really watch. Some of them are dancing to music that hasn't played yet. Some of them are dancing to music that played last week. They're all synchronized because time is synchronized here."
 
-      You look at the dance floor. And for a moment—just a moment—you see it. The lag. Some dancers are half a beat behind. Some are half a beat ahead. But they're all moving to the same song.
+      You look at the dance floor. And for a moment — just a moment — you see it. The lag. Some dancers are half a beat behind. Some are half a beat ahead. But they're all moving to the same song.
 
       "The substance everyone is 'on,'" the figure continues, "is *temporal dilution*. The experience of existing across multiple moments at once. Some people handle it well. They become regulars. Staff. Part of the structure."
 
@@ -1525,7 +1525,7 @@ nodes:
 
       "The DJ knows your name will be important."
 
-      The text is changing. Not erasing and rewriting—you'd see that. It's just... different each time you focus on it. Like the paper is showing you all possible versions of itself at once.
+      The text is changing. Not erasing and rewriting — you'd see that. It's just... different each time you focus on it. Like the paper is showing you all possible versions of itself at once.
 
       You hold it up to the strobe lights. In the flickering illumination, you can see all the texts at once. Dozens of messages. Hundreds. Overlapping. All written in the same handwriting. Your handwriting, you realize with a chill.
 
@@ -1579,7 +1579,7 @@ nodes:
   dj_booth_escape:
     title: "The Music Follows"
     narrative: |
-      You turn and try to leave the DJ booth. But as you descend the steps, the music comes with you. Not the ambient club music—the DJ's specific frequency. It's attached to you now. Wrapping around your consciousness like a warm blanket. Or a straitjacket.
+      You turn and try to leave the DJ booth. But as you descend the steps, the music comes with you. Not the ambient club music — the DJ's specific frequency. It's attached to you now. Wrapping around your consciousness like a warm blanket. Or a straitjacket.
 
       You push through the crowd, but they part for you differently now. Respectfully. Fearfully. Like you're carrying something dangerous.
 
@@ -1587,7 +1587,7 @@ nodes:
 
       You make it to where you think the exit is, but the curtains look different now. They're pulsing with the bass. Breathing. Alive.
 
-      "You can't leave with the frequency inside you," a voice says. It's the older woman from earlier—the one who's been here fourteen months. "It has to be extracted. Or accepted. There's no middle ground."
+      "You can't leave with the frequency inside you," a voice says. It's the older woman from earlier — the one who's been here fourteen months. "It has to be extracted. Or accepted. There's no middle ground."
 
       She looks at you with pity.
 
@@ -1636,7 +1636,7 @@ nodes:
 
       "What would happen then?"
 
-      The DJ reaches out and touches your forehead. You see—for a fraction of a second—what the unfiltered music looks like.
+      The DJ reaches out and touches your forehead. You see — for a fraction of a second — what the unfiltered music looks like.
 
       It's not sound.
 
@@ -1646,7 +1646,7 @@ nodes:
 
       You fall to your knees.
 
-      "That," the DJ says, "is what I protect you from. Every beat, every bar, every song—a tiny, tolerable piece of infinity. You're welcome."
+      "That," the DJ says, "is what I protect you from. Every beat, every bar, every song — a tiny, tolerable piece of infinity. You're welcome."
 
     choice:
       prompt: "The DJ has shown you the truth beneath the music."
@@ -1672,7 +1672,7 @@ nodes:
     narrative: |
       "Is any of this real?" you demand. "Or is it all a simulation? A drug trip? A shared hallucination?"
 
-      The DJ tilts their head. Behind their closed eyelids, you can see rapid movement—not just their eyes, but something else. Something geometric. Fractal.
+      The DJ tilts their head. Behind their closed eyelids, you can see rapid movement — not just their eyes, but something else. Something geometric. Fractal.
 
       "Define 'real,'" they say.
 
@@ -1699,14 +1699,14 @@ nodes:
     choice:
       prompt: "The DJ is offering to show you how reality bends."
       options:
-        - text: "Yes—show me"
+        - text: "Yes — show me"
           description: "See the construction in action"
           next_node: "overdose_dissolution"
           consequences:
             - type: "character_dies"
               reason: "The demonstration exceeded your capacity to process"
 
-        - text: "No—I've seen enough"
+        - text: "No — I've seen enough"
           description: "Leave while you still remember what's real"
           next_node: "truth_too_heavy"
           consequences:
@@ -1729,7 +1729,7 @@ nodes:
   booth_experience:
     title: "The Frequency Bath"
     narrative: |
-      You sit in the booth. It's surprisingly comfortable—the cushions seem to mold around you, cradling you in perfect stillness.
+      You sit in the booth. It's surprisingly comfortable — the cushions seem to mold around you, cradling you in perfect stillness.
 
       The hum is immediate. Not from the speakers. From the booth itself. From the walls. From the air. It enters through your skin, your bones, your closed eyes.
 
@@ -1784,7 +1784,7 @@ nodes:
 
       "Then why can't they leave?"
 
-      "They can leave whenever they want." He actually laughs—a dry, humorless sound. "The problem isn't leaving. The problem is wanting to leave. The frequency adjusts your desires. After calibration, leaving seems... unnecessary. Uninteresting. Why would you go back to the gray world when you've seen the colors?"
+      "They can leave whenever they want." He actually laughs — a dry, humorless sound. "The problem isn't leaving. The problem is wanting to leave. The frequency adjusts your desires. After calibration, leaving seems... unnecessary. Uninteresting. Why would you go back to the gray world when you've seen the colors?"
 
       He looks at the seven occupied booths.
 
@@ -1828,7 +1828,7 @@ nodes:
 
       "I was wondering when you'd arrive," they say with your voice. "You're late. Or early. Time is confusing down here."
 
-      "How—what—"
+      "How — what—"
 
       "Shh." They reach up and touch your face with your own hand. "You don't need to understand yet. You just need to accept. Every person in these booths is a version of someone who entered the club. Frozen at the moment of their deepest understanding."
 
@@ -1856,7 +1856,7 @@ nodes:
               value: true
 
         - text: "Reject the paradox and flee"
-          description: "This isn't real—it can't be"
+          description: "This isn't real — it can't be"
           next_node: "basement_escape"
           consequences:
             - type: "modify_trait"
@@ -1866,7 +1866,7 @@ nodes:
   basement_escape:
     title: "The Time Slip"
     narrative: |
-      You run for the stairs. Your legs feel heavy—calibrated heavy, part of you thinks—but you push through. Up the steps. Two at a time. Toward the music and the lights and the dancing.
+      You run for the stairs. Your legs feel heavy — calibrated heavy, part of you thinks — but you push through. Up the steps. Two at a time. Toward the music and the lights and the dancing.
 
       You emerge from the basement.
 
@@ -1882,7 +1882,7 @@ nodes:
 
       It's daytime. A Tuesday, according to a newspaper box. You went in on a Saturday night.
 
-      But something is wrong. The street feels different. The cars look older. Or newer. Or both. The people walking past aren't looking at you—they're looking *through* you.
+      But something is wrong. The street feels different. The cars look older. Or newer. Or both. The people walking past aren't looking at you — they're looking *through* you.
 
       Behind you, the club door is gone. Just a wall now. Like there was never an entrance.
 
@@ -1998,7 +1998,7 @@ nodes:
       "I've been here a long time," she says. "But I've never taken that last step. I've been waiting for someone to take it with me."
 
     choice:
-      prompt: "Level Seven offers transcendence—at the cost of identity."
+      prompt: "Level Seven offers transcendence — at the cost of identity."
       options:
         - text: "Take the final step with her"
           description: "Become something more than human"
@@ -2073,7 +2073,7 @@ nodes:
     narrative: |
       You head back to the basement. If the answer isn't in escaping, maybe it's in going deeper.
 
-      The stairs seem longer this time. The hum louder. The booths fuller—you could swear there were only seven people before, but now there are twelve. Fifteen. Twenty.
+      The stairs seem longer this time. The hum louder. The booths fuller — you could swear there were only seven people before, but now there are twelve. Fifteen. Twenty.
 
       The attendant is still there. Still with his clipboard. But his uniform fits differently now. Tighter. More like skin than fabric.
 
@@ -2091,7 +2091,7 @@ nodes:
 
       "What if I can't come back?"
 
-      "Then you'll finally have your answer." He smiles—a real smile, the first genuine emotion you've seen on his face. "Either way, the questions stop."
+      "Then you'll finally have your answer." He smiles — a real smile, the first genuine emotion you've seen on his face. "Either way, the questions stop."
 
     choice:
       prompt: "The attendant is offering knowledge in exchange for surrender."
@@ -2119,7 +2119,7 @@ nodes:
   security_intervention:
     title: "The Interception"
     narrative: |
-      Two figures materialize from the crowd. They move with that same synchronized precision you've seen everywhere—perfect unison, perfect timing, perfect absence of individual thought.
+      Two figures materialize from the crowd. They move with that same synchronized precision you've seen everywhere — perfect unison, perfect timing, perfect absence of individual thought.
 
       Security. But not really. They wear the uniforms, but their eyes are wrong. Too dilated. Too focused. Too *present*.
 
@@ -2127,7 +2127,7 @@ nodes:
 
       "The calibration must be completed," the other adds. "For your protection."
 
-      They take your arms—gently, but with absolute strength. You couldn't break free if you tried.
+      They take your arms — gently, but with absolute strength. You couldn't break free if you tried.
 
       "This isn't a punishment," they explain as they guide you toward the basement stairs. "This is care. You touched something that wasn't ready for you. Or you weren't ready for it. The frequency needs to be stabilized."
 
@@ -2188,7 +2188,7 @@ nodes:
           next_node: "downstairs_discovery"
           consequences: []
 
-        - text: "This is ridiculous—leave"
+        - text: "This is ridiculous — leave"
           description: "You don't need their permission"
           next_node: "exit_search"
           consequences: []
@@ -2235,7 +2235,7 @@ nodes:
           next_node: "panic_exit"
           consequences: []
 
-        - text: "Keep reading—find the earliest report"
+        - text: "Keep reading — find the earliest report"
           description: "Understand how this started"
           next_node: "truth_too_heavy"
           consequences:
@@ -2248,7 +2248,7 @@ nodes:
     narrative: |
       You search through the desk drawers. Papers. Forms. Schedules. All normal administrative detritus.
 
-      But in the bottom drawer, locked—you break it open—there's a single file folder. Hand-labeled: "ORIGINAL INCIDENT."
+      But in the bottom drawer, locked — you break it open — there's a single file folder. Hand-labeled: "ORIGINAL INCIDENT."
 
       Inside, a single page. Yellowed with age. The text is typed on an old typewriter.
 
@@ -2256,7 +2256,7 @@ nodes:
 
       "Subsequent investigation revealed the frequency had always existed. It predates human hearing. It predates human existence. We didn't create it. We learned to tune to it."
 
-      "The establishment known as 'The Velvet Chamber' was built as a focusing array. The architecture itself is designed to amplify and contain the frequency. Anyone who enters the building begins calibrating automatically."
+      "The establishment known as 'Altered State' was built as a focusing array. The architecture itself is designed to amplify and contain the frequency. Anyone who enters the building begins calibrating automatically."
 
       "There is no way to un-calibrate. There is no cure. There is no exit that returns you to full separation from the frequency."
 
@@ -2267,7 +2267,7 @@ nodes:
       "Welcome."
 
     choice:
-      prompt: "The original file explains everything—and changes nothing."
+      prompt: "The original file explains everything — and changes nothing."
       options:
         - text: "Accept your role in the experiment"
           description: "You can't undo what's done"
