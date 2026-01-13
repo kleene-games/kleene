@@ -5,7 +5,7 @@
   },
   "repository": "https://github.com/kleene-games/kleene",
   "metadata": {
-    "description": "Kleene - Adaptive AI Text Adventure Engine - for Claude Code! Play ( and buikld your own) immersive text-adventure worlds!",
+    "description": "Kleene - Adaptive AI Text Adventure Engine - for Claude Code! Play ( and build your own) immersive text-adventure worlds!",
     "version": "0.2.0"
   },
   "plugins": [
