@@ -6,8 +6,8 @@
     "name": "Nathaniel Ramm",
     "email": "nathaniel@hiivmind.ai"
   },
-  "repository": "https://github.com/hiivmind/kleene-plugin",
-  "homepage": "https://github.com/hiivmind/kleene-plugin#readme",
+  "repository": "https://github.com/kleene-games/kleene",
+  "homepage": "https://github.com/kleene-games/kleene#readme",
   "license": "MIT",
   "keywords": [
     "game",
@@ -18,11 +18,5 @@
     "storytelling",
     "narrative-engine",
     "emergent-storytelling"
-  ],
-  "categories": [
-    "games",
-    "entertainment",
-    "creative-writing",
-    "interactive-fiction"
   ]
 }
