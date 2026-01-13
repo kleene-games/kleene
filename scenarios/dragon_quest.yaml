@@ -74,6 +74,7 @@ nodes:
       options:
         - id: take_sword
           text: "Visit the blacksmith and take the sword"
+          cell: chooses
           consequence:
             - type: gain_item
               item: rusty_sword
@@ -85,14 +86,30 @@ nodes:
 
         - id: seek_knowledge
           text: "Enter the dark forest to seek another way"
+          cell: chooses
           consequence:
             - type: move_to
               location: forest
           narrative: "You turn from steel toward secrets."
           next_node: forest_entrance
 
+        - id: ask_elder
+          text: "Ask the elder what she knows about the dragon"
+          cell: unknown
+          narrative: "The elder pauses, studying your face."
+          next: improvise
+          improvise_context:
+            theme: "seeking wisdom before action"
+            permits: ["history", "weakness", "legend", "why", "story", "mate", "grief"]
+            blocks: ["demand", "threaten", "force", "lie", "trick"]
+            limbo_fallback: "The elder watches you, waiting for a real question..."
+          outcome_nodes:
+            discovery: elder_lore
+            revelation: elder_silence
+
         - id: rush_mountain
           text: "Head directly to the mountain"
+          cell: chooses
           consequence:
             - type: move_to
               location: mountain_path
@@ -202,6 +219,7 @@ nodes:
       options:
         - id: fight_with_sword
           text: "Draw your sword and fight!"
+          cell: chooses
           precondition:
             type: has_item
             item: rusty_sword
@@ -210,6 +228,7 @@ nodes:
 
         - id: fight_unarmed
           text: "Charge the dragon with bare hands"
+          cell: chooses
           precondition:
             type: trait_minimum
             trait: courage
@@ -219,14 +238,30 @@ nodes:
 
         - id: speak_dragon_tongue
           text: "Speak to the dragon in its own tongue"
+          cell: chooses
           precondition:
             type: flag_set
             flag: knows_dragon_tongue
           narrative: "Ancient words flow from your lips."
           next_node: dragon_dialogue
 
+        - id: observe_dragon
+          text: "Wait and observe the dragon"
+          cell: unknown
+          narrative: "You hold your ground, watching."
+          next: improvise
+          improvise_context:
+            theme: "patient observation of an ancient being"
+            permits: ["scales", "inscriptions", "eyes", "breathing", "watch", "study", "patterns"]
+            blocks: ["attack", "charge", "sneak", "steal", "rush"]
+            limbo_fallback: "The dragon's presence holds you in place, time stretching in the mountain silence..."
+          outcome_nodes:
+            discovery: dragon_notices_patience
+            revelation: dragon_dismisses_coward
+
         - id: flee_dragon
           text: "Turn and flee!"
+          cell: avoids
           narrative: "Survival is its own victory... isn't it?"
           next_node: attempt_flee
 
@@ -350,25 +385,244 @@ nodes:
 
   attempt_flee:
     narrative: |
-      You turn and run. The dragon watches you go.
+      You turn and run. The dragon's eyes follow you.
 
-      It does not pursue. Perhaps it finds you unworthy of the effort.
-      Perhaps it simply doesn't care.
-
-      You make it back to the village, gasping, shaking.
-      You are alive. But the dragon still circles the mountain.
-      And everyone knows you ran.
+      Wind rushes past as you scramble down the path. Behind you,
+      you hear the scrape of scales on stone...
     choice:
-      prompt: "You have survived."
+      prompt: "The mountain path stretches before you."
       options:
-        - id: live_with_shame
-          text: "Live with the choice you've made"
+        - id: flee_succeeds
+          text: "Keep running - don't look back"
+          cell: avoids
+          precondition:
+            type: trait_minimum
+            trait: luck
+            minimum: 4
           consequence:
             - type: modify_trait
               trait: courage
               delta: -2
-          narrative: "Survival has its price."
+          narrative: |
+            You make it back to the village, gasping, shaking.
+            You are alive. But the dragon still circles the mountain.
+            And everyone knows you ran.
           next_node: ending_fled
+
+        - id: flee_fails
+          text: "You stumble - the dragon is faster"
+          cell: avoids
+          precondition:
+            type: trait_maximum
+            trait: luck
+            maximum: 3
+          narrative: |
+            Your foot catches on loose stone. You fall.
+
+            The dragon lands before you, cutting off escape.
+            Some fates cannot be outrun.
+          next_node: dragon_cornered
+
+  # Unknown row outcome nodes (from improvise options)
+
+  elder_lore:
+    narrative: |
+      The elder's eyes soften. She releases your arm and gestures
+      to a bench by the fire.
+
+      "Sit. You deserve to know what you face."
+
+      She speaks of the dragon's history - not a beast of destruction,
+      but an ancient being grieving a loss beyond measure. Its mate
+      fell here centuries ago, before the village existed. The dragon
+      returns seeking her resting place.
+
+      "Perhaps," the elder says, "there is more than one way to end this."
+    choice:
+      prompt: "The elder's words change everything."
+      options:
+        - id: take_sword_informed
+          text: "Take the sword, but with new understanding"
+          cell: chooses
+          consequence:
+            - type: gain_item
+              item: rusty_sword
+            - type: modify_trait
+              trait: wisdom
+              delta: 2
+            - type: set_flag
+              flag: knows_dragon_history
+              value: true
+          narrative: "Steel and wisdom together. Perhaps that is the way."
+          next_node: sword_taken
+
+        - id: seek_shrine_informed
+          text: "Seek the shrine - there must be another way"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: forest
+            - type: modify_trait
+              trait: wisdom
+              delta: 2
+            - type: set_flag
+              flag: knows_dragon_history
+              value: true
+          narrative: "The elder nods. 'The old gods may know the path.'"
+          next_node: forest_entrance
+
+  elder_silence:
+    narrative: |
+      The elder's face hardens. She pulls back her hand.
+
+      "You come to me with demands? With threats? After all these years
+      of protecting this village?"
+
+      She turns away.
+
+      "Find your own answers. Or don't. The dragon comes regardless."
+    choice:
+      prompt: "The elder has dismissed you."
+      options:
+        - id: apologize_to_elder
+          text: "Apologize and ask properly"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+          narrative: "You bow your head. 'I'm sorry. Please, help me understand.'"
+          next_node: elder_lore
+
+        - id: leave_elder_angry
+          text: "Fine. You don't need her help."
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 1
+          narrative: "Pride carries you out the door. You'll face this alone."
+          next_node: sword_taken
+
+  dragon_notices_patience:
+    narrative: |
+      The dragon's head tilts. Those furnace-eyes study you with
+      something unexpected: curiosity.
+
+      "You do not attack. You do not flee. You... wait."
+
+      Its voice resonates through your bones, ancient and weary.
+
+      "Few have done so. Fewer still survived the urge to run.
+      Perhaps..." A long exhale, smoke curling. "Perhaps you are
+      worth speaking to."
+    choice:
+      prompt: "The dragon acknowledges you."
+      options:
+        - id: speak_carefully
+          text: "Speak to it - carefully, respectfully"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: wisdom
+              delta: 2
+            - type: set_flag
+              flag: dragon_respects_patience
+              value: true
+          narrative: "You find your voice. 'I came to understand, not to destroy.'"
+          next_node: dragon_dialogue
+
+        - id: still_draw_sword
+          text: "Draw your sword now - while it's distracted"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: rusty_sword
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 1
+          narrative: "Patience was a tactic. Steel is the answer."
+          next_node: dragon_fight
+
+  dragon_dismisses_coward:
+    narrative: |
+      The dragon's nostrils flare. Smoke curls around you.
+
+      "You think to sneak? To steal? To attack while my back is turned?"
+
+      A rumble of contempt shakes the mountain.
+
+      "I have lived longer than your village has existed. I know the
+      smell of treachery."
+
+      The dragon's tail sweeps behind you, cutting off retreat.
+
+      "Now you will face me honestly. Or not at all."
+    choice:
+      prompt: "The dragon has cornered you."
+      options:
+        - id: face_honestly
+          text: "Admit your intentions and face the dragon"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 1
+          narrative: "No more tricks. Time to face this."
+          next_node: dragon_fight_unarmed
+
+        - id: beg_forgiveness
+          text: "Apologize and beg for your life"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: -1
+          narrative: "You fall to your knees. 'I'm sorry. I didn't mean-'"
+          next_node: dragon_refused
+
+  dragon_cornered:
+    narrative: |
+      The dragon lands before you, cutting off the mountain path.
+      Its massive form blocks any escape. Those furnace-eyes hold
+      no mercy.
+
+      "You came to my mountain. You challenged my grief with your
+      presence. And now you think to simply... leave?"
+
+      A low growl shakes loose stones from the cliff face.
+
+      "We will resolve this. One way or another."
+    choice:
+      prompt: "There is no escape."
+      options:
+        - id: fight_cornered
+          text: "Stand and fight - you have no choice"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: rusty_sword
+          narrative: "If you must die, die with steel in hand."
+          next_node: dragon_fight
+
+        - id: speak_desperately
+          text: "Try to speak - find any words"
+          cell: chooses
+          precondition:
+            type: flag_set
+            flag: knows_dragon_tongue
+          narrative: "In desperation, the old words return to you."
+          next_node: dragon_dialogue
+
+        - id: accept_fate
+          text: "Accept your fate"
+          cell: avoids
+          consequence:
+            - type: character_dies
+              reason: "consumed by dragonfire, having failed to escape"
+          narrative: "Some things cannot be outrun. You close your eyes."
+          next_node: ending_death
 
 # Endings
 endings:

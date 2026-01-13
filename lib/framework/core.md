@@ -61,27 +61,92 @@ The character continues only if a condition is met:
 hero.filter(has_courage >= 5) → Some(hero) OR None(courage failed)
 ```
 
-## The Four Quadrants
+## The Nine Cells
 
-Every choice exists at the intersection of two axes:
+Every choice exists at the intersection of three player states and three world responses:
 
-|                    | World Permits          | World Blocks           |
-|--------------------|------------------------|------------------------|
-| **Player Chooses** | Victory/Transformation | Blocked Path           |
-| **Player Avoids**  | Escape/Unchanged       | Forced Consequence     |
+|                    | World Permits | World Indeterminate | World Blocks |
+|--------------------|---------------|---------------------|--------------|
+| **Player Chooses** | Triumph       | Commitment          | Barrier      |
+| **Player Unknown** | Discovery     | Limbo               | Revelation   |
+| **Player Avoids**  | Escape        | Deferral            | Fate         |
 
-### Quadrant 1: Player Chooses, World Permits
+### The Axes
+
+**Player Axis:**
+- **Chooses** - Decisive action toward a goal
+- **Unknown** - Hesitation, exploration, or improvised action
+- **Avoids** - Retreat, refusal, or evasion
+
+**World Axis:**
+- **Permits** - World allows action to succeed
+- **Indeterminate** - Outcome not yet resolved, depends on future actions
+- **Blocks** - World prevents or punishes action
+
+### Row 1: Player Chooses (Decisive Action)
+
+**Triumph (Chooses + Permits)**
 The hero acts and succeeds. Classic victory. Transformation through agency.
+```
+hero.and_then(fight_dragon) → Some(victorious hero)
+```
 
-### Quadrant 2: Player Chooses, World Blocks
+**Commitment (Chooses + Indeterminate)**
+Action initiated, consequences pending. The hero drinks the potion, sends the messenger, plants the trap.
+```
+hero.and_then(drink_potion) → Unknown(effects pending)
+```
+
+**Barrier (Chooses + Blocks)**
 The hero tries but cannot proceed. Missing key, insufficient courage, locked door.
 The precondition returns `Some(false)` with a reason.
 
-### Quadrant 3: Player Avoids, World Permits
+### Row 2: Player Unknown (Hesitant/Improvised)
+
+The Unknown row captures player hesitation and improvisation. These cells can be achieved two ways:
+
+**Scripted Unknown**: Options with `cell: unknown` and `next: improvise` that explicitly invite open-ended player input. The scenario author defines patterns for Discovery/Revelation outcomes and a fallback for Limbo.
+
+**Emergent Unknown**: Free-text "Other" input at any choice point. The play skill classifies intent and feasibility to determine which cell applies.
+
+Both approaches are valid. Scripted Unknown guarantees coverage for the analyze skill; Emergent Unknown provides organic exploration.
+
+**Discovery (Unknown + Permits)**
+Exploration yields unexpected success. The world rewards curiosity.
+```
+hero.map(examine_dragon_scales) → Some(hero, +wisdom, "noticed weakness")
+```
+Triggered by: `permits` patterns match in improvise options, or feasibility = Possible for emergent improvisation.
+
+**Limbo (Unknown + Indeterminate)**
+The narrative center - pure potential. Player hesitates at crossroads, improvises without clear outcome.
+Multiple futures remain possible. This is the chaos zone where side quests and improvisation thrive.
+```
+hero.filter(???) → Unknown(anything possible)
+```
+Triggered by: No pattern match (uses `limbo_fallback`), or feasibility = Ambiguous for emergent improvisation.
+
+**Revelation (Unknown + Blocks)**
+Hesitation reveals constraint. Failure teaches what's needed.
+```
+hero.map(approach_carefully) → Some(false, "You realize you cannot proceed without...")
+```
+Triggered by: `blocks` patterns match in improvise options, or feasibility = Blocked for emergent improvisation.
+
+### Row 3: Player Avoids (Retreat/Refusal)
+
+**Escape (Avoids + Permits)**
 The hero could act but chooses not to. Fleeing the dragon, refusing the call.
 Irony ending - survival without growth.
 
-### Quadrant 4: Player Avoids, World Blocks
+**Deferral (Avoids + Indeterminate)**
+Problem postponed, not solved. The hero hides, ignores warnings, avoids confrontation.
+A ticking clock - consequences build in the background.
+```
+hero.map(hide_from_dragon) → Unknown(it still hunts)
+```
+
+**Fate (Avoids + Blocks)**
 The hero tries to avoid but cannot. The consequence finds them anyway.
 Tragedy, fate, inevitability.
 
@@ -109,13 +174,39 @@ None(cannot enter without key)
 ### NONE_PROPAGATED
 None propagated from an earlier state (character was already gone).
 
+## Completeness Tiers
+
+Narrative completeness is measured by coverage of the nine cells:
+
+### Bronze (Original Model)
+Cover the four corners - the binary foundation:
+- **Triumph** (Player Chooses + World Permits)
+- **Barrier** (Player Chooses + World Blocks)
+- **Escape** (Player Avoids + World Permits)
+- **Fate** (Player Avoids + World Blocks)
+
+Plus: At least one NONE_DEATH path and one SOME_TRANSFORMED path.
+
+### Silver (Extended Model)
+Bronze requirements plus 2+ middle cells from:
+- **Commitment** - consequences pending
+- **Discovery** - exploration rewarded
+- **Revelation** - failure teaches
+- **Deferral** - problem postponed
+- **Limbo** - pure potential (typically via improvisation)
+
+### Gold (Full Model)
+All nine cells represented. The scenario natively supports hesitation, improvisation, and indeterminate outcomes.
+
 ## A Complete Narrative
 
-A narratively complete scenario must include:
-1. At least one path to each quadrant
+At minimum (Bronze), a narratively complete scenario must include:
+1. At least one path to each corner cell (Triumph, Barrier, Escape, Fate)
 2. At least one NONE_DEATH path (mortality)
 3. At least one SOME_TRANSFORMED path (growth possible)
 4. Ideally: NONE_REMOVED (transcendence) and SOME_UNCHANGED (irony)
+
+For richer narratives (Silver/Gold), also include middle cells that embrace uncertainty.
 
 ## State Management
 
@@ -229,4 +320,11 @@ When the player ventures beyond known paths, the LLM generates new narrative nod
 4. Track the narrative trace
 5. Create meaningful choices with real consequences
 
-The meta-game ensures the generated content maintains narrative completeness across all quadrants.
+### Grid-Aware Generation
+
+Improvised actions naturally map to the "Player Unknown" row:
+- **Discovery** - when exploration succeeds
+- **Limbo** - when intent is ambiguous
+- **Revelation** - when improvisation reveals constraints
+
+The meta-game ensures generated content maintains narrative completeness across the nine cells, with particular attention to the chaos center (Limbo) where side quests and improvised adventures thrive.

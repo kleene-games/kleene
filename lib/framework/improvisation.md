@@ -4,6 +4,25 @@ Rules for responding to player free-text input beyond predefined choices.
 
 > **Philosophy:** Improvisation enriches the current moment without derailing scenario balance. Major state changes (items, locations, death) are reserved for scripted paths.
 
+## Grid Integration
+
+Improvised actions map to the **Player Unknown** row of the Nine Cells:
+
+| Feasibility | Grid Cell   | Response Pattern |
+|-------------|-------------|------------------|
+| Possible    | **Discovery**   | Reward curiosity, add insight |
+| Blocked     | **Revelation**  | Explain constraint, teach player |
+| Ambiguous   | **Limbo**       | Acknowledge without resolving |
+
+### Discovery Responses
+When improvisation succeeds (feasibility: possible), the world has *permitted* the unknown action. Generate enriching detail that rewards exploration. The character gains insight, flavor, or soft advantages.
+
+### Revelation Responses
+When improvisation is blocked, use the moment to *reveal* what's needed. Turn failure into information. The player learns why the path is blocked, which helps them find the correct approach.
+
+### Limbo Responses
+When player intent is unclear or action is ambiguous (neither clearly possible nor blocked), acknowledge the hesitation without forcing resolution. The narrative pauses at the threshold of possibility. This is the chaos center - perfect for side quests, ambient exploration, and building atmosphere.
+
 ## Detection
 
 After receiving user selection, check if the response matches any predefined option label. If NOT:
@@ -40,6 +59,11 @@ Given current state, evaluate if the action is:
 - Tries to interact with non-existent entities
 - Attempts to skip major story beats
 - Would trivialize core challenges
+
+**Ambiguous**: Intent unclear or action open-ended (→ Limbo)
+- Player hesitates or explores without clear goal
+- Action could go multiple ways
+- "Wait and see" behaviors
 
 ## Response Generation
 
@@ -92,6 +116,15 @@ The dragon fills the entire passage ahead. There's no path around it,
 no clever route to slip by unnoticed. Whatever happens next, it
 happens here, face to face with the wyrm.
 ```
+
+### Ambiguous Action (Limbo)
+When intent is unclear, acknowledge without forcing resolution. The narrative holds its breath.
+```
+You stand at the threshold, neither advancing nor retreating. The air
+itself seems to wait. The dragon's eyes follow you, patient as stone,
+as if time has less meaning here than you'd imagined. What will you do?
+```
+No state changes. The player remains at the same decision point, but the atmosphere has shifted.
 
 ### Meta Request
 Handle directly, breaking the fourth wall briefly.

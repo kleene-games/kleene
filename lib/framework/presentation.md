@@ -116,3 +116,66 @@ Use `AskUserQuestion` with these constraints:
 - Max 4 options (tool limit)
 
 If node has >4 options, select most relevant based on preconditions and current state.
+
+## Improvise Option Flow
+
+When a player selects an option with `next: improvise`, maintain seamless narrative presentation.
+
+### Silent Processing
+
+**NEVER** output internal state or processing notes. The player should experience seamless narrative flow without seeing game mechanics.
+
+Forbidden outputs:
+- "This option has `next: improvise`"
+- "Presenting sub-prompt"
+- "Processing improvisation flow"
+- "Executing scripted improvisation"
+- Any meta-commentary about option types or game internals
+
+### Transition Flow
+
+```
+[Player selects improvise option]
+         ↓
+[Display option.narrative if present]
+         ↓
+[Present sub-prompt via AskUserQuestion]
+```
+
+### Example: WRONG
+
+```
+> Question the elder
+
+This option has next: improvise. Presenting sub-prompt.
+
+What specifically do you ask?
+  1. Ask about its history
+  ...
+```
+
+### Example: CORRECT
+
+```
+> Question the elder
+
+The elder pauses, studying your face.
+
+What specifically do you ask?
+  1. Ask about its history
+  2. Ask why it attacks now
+  ...
+```
+
+### Option Narrative
+
+If the improvise option has a `narrative` field, display it as the immediate response to the player's choice BEFORE showing the sub-prompt:
+
+```yaml
+- id: ask_elder
+  text: "Ask the elder what she knows"
+  narrative: "The elder pauses, studying your face."  # ← Display this
+  next: improvise
+```
+
+The transition from choice → narrative → sub-prompt should feel like natural storytelling, not a game engine exposing its internals.

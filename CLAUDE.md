@@ -31,8 +31,11 @@ kleene/
 │   ├── kleene-generate/      # Scenario generation
 │   └── kleene-analyze/       # Structural analysis
 ├── lib/framework/
-│   ├── core.md               # Option type semantics & quadrant theory
-│   └── scenario-format.md    # YAML specification
+│   ├── core.md               # Option type semantics & Nine Cells framework
+│   ├── scenario-format.md    # YAML specification
+│   ├── presentation.md       # Header, trait, and choice formatting
+│   ├── improvisation.md      # Free-text action handling
+│   └── saves.md              # Game folder, save format, persistence
 ├── scenarios/                # Bundled scenarios
 │   └── dragon_quest.yaml     # Example scenario
 ├── hooks/                    # Auto-approve for seamless gameplay
@@ -42,16 +45,25 @@ kleene/
 
 ## Core Concepts
 
-### The Four Quadrants
+### The Nine Cells
 
-Every choice exists at the intersection of player agency and world response:
+Every choice exists at the intersection of three player states and three world responses:
 
-|                    | World Permits          | World Blocks           |
-|--------------------|------------------------|------------------------|
-| **Player Chooses** | Victory/Transformation | Blocked Path           |
-| **Player Avoids**  | Escape/Unchanged       | Forced Consequence     |
+|                    | World Permits | World Indeterminate | World Blocks |
+|--------------------|---------------|---------------------|--------------|
+| **Player Chooses** | Triumph       | Commitment          | Barrier      |
+| **Player Unknown** | Discovery     | Limbo               | Revelation   |
+| **Player Avoids**  | Escape        | Deferral            | Fate         |
 
-A narratively complete scenario ensures all quadrants are reachable.
+**Player Unknown** captures both hesitation and improvised free-text actions.
+**World Indeterminate** represents outcomes not yet resolved.
+**Limbo** (center cell) is the chaos zone where side quests and improvisation thrive.
+
+### Completeness Tiers
+
+- **Bronze**: 4 corner cells (Triumph, Barrier, Escape, Fate) - the original quadrants
+- **Silver**: Bronze + 2 middle cells (adds uncertainty/exploration)
+- **Gold**: All 9 cells - full narrative possibility space
 
 ### Null Cases
 
@@ -133,22 +145,6 @@ The `agents/game-runner.md` defines a haiku-model subagent that:
 
 ## Game Folder Convention
 
-The current working directory is the "game folder". Saves are organized by scenario:
+> **Reference:** See `lib/framework/saves.md` for complete details.
 
-```
-./saves/
-├── dragon_quest/
-│   ├── 2026-01-12_14-30-22.yaml
-│   └── 2026-01-10_09-15-00.yaml
-├── altered_state_nightclub/
-│   └── 2026-01-11_22-45-33.yaml
-└── corporate_banking/
-    └── 2026-01-09_18-00-00.yaml
-```
-
-| Path | Purpose |
-|------|---------|
-| `./saves/[scenario]/` | Saves for specific scenario |
-| `./saves/[scenario]/YYYY-MM-DD_HH-MM-SS.yaml` | Individual save file |
-
-Each gameplay session creates a new timestamped save file at start.
+The current working directory is the "game folder". Saves are stored at `./saves/[scenario]/[timestamp].yaml`. Each gameplay session creates a new timestamped save file at start.

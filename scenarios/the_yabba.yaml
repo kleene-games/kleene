@@ -89,13 +89,14 @@ nodes:
       The locals call this place "The Yabba." They say it with affection, like a nickname for an old mate. Everyone reckons it's the best little place on earth.
 
       As you disembark, you notice an Aboriginal man sitting alone at the front of the carriage, gazing out the window at the red earth. He hasn't moved. The white passengers — miners, mostly, already drunk — push past without acknowledging him.
-      The Aboriginal man catches your eye through the window. Just for a moment. Then he looks away, back at the land that once belonged to him and his ancestors.
+      The Aboriginal man catches your eye through the window. Just for a moment.
 
     choice:
       prompt: "The heat is oppressive. The platform is emptying."
       options:
         - id: find_hotel
           text: "Check into the hotel and stay in your room"
+          cell: avoids
           consequence:
             - type: move_to
               location: hotel
@@ -104,6 +105,7 @@ nodes:
 
         - id: find_pub
           text: "Find a pub — you could use a cold beer"
+          cell: chooses
           consequence:
             - type: move_to
               location: pub
@@ -115,6 +117,7 @@ nodes:
 
         - id: explore_town
           text: "Walk around town first — get your bearings"
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: self_knowledge
@@ -124,6 +127,7 @@ nodes:
 
         - id: acknowledge_man
           text: "Nod to the Aboriginal man before leaving the station."
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: dignity
@@ -131,8 +135,23 @@ nodes:
             - type: set_flag
               flag: acknowledged_man_on_train
               value: true
-          narrative: "Always was. Always will be."
+          narrative: "He sees you nod, then looks away, back at the land that was once his and his ancestors' before him. Always was. Always will be."
           next_node: town_exploration
+
+        - id: observe_station
+          text: "Linger at the station — take in your surroundings before committing"
+          cell: unknown
+          next: improvise
+          improvise_context:
+            theme: "first impressions of an outback mining town"
+            permits: ["look", "watch", "notice", "observe", "study", "listen", "smell", "heat"]
+            blocks: ["leave", "escape", "run", "refuse", "attack"]
+            limbo_fallback: |
+              The heat presses down. You stand on the platform, neither moving nor
+              deciding. The town waits, indifferent to your hesitation.
+          outcome_nodes:
+            discovery: station_observation_discovery
+            revelation: station_observation_blocked
 
   town_exploration:
     narrative: |
@@ -152,6 +171,7 @@ nodes:
       options:
         - id: go_with_jock
           text: "Let Jock lead you to the pub"
+          cell: chooses
           consequence:
             - type: modify_relationship
               npc: jock
@@ -161,6 +181,7 @@ nodes:
 
         - id: politely_decline_jock
           text: "Politely decline — you need to check into your hotel"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: dignity
@@ -173,6 +194,7 @@ nodes:
 
         - id: ask_about_town
           text: "Ask Jock about the town first"
+          cell: chooses
           consequence:
             - type: modify_relationship
               npc: jock
@@ -182,6 +204,21 @@ nodes:
               delta: 1
           narrative: "Jock loves talking about The Yabba."
           next_node: jock_town_tour
+
+        - id: examine_memorial
+          text: "Stop at the war memorial — those names look familiar"
+          cell: unknown
+          next: improvise
+          improvise_context:
+            theme: "understanding the town through its dead"
+            permits: ["read", "names", "war", "history", "families", "Crawford", "Hynes", "generations"]
+            blocks: ["vandalize", "ignore", "mock", "disrespect"]
+            limbo_fallback: |
+              The bronze names shimmer in the heat. Crawford. Hynes. Tydon.
+              The same names on the pub signs, the shop fronts, the police
+              badge. This town remembers its dead. Or perhaps, never let them go.
+          outcome_nodes:
+            discovery: memorial_discovery
 
   jock_town_tour:
     narrative: |
@@ -201,6 +238,7 @@ nodes:
       options:
         - id: accept_drink_tour
           text: "Accept — he's earned it"
+          cell: chooses
           consequence:
             - type: modify_relationship
               npc: jock
@@ -213,6 +251,7 @@ nodes:
 
         - id: hotel_instead
           text: "Thank him but head to your hotel"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: dignity
@@ -225,6 +264,7 @@ nodes:
 
         - id: ask_about_doc
           text: "Ask more about this 'Doc Tydon'"
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: self_knowledge
@@ -234,6 +274,7 @@ nodes:
 
         - id: decline_and_walk_away
           text: "Politely decline and walk away — no explanation needed, no justification owed"
+          cell: avoids
           precondition:
             type: trait_minimum
             trait: dignity
@@ -266,6 +307,7 @@ nodes:
       options:
         - id: meet_doc_early
           text: "Meet Doc first"
+          cell: chooses
           consequence:
             - type: modify_relationship
               npc: doc
@@ -278,6 +320,7 @@ nodes:
 
         - id: drink_first
           text: "Drink first — you need it"
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: sobriety
@@ -305,6 +348,7 @@ nodes:
       options:
         - id: accept_doc_drink
           text: "Accept Doc's offer"
+          cell: chooses
           consequence:
             - type: modify_relationship
               npc: doc
@@ -317,6 +361,7 @@ nodes:
 
         - id: decline_politely
           text: "Decline — you need to check in first"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: dignity
@@ -326,6 +371,7 @@ nodes:
 
         - id: ask_why_hell
           text: "Ask why he called it hell"
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: self_knowledge
@@ -356,6 +402,7 @@ nodes:
       options:
         - id: take_flask
           text: "Take the flask — drink with him"
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: sobriety
@@ -371,6 +418,7 @@ nodes:
 
         - id: refuse_flask
           text: "Refuse — you're not ready for this"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: dignity
@@ -380,6 +428,7 @@ nodes:
 
         - id: challenge_doc
           text: "Tell Doc you're not afraid of yourself"
+          cell: chooses
           consequence:
             - type: modify_relationship
               npc: doc
@@ -447,6 +496,7 @@ nodes:
       options:
         - id: stay_put
           text: "Stay in your room and read"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: dignity
@@ -456,6 +506,7 @@ nodes:
 
         - id: go_to_pub
           text: "Go to the pub — just for a couple of hours"
+          cell: chooses
           consequence:
             - type: move_to
               location: pub
@@ -467,6 +518,7 @@ nodes:
 
         - id: write_robyn
           text: "Write a letter to Robyn"
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: self_knowledge
@@ -476,12 +528,29 @@ nodes:
 
         - id: walk_town
           text: "Take a walk around town — explore safely"
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: self_knowledge
               delta: 1
           narrative: "Better than staring at walls."
           next_node: town_exploration
+
+        - id: sit_and_wait
+          text: "Sit on the veranda and just... wait. See what happens."
+          cell: unknown
+          next: improvise
+          improvise_context:
+            theme: "passive observation in limbo"
+            permits: ["watch", "observe", "wait", "sit", "listen", "people", "think"]
+            blocks: ["sleep", "leave", "hide"]
+            limbo_fallback: |
+              Hours pass. The ceiling fan turns. Men enter and leave the pub
+              across the street. The sun arcs overhead. You're not doing anything.
+              You're not deciding anything. Time becomes thick as honey.
+
+              This is what the Yabba does to people, you realize. It waits them out.
+          outcome_nodes: {}
 
   letter_to_robyn:
     narrative: |
@@ -1613,6 +1682,7 @@ nodes:
       options:
         - id: explain_calmly
           text: "Explain calmly why gambling isn't for you — no judgment, just not interested"
+          cell: avoids
           precondition:
             type: trait_minimum
             trait: dignity
@@ -1629,6 +1699,7 @@ nodes:
 
         - id: small_bet
           text: "Place a small bet — just to be social"
+          cell: chooses
           consequence:
             - type: set_flag
               flag: gambled
@@ -1641,6 +1712,7 @@ nodes:
 
         - id: refuse_gamble
           text: "Refuse to gamble — you need your money"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: dignity
@@ -1650,6 +1722,7 @@ nodes:
 
         - id: one_more_to_fit_in
           text: "Have one more drink to fit in — you're almost one of them now"
+          cell: chooses
           precondition:
             type: all_of
             conditions:
@@ -1671,6 +1744,22 @@ nodes:
               value: true
           narrative: "Another beer. The warmth spreads. You're starting to understand these men — or think you do. The coins spin and you find yourself putting money down without quite deciding to."
           next_node: winning_streak
+
+        - id: watch_from_edge
+          text: "Hang back and observe — see what gambling does to these men"
+          cell: unknown
+          next: improvise
+          improvise_context:
+            theme: "observing gamblers at the moment of truth"
+            permits: ["watch", "eyes", "faces", "expressions", "winners", "losers", "pattern", "addiction"]
+            blocks: ["bet", "gamble", "play", "join"]
+            limbo_fallback: |
+              The coins spin. Heads or tails. You watch the faces, not the coins.
+              The winners howl. The losers laugh—they always laugh, until they
+              don't. The kip rises and falls like a heartbeat.
+          outcome_nodes:
+            discovery: two_up_observation_discovery
+            revelation: two_up_observation_blocked
 
   pressure_to_gamble:
     narrative: |
@@ -2428,6 +2517,7 @@ nodes:
       options:
         - id: open_up_to_doc
           text: "Talk honestly with Doc about your situation"
+          cell: chooses
           consequence:
             - type: modify_relationship
               npc: doc
@@ -2440,6 +2530,7 @@ nodes:
 
         - id: drink_silently
           text: "Just drink — you're too tired to talk"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: sobriety
@@ -2449,6 +2540,7 @@ nodes:
 
         - id: challenge_doc
           text: "Ask Doc why he gave up — he was a surgeon"
+          cell: chooses
           consequence:
             - type: modify_relationship
               npc: doc
@@ -2461,6 +2553,7 @@ nodes:
 
         - id: refuse_docs_drink
           text: "Refuse the drink — you're staying clear-headed tonight. Eat the meat, but stay sharp"
+          cell: avoids
           precondition:
             type: trait_minimum
             trait: sobriety
@@ -2480,6 +2573,7 @@ nodes:
 
         - id: confess_gambling_losses
           text: "Tell Doc about losing everything at two-up — you need someone to understand"
+          cell: chooses
           precondition:
             type: flag_set
             flag: lost_everything
@@ -2492,6 +2586,21 @@ nodes:
               delta: 4
           narrative: "You tell him about the spinning coins, the rush, the catastrophic loss. Doc listens without judgment. 'Two-up,' he says quietly. 'The Yabba's favorite teacher. You learned fast, mate.'"
           next_node: docs_wisdom
+
+        - id: explore_docs_books
+          text: "Browse Doc's bookshelf — what does a ruined surgeon read?"
+          cell: unknown
+          next: improvise
+          improvise_context:
+            theme: "understanding a man through his library"
+            permits: ["books", "titles", "shakespeare", "philosophy", "medicine", "read", "spine"]
+            blocks: ["steal", "burn", "mock"]
+            limbo_fallback: |
+              The spines are sun-faded, warped by humidity. Medical texts sit
+              beside philosophy, poetry beside anatomy. Doc watches you browse,
+              offering nothing. A man's library is his confession.
+          outcome_nodes:
+            discovery: docs_books_discovery
 
         - id: doc_embraces_brother
           text: "Doc embraces you like a lost brother — finally, someone who truly understands"
@@ -2756,6 +2865,7 @@ nodes:
       options:
         - id: shoot_kangaroo
           text: "Pull the trigger"
+          cell: chooses
           precondition:
             type: trait_maximum
             trait: dignity
@@ -2778,6 +2888,7 @@ nodes:
 
         - id: cant_do_it
           text: "Lower the rifle — you can't do it"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: dignity
@@ -2790,6 +2901,7 @@ nodes:
 
         - id: shoot_wildly
           text: "Shoot into the air — end this"
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: desperation
@@ -2799,6 +2911,7 @@ nodes:
 
         - id: drunk_fumble_shot
           text: "Try to shoot but you're too drunk — hands shaking, vision blurred"
+          cell: chooses
           precondition:
             type: trait_maximum
             trait: sobriety
@@ -2818,6 +2931,7 @@ nodes:
 
         - id: doc_says_you_dont_have_to
           text: "Doc whispers: 'You don't have to shoot. I won't judge you.'"
+          cell: avoids
           precondition:
             type: relationship_minimum
             npc: doc
@@ -2834,6 +2948,7 @@ nodes:
 
         - id: tim_threatens_shoot_or_else
           text: "Tim shoves the rifle at you—'Shoot it or you're not getting back in the ute'"
+          cell: chooses
           precondition:
             type: relationship_maximum
             npc: tim
@@ -2850,6 +2965,22 @@ nodes:
               value: true
           narrative: "'Pull the bloody trigger or start walking.' Tim's voice is flat. He means it. Twenty miles of nothing between you and anywhere. The roo's eyes reflect the spotlight. You shoot."
           next_node: aftermath_of_hunt
+
+        - id: hesitate_rifle
+          text: "Hesitate — the rifle grows heavy, you can't decide"
+          cell: unknown
+          next: improvise
+          improvise_context:
+            theme: "paralysis at the moment of violence"
+            permits: ["wait", "think", "breathe", "lower", "mercy"]
+            blocks: ["shoot", "kill", "fire"]
+            limbo_fallback: |
+              The kangaroo watches you. You watch it. The men watch you both.
+              Time stretches. The rifle grows heavier with each heartbeat.
+              Someone laughs nervously. The spell might break any second.
+          outcome_nodes:
+            revelation: hunt_hesitation_revelation
+            discovery: hunt_hesitation_mercy
 
   aftermath_of_hunt:
     narrative: |
@@ -2869,6 +3000,7 @@ nodes:
       options:
         - id: silent_judgment
           text: "Stand back and watch — judge them silently, but don't interfere"
+          cell: avoids
           precondition:
             type: trait_minimum
             trait: dignity
@@ -2885,6 +3017,7 @@ nodes:
 
         - id: join_destruction
           text: "Join in — smash something"
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: dignity
@@ -2900,6 +3033,7 @@ nodes:
 
         - id: try_to_stop
           text: "Try to stop them — this is wrong"
+          cell: chooses
           consequence:
             - type: modify_trait
               trait: dignity
@@ -2915,6 +3049,7 @@ nodes:
 
         - id: slip_away
           text: "Slip away while they're distracted"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: dignity
@@ -2924,6 +3059,7 @@ nodes:
 
         - id: drink_through_it
           text: "Drink until you can't see it anymore"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: sobriety
@@ -2936,6 +3072,7 @@ nodes:
 
         - id: too_drunk_to_resist
           text: "You're too drunk to stop yourself — join in laughing, swept up in the chaos"
+          cell: chooses
           precondition:
             type: trait_maximum
             trait: sobriety
@@ -2951,7 +3088,23 @@ nodes:
               trait: self_knowledge
               delta: 2
           narrative: "The alcohol has you. No judgment, no restraint. You laugh with them, smash with them. Tomorrow you won't remember. Tonight, you're one of them."
-          next_node: the_wreckage
+
+        - id: process_silently
+          text: "Stay apart from the destruction — try to process what you've seen"
+          cell: unknown
+          next: improvise
+          improvise_context:
+            theme: "internal reckoning during external chaos"
+            permits: ["think", "feel", "remember", "process", "understand", "realize"]
+            blocks: ["join", "smash", "drink"]
+            limbo_fallback: |
+              Glass shatters. Men howl. You stand in the corner, trying to
+              locate yourself in all this. Were you always capable of this?
+              Or did the Yabba unlock something that was never there before?
+
+              The question has no answer. Not tonight.
+          outcome_nodes:
+            discovery: aftermath_clarity
 
   the_wreckage:
     narrative: |
@@ -4704,6 +4857,7 @@ nodes:
       options:
         - id: this_isnt_you
           text: "This isn't you — put the rifle down and think clearly"
+          cell: chooses
           precondition:
             type: trait_minimum
             trait: dignity
@@ -4720,6 +4874,7 @@ nodes:
 
         - id: youve_hit_bottom
           text: "You've hit bottom — but you're not broken"
+          cell: chooses
           precondition:
             type: trait_minimum
             trait: self_knowledge
@@ -4733,6 +4888,7 @@ nodes:
 
         - id: turn_rifle
           text: "Turn the rifle on yourself"
+          cell: chooses
           precondition:
             type: any_of
             conditions:
@@ -4751,6 +4907,7 @@ nodes:
 
         - id: put_down_rifle
           text: "Put the rifle down and walk outside"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: self_knowledge
@@ -4763,12 +4920,31 @@ nodes:
 
         - id: wait_for_doc
           text: "Wait — Doc will come back eventually"
+          cell: avoids
           consequence:
             - type: modify_trait
               trait: self_knowledge
               delta: 3
           narrative: "You need help. For once, you admit it."
           next_node: doc_returns
+
+        - id: just_exist
+          text: "Don't decide. Just exist in this moment."
+          cell: unknown
+          next: improvise
+          improvise_context:
+            theme: "existence at the edge of annihilation"
+            permits: ["breathe", "exist", "be", "feel", "wait"]
+            blocks: ["act", "decide", "choose"]
+            limbo_fallback: |
+              The desert stretches in every direction. The sun is a white eye.
+
+              You are here. You are alive. That's all you know.
+
+              Somewhere, a crow calls. Somewhere, a truck engine fades.
+
+              You just exist. Nothing more is required of this moment.
+          outcome_nodes: {}
 
   suicide_attempt:
     narrative: |
@@ -5606,6 +5782,372 @@ nodes:
               delta: 3
           narrative: "Doc. Janette. Even Jock. The Yabba has them. You're one of the lucky ones."
           next_node: ending_escape
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # IMPROVISATION OUTCOME NODES
+  # These nodes are reached from explicit improvisation options
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  station_observation_discovery:
+    narrative: |
+      You linger at the station, letting your senses absorb this place before committing to it.
+
+      The heat has a weight to it, pressing down like a physical thing. The air smells of dust and diesel and something else — eucalyptus, maybe, or the red earth itself.
+
+      You notice details: the faded timetables on the board, unchanged for years. The Aboriginal artwork on the waiting room wall, tucked in a corner where tourists might miss it. The way the platform faces west, toward the interior, away from everything you know.
+
+      On the memorial plaque by the door, you read names — Crawford, Hynes, Tydon — the same surnames that will follow you through this town like a curse. The Yabba has existed for generations. It has swallowed men before.
+
+      You understand something now: this isn't just a stopover. It's a threshold.
+    choice:
+      prompt: "You've seen the Yabba with fresh eyes. What now?"
+      options:
+        - id: proceed_cautiously
+          text: "Proceed into town — forewarned is forearmed"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 2
+          narrative: "You step off the platform with your eyes open."
+          next_node: town_exploration
+
+        - id: find_shelter
+          text: "Find the hotel first — you need time to think"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+          narrative: "Knowledge without action is wisdom."
+          next_node: hotel_boredom
+
+  station_observation_blocked:
+    narrative: |
+      You think about walking. Just walking — out of town, down the highway, anywhere but here.
+
+      But there's nothing. Red dirt and heat mirages in every direction. The next town is fifty miles away. Without water, without shade, you'd be dead before nightfall.
+
+      The train you arrived on has already departed. The next one isn't until tomorrow afternoon. You're trapped here whether you like it or not.
+
+      The Yabba doesn't need walls or bars. The land itself is the prison.
+    choice:
+      prompt: "There's no way out. Not yet."
+      options:
+        - id: accept_reality
+          text: "Accept it — find shelter and wait for tomorrow"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 2
+          narrative: "One night. You can survive one night."
+          next_node: hotel_boredom
+
+        - id: make_best
+          text: "Make the best of it — explore while you're here"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 1
+          narrative: "Trapped or not, you won't let this place break you."
+          next_node: town_exploration
+
+  memorial_discovery:
+    narrative: |
+      You study the memorial more closely. The names repeat: Crawford. Hynes. Tydon. Crawford again. Hynes again.
+
+      World War I. World War II. Korea. Vietnam. The same families, generation after generation, sending their sons into the meat grinder.
+
+      And the ones who came back? You look around at the miners drinking at midday, the women hurrying past with their heads down, the children who'll grow up to be just like their fathers.
+
+      The Yabba doesn't just trap individuals. It traps bloodlines. It consumes families whole, decade after decade, and calls it community.
+
+      You think of Doc — a surgeon from Sydney, brilliant by all accounts, now drinking himself to death in a tin shack. Was he consumed? Or did he choose this?
+
+      Does it matter?
+    choice:
+      prompt: "The pattern is clear now."
+      options:
+        - id: wont_be_you
+          text: "You won't be one of them — get to your hotel, stay focused"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 3
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+            - type: set_flag
+              flag: understood_yabba_cycle
+              value: true
+          narrative: "Knowledge is armor."
+          next_node: hotel_boredom
+
+        - id: jock_approaches
+          text: "A police officer approaches — Jock Crawford, according to his badge"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+            - type: set_flag
+              flag: understood_yabba_cycle
+              value: true
+          narrative: "One of the names from the memorial. Alive and smiling."
+          next_node: town_exploration
+
+  two_up_observation_discovery:
+    narrative: |
+      You hang back and watch the faces instead of the coins.
+
+      There's a pattern. The winners howl, slap backs, buy rounds. They're heroes for thirty seconds. Then they bet again, bigger, chasing the feeling.
+
+      The losers laugh too — at first. Then they go quiet. Then they bet again, desperate, trying to claw back what they've lost.
+
+      No one walks away ahead. Not really. The house doesn't take a cut here — there is no house — but the game takes everything anyway. The winners keep playing until they become losers. The losers keep playing until they're broken.
+
+      You see Doc, watching you watch them. He raises his glass, almost imperceptibly. A salute to the observer.
+
+      "Clever boy," his eyes seem to say. "But will you stay clever?"
+    choice:
+      prompt: "You've seen the trap. Now what?"
+      options:
+        - id: one_small_bet
+          text: "One small bet — you understand the game now, you can control it"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+            - type: set_flag
+              flag: gambled
+              value: true
+          narrative: "You step forward. The crowd parts."
+          next_node: winning_streak
+
+        - id: leave_ring
+          text: "Leave the ring — you've learned enough"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 4
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+          narrative: "The best gamble is the one you don't make."
+          next_node: hotel_boredom
+
+  two_up_observation_blocked:
+    narrative: |
+      Jock notices you watching from the edge.
+
+      "Oi! None of that!" He steers you toward the ring with a firm hand. "Can't just watch in the 'Yabba, mate. That's not how it works. You're either in or you're out."
+
+      The men around you nod, a circle closing. The aggressive hospitality you've felt all day has crystallized into something harder.
+
+      "Just one bet," Jock says. "She'll be right. Don't be a wowser."
+
+      They're all watching now. The coins wait on the kip.
+    choice:
+      prompt: "The pressure is intense."
+      options:
+        - id: give_in_observation
+          text: "Fine — one bet to shut them up"
+          cell: chooses
+          consequence:
+            - type: set_flag
+              flag: gambled
+              value: true
+            - type: modify_trait
+              trait: dignity
+              delta: -2
+          narrative: "You step forward. The crowd cheers."
+          next_node: winning_streak
+
+        - id: resist_observation
+          text: "Hold firm — you're not gambling"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 3
+          narrative: "They can push all they want."
+          next_node: pressure_to_gamble
+
+  docs_books_discovery:
+    narrative: |
+      You browse Doc's bookshelf while he watches, offering nothing.
+
+      Medical texts, dog-eared and annotated. Anatomy diagrams with notes in the margins. A surgeon's library, preserved even after the surgery ended.
+
+      But there's more. Philosophy: Marcus Aurelius, Nietzsche, Schopenhauer. Poetry: Yeats, Eliot, Judith Wright. And at the end, a battered copy of Kenneth Cook's novel about a schoolteacher trapped in an outback town.
+
+      You pull out the Meditations. It falls open to a marked passage:
+
+      "You have power over your mind — not outside events. Realize this, and you will find strength."
+
+      Doc's marginalia reads: "The Yabba taught me this. It took everything else first."
+
+      He refills your glass without being asked. "Found my confession, have you?"
+    choice:
+      prompt: "Doc's books have shown you something about him."
+      options:
+        - id: ask_about_books
+          text: "Ask him about the books — how a surgeon became a philosopher"
+          cell: chooses
+          consequence:
+            - type: modify_relationship
+              npc: doc
+              delta: 10
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 4
+          narrative: "Doc settles in for a real conversation."
+          next_node: docs_confession
+
+        - id: change_subject
+          text: "Change the subject — some confessions are too intimate"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+          narrative: "Some things are better left unread."
+          next_node: kangaroo_hunt_invitation
+
+  hunt_hesitation_revelation:
+    narrative: |
+      You hesitate too long.
+
+      Tim snatches the rifle from your hands. "Bloody useless." He aims and fires in one fluid motion. The kangaroo drops.
+
+      "City boys," he spits. "All the same. Can't pull a trigger when it matters."
+
+      The men laugh — not with you but at you. You've failed some test you didn't know you were taking.
+
+      Doc looks at you with something like pity. Or recognition. Hard to tell in the spotlight glare.
+
+      "Don't worry, schoolteacher," he says quietly. "The Yabba has other ways to break you."
+    choice:
+      prompt: "You've shown weakness. The hunt continues."
+      options:
+        - id: stay_silent
+          text: "Stay silent — you've nothing to prove to these men"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 2
+            - type: modify_relationship
+              npc: tim
+              delta: -10
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 5
+          narrative: "Let them think what they want."
+          next_node: aftermath_of_hunt
+
+        - id: grab_rifle_back
+          text: "Grab the rifle back — you'll shoot the next one"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: -5
+            - type: modify_trait
+              trait: desperation
+              delta: 3
+            - type: set_flag
+              flag: went_on_hunt
+              value: true
+          narrative: "You snatch it from Tim's hands."
+          next_node: aftermath_of_hunt
+
+  hunt_hesitation_mercy:
+    narrative: |
+      The moment stretches. The rifle grows heavier.
+
+      And then the kangaroo bolts. It crashes through the scrub, dark shape vanishing into darker darkness, and is gone.
+
+      The men groan. "Useless bloody city boy!" But they're already turning, looking for the next roo, the next target.
+
+      Doc catches your eye. He nods, almost imperceptibly.
+
+      In the chaos of the hunt, that small gesture feels like absolution. You didn't shoot. The animal escaped. It's not much. But it's something.
+    choice:
+      prompt: "The roo escaped. The hunt continues."
+      options:
+        - id: relief
+          text: "Feel relief — you didn't become one of them. Not tonight."
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: dignity
+              delta: 3
+            - type: modify_relationship
+              npc: doc
+              delta: 5
+          narrative: "Small mercies."
+          next_node: aftermath_of_hunt
+
+        - id: shame
+          text: "Feel shame — you couldn't act when it mattered"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 3
+          narrative: "Hesitation is its own kind of failure."
+          next_node: aftermath_of_hunt
+
+  aftermath_clarity:
+    narrative: |
+      Glass shatters around you, but you're somewhere else. Somewhere inside, looking out.
+
+      You see it with sudden, terrible clarity: this isn't random destruction. It's ritual. The hunt, the kill, the wreckage — it's how these men survive living in a place that wants to kill them.
+
+      They can't attack the heat, the isolation, the grinding poverty of spirit. So they attack something they can break. And afterward, they rebuild, and drink, and wait for the next hunt, the next excuse to let the pressure out.
+
+      Understanding isn't forgiveness. But it's something.
+
+      Doc is watching you from the corner, bottle in hand, reciting what sounds like Shakespeare but might be the Bible. He sees you seeing them.
+
+      "Welcome to enlightenment, schoolteacher," he murmurs. "Now you know. Does it help?"
+    choice:
+      prompt: "You understand now. Does it help?"
+      options:
+        - id: understanding_helps
+          text: "Yes. Understanding is the first step out."
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: self_knowledge
+              delta: 5
+            - type: set_flag
+              flag: understood_yabba_violence
+              value: true
+          narrative: "Doc nods slowly."
+          next_node: the_wreckage
+
+        - id: understanding_useless
+          text: "No. Understanding changes nothing."
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: desperation
+              delta: 3
+            - type: set_flag
+              flag: understood_yabba_violence
+              value: true
+          narrative: "Doc raises his glass. 'You're learning.'"
+          next_node: the_wreckage
 
 endings:
   ending_survival:
