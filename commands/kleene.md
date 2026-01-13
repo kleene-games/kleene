@@ -272,6 +272,30 @@ Unregistered files: 1
 4. Write registry
 5. Confirm: "Disabled 'Corporate Banking' - will not appear in play menu"
 
+### Temperature Actions
+Keywords: "temperature", "temp", "improv", "adaptation"
+
+**Set Temperature** (`/kleene temperature [0-10]`):
+1. Parse temperature value (0-10)
+2. Update `settings.improvisation_temperature` in current game state
+3. Confirm: "Improvisation temperature set to [N]"
+
+If no value provided, show current setting and explain scale:
+```
+Current improvisation temperature: 0 (Verbatim)
+
+Scale:
+  0     Verbatim    - Scenario text exactly as written (default)
+  1-3   Subtle      - Faint echoes of discoveries
+  4-6   Balanced    - Direct references woven in
+  7-9   Immersive   - Rich integration + bonus options
+  10    Adaptive    - Narrative shaped by exploration
+
+Use: /kleene temperature [0-10]
+```
+
+**Note:** Temperature only applies during active gameplay. The setting is saved with game state and persists across sessions.
+
 ### Help Actions
 Keywords: "help", "how", "what", "?"
 
@@ -305,6 +329,10 @@ REGISTRY
   /kleene registry                Show registry status
   /kleene enable [scenario]       Enable a disabled scenario
   /kleene disable [scenario]      Hide scenario from play menu
+
+SETTINGS
+  /kleene temperature             Show current improvisation temperature
+  /kleene temperature [0-10]      Set adaptation level (0=verbatim, 10=fully adaptive)
 
 Saves: ./saves/[scenario]/[timestamp].yaml
 Registry: scenarios/registry.yaml

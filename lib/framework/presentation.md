@@ -179,3 +179,98 @@ If the improvise option has a `narrative` field, display it as the immediate res
 ```
 
 The transition from choice → narrative → sub-prompt should feel like natural storytelling, not a game engine exposing its internals.
+
+## Temperature-Adapted Narrative
+
+When `settings.improvisation_temperature > 0` and relevant `improv_*` flags exist, generate contextual framing before the scripted narrative.
+
+### Formatting Rules
+
+**No special markers** — Adaptation blends seamlessly with narrative. No italics, brackets, or labels distinguishing adapted text from scripted text.
+
+**Position** — Adaptation appears BEFORE the node's narrative, separated by a blank line.
+
+```
+[Adaptation text — 1-3 sentences based on temperature]
+
+[Original node narrative — unchanged]
+```
+
+**Length by Temperature**
+
+| Temperature | Max Adaptation Length |
+|-------------|----------------------|
+| 1-3 | 1 sentence |
+| 4-6 | 1-2 sentences |
+| 7-9 | 2-3 sentences |
+| 10 | 3-4 sentences |
+
+### Example: Temperature 5
+
+```
+The inscriptions you noticed earlier seem relevant here — the same
+curving symbols are etched into the cavern walls.
+
+The dragon's eyes fix upon you. Ancient and knowing, they hold
+the weight of centuries. What will you do?
+```
+
+### Example: Temperature 10
+
+```
+Everything you've learned comes together in this moment — the
+inscriptions on the scales, the elder's words about grief, the
+way the shadows seem to bow rather than flee. You see now what
+others never paused to notice.
+
+The dragon's eyes fix upon you. Ancient and knowing, they hold
+the weight of centuries. What will you do?
+```
+
+### What NOT to Include
+
+- Meta-commentary ("Based on your exploration...")
+- Game mechanics ("Your improv_examined_scales flag triggers...")
+- Future hints ("This will be important later...")
+- Forced relevance (referencing unrelated discoveries)
+
+### Tone Matching
+
+Adaptation must match the scenario's established voice:
+- **Perspective**: Same as node narrative (usually 2nd person present)
+- **Vocabulary**: Match scenario register (archaic, modern, technical)
+- **Imagery density**: Match descriptive style of surrounding text
+
+## Bonus Option Presentation
+
+At temperature 7+, bonus options may be generated and added to choices.
+
+### Placement
+
+Bonus options appear AFTER scripted options but BEFORE the implicit "Other" option.
+
+```
+What will you do?
+
+1. Attack with your sword
+   └── Challenge the dragon in combat
+
+2. Speak to the dragon
+   └── Attempt to communicate
+
+3. Trace the inscriptions ★
+   └── Follow the symbols you noticed on its scales
+
+[Other: custom action]
+```
+
+### Indicator
+
+Use a subtle star (★) after the label to indicate this is a bonus option. Do NOT use labels like "[BONUS]" or "[Generated]".
+
+### Description Style
+
+Bonus option descriptions should:
+- Reference the discovery that triggered them
+- Use present tense
+- Be concise (under 50 characters)

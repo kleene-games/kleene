@@ -68,6 +68,8 @@ world:
   current_location: [location]
   time: [time]
   flags: {...}
+settings:
+  improvisation_temperature: [0-10]  # Controls narrative adaptation
 ```
 
 ## Operations

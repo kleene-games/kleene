@@ -100,7 +100,8 @@ nodes:
           next: improvise
           improvise_context:
             theme: "seeking wisdom before action"
-            permits: ["history", "weakness", "legend", "why", "story", "mate", "grief"]
+            permits:
+              ["history", "weakness", "legend", "why", "story", "mate", "grief"]
             blocks: ["demand", "threaten", "force", "lie", "trick"]
             limbo_fallback: "The elder watches you, waiting for a real question..."
           outcome_nodes:
@@ -252,7 +253,16 @@ nodes:
           next: improvise
           improvise_context:
             theme: "patient observation of an ancient being"
-            permits: ["scales", "inscriptions", "eyes", "breathing", "watch", "study", "patterns"]
+            permits:
+              [
+                "scales",
+                "inscriptions",
+                "eyes",
+                "breathing",
+                "watch",
+                "study",
+                "patterns",
+              ]
             blocks: ["attack", "charge", "sneak", "steal", "rush"]
             limbo_fallback: "The dragon's presence holds you in place, time stretching in the mountain silence..."
           outcome_nodes:

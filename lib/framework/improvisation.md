@@ -245,3 +245,229 @@ If free-text describes an action that has a precondition they don't meet, explai
 You reach for where your sword should hang, but your hand finds only
 air. Without a weapon, challenging the dragon directly would be folly.
 ```
+
+## Improvisation Temperature
+
+The temperature setting (0-10) controls how much improvised context influences the presentation of scripted narratives. Higher temperatures create a more responsive, personalized experience.
+
+### Scale Definition
+
+| Temp | Style | Description |
+|------|-------|-------------|
+| 0 | Verbatim | Scenario text displayed exactly as written |
+| 1-3 | Subtle | Faint echoes of improvised discoveries |
+| 4-6 | Balanced | Direct references woven into narrative |
+| 7-9 | Immersive | Rich integration of all improv context |
+| 10 | Fully Adaptive | Narrative perspective shaped by exploration |
+
+**Default:** 5 (Balanced)
+
+### Core Principle
+
+Temperature affects *presentation*, not *structure*. The scenario YAML is authoritative for:
+- Node transitions
+- Consequences
+- Preconditions
+- Ending narratives
+
+Temperature-based adaptation only enriches mood, context, and perspective.
+
+### Eligible Flags for Callback
+
+Only `improv_*` flags are eligible for temperature-based adaptation:
+
+| Flag Pattern | Callback Context |
+|--------------|------------------|
+| `improv_examined_*` | "You recall examining..." |
+| `improv_spoke_to_*` | "Having spoken with [entity]..." |
+| `improv_attempted_*` | "Your earlier attempt at..." |
+| `improv_discovered_*` | "The knowledge you gained..." |
+
+Regular `character.flags` set by scripted consequences are NOT used for temperature adaptation — they gate preconditions only.
+
+## Narrative Adaptation
+
+Before displaying a node's narrative, check temperature and relevant `improv_*` flags.
+
+### Temperature 0 (Verbatim)
+
+Display narrative exactly as written. No adaptation.
+
+```
+# Node narrative (unchanged)
+The dragon's eyes fix upon you. Ancient and knowing, they hold
+the weight of centuries. What will you do?
+```
+
+### Temperature 1-3 (Subtle)
+
+Add faint atmospheric hints without explicit reference.
+
+```
+Something about the dragon's scales feels familiar, though you
+can't quite place why.
+
+The dragon's eyes fix upon you. Ancient and knowing, they hold
+the weight of centuries. What will you do?
+```
+
+### Temperature 4-6 (Balanced)
+
+Direct reference to improvised discoveries, woven naturally.
+
+```
+The inscriptions you noticed earlier on the dragon's scales
+seem to pulse faintly in the torchlight.
+
+The dragon's eyes fix upon you. Ancient and knowing, they hold
+the weight of centuries. What will you do?
+```
+
+### Temperature 7-9 (Immersive)
+
+Rich integration connecting multiple improvised elements.
+
+```
+Having studied the dragon's scales and spoken with the elder,
+you recognize patterns now — the inscriptions are words of
+greeting, not warning. The dragon has been waiting, perhaps
+for someone who would look closely enough to see.
+
+The dragon's eyes fix upon you. Ancient and knowing, they hold
+the weight of centuries. What will you do?
+```
+
+### Temperature 10 (Fully Adaptive)
+
+The narrative perspective shifts to reflect the character's complete journey.
+
+```
+Everything you've learned comes together in this moment —
+the inscriptions on the scales, the elder's words about
+the dragon's grief, the symbols etched into the cavern walls.
+You see now what others never paused to notice. The dragon
+isn't a monster. It's a mourner.
+
+The dragon's eyes fix upon you. Ancient and knowing, they hold
+the weight of centuries. What will you do?
+```
+
+### Adaptation Guidelines
+
+1. **Prepend, don't replace** — The original narrative appears after adaptation
+2. **Match tone** — Adaptation inherits the scenario's voice and vocabulary
+3. **Length scales with temperature** — 1 sentence at temp 3, up to 3-4 at temp 10
+4. **Relevance filter** — Only reference flags that relate to the current scene
+5. **Never spoil** — Don't reveal scripted outcomes or future consequences
+
+## Option Adaptation
+
+At temperature 4+, option *descriptions* (not labels) can be enriched with improv context.
+
+### Temperature 0-3
+
+Options displayed exactly as written.
+
+```
+1. Attack with your sword
+   └── Challenge the dragon in combat
+
+2. Speak to the dragon
+   └── Attempt to communicate
+```
+
+### Temperature 4-6
+
+Descriptions enriched with relevant discoveries.
+
+```
+1. Attack with your sword
+   └── Challenge the dragon in combat (you recall its scarred left side)
+
+2. Speak to the dragon
+   └── Attempt to communicate (remembering the greeting symbols you studied)
+```
+
+### Temperature 7+
+
+Descriptions may suggest tactical implications.
+
+```
+1. Attack with your sword
+   └── Target the weakness you discovered in its scales
+
+2. Speak to the dragon
+   └── Use the greeting words inscribed on its scales
+```
+
+### Rules
+
+- **Labels stay fixed** — Precondition matching depends on exact option IDs
+- **Descriptions only** — The `description` field shown in AskUserQuestion
+- **Parenthetical preferred** — At temp 4-6, use "(you recall...)" format
+- **Integrated at temp 7+** — Rewrite description to incorporate discovery naturally
+
+## Bonus Options
+
+At temperature 7+, generate up to 1 bonus option per choice based on `improv_*` flags.
+
+### Generation Criteria
+
+A bonus option can be generated when:
+1. Temperature >= 7
+2. At least one `improv_*` flag suggests a meaningful action
+3. The action is feasible in current context
+4. Adding it won't exceed 4-option limit (including bonus)
+
+### Bonus Option Structure
+
+```yaml
+label: "[Short imperative - 2-4 words]"
+description: "[Brief context referencing the discovery]"
+source_flag: "[The improv_* flag that triggered this]"
+```
+
+### Examples
+
+**Flag:** `improv_discovered_dragon_weakness`
+```
+label: "Strike the weak point"
+description: "Target the vulnerability you discovered earlier"
+```
+
+**Flag:** `improv_examined_dragon_scales`
+```
+label: "Trace the inscriptions"
+description: "Follow the symbols you noticed on its scales"
+```
+
+**Flag:** `improv_spoke_to_shadow`
+```
+label: "Call to the shadow"
+description: "Summon the presence you communed with"
+```
+
+### Behavior When Selected
+
+Bonus options behave like emergent improvisation (free-text "Other"):
+
+1. Generate narrative response matching scenario tone
+2. Apply soft consequences only (trait ±1, `add_history`, new `improv_*` flags)
+3. Display response with the bold box format
+4. Present same choices again — bonus option remains available
+5. Do NOT advance node or increment turn
+
+### Edge Cases
+
+**Multiple relevant flags:**
+Choose the most relevant to current scene. Only 1 bonus option per choice.
+
+**Flag already used for bonus:**
+Track which flags have generated bonus options this turn. Avoid repeating.
+
+**Bonus option selected twice:**
+Handle like repeated improvisation — acknowledge without granting duplicate rewards.
+```
+You've already traced the inscriptions carefully. The pattern
+is committed to memory now.
+```

@@ -99,6 +99,10 @@ GAME_STATE:
     time: number              # Time counter
     flags: {flag: boolean}    # World state flags
 
+  settings:
+    improvisation_temperature: number  # 0-10, controls narrative adaptation
+                                       # 0 = verbatim, 5 = balanced, 10 = fully adaptive
+
   recent_history: [string]    # Last 3-5 turns for context
 ```
 
@@ -140,6 +144,8 @@ GAME_STATE:
    turn: 0
    character: [scenario.initial_character]
    world: [scenario.initial_world]
+   settings:
+     improvisation_temperature: 0  # Default (verbatim); can use scenario.settings.default_temperature if present
    recent_history: []
    ```
 
@@ -169,15 +175,28 @@ TURN:
      - If current_node is in scenario.endings → display ending, save state, EXIT
      - If character.exists == false → display death ending, save state, EXIT
 
-  3. Display narrative:
-     - Output the node's narrative text with formatting
+  3. Display narrative (with temperature adaptation):
+     - Read settings.improvisation_temperature (default: 0)
+     - Collect relevant improv_* flags from character.flags
+     - IF temperature > 0 AND improv_* flags exist:
+       - Generate contextual framing based on temperature level
+       - Weave into or prepend to narrative text
+       - See lib/framework/improvisation.md → "Improvisation Temperature"
+     - Output the (possibly adapted) narrative with formatting
      - Show character stats line
 
-  4. Evaluate available choices:
+  4. Evaluate available choices (with temperature adaptation):
      - For each option in node.choice.options:
        - Evaluate precondition against current state
        - If passes: add to available choices
        - If fails: EXCLUDE from choices (do not show)
+     - IF temperature >= 4 AND improv_* flags exist:
+       - Enrich option descriptions with improv context
+       - E.g., "Attack with your sword (you recall its scarred side)"
+     - IF temperature >= 7 AND improv_* flags suggest bonus action:
+       - Generate at most 1 bonus option based on improv flags
+       - Bonus options use soft consequences only (like free-text improv)
+       - See lib/framework/improvisation.md → "Bonus Options"
 
   5. Present choices via AskUserQuestion:
      {
@@ -185,7 +204,7 @@ TURN:
          "question": "[node.choice.prompt]",
          "header": "Choice",
          "multiSelect": false,
-         "options": [available choices with labels/descriptions]
+         "options": [available choices + bonus option if generated]
        }]
      }
 
@@ -204,6 +223,15 @@ TURN:
   6b. IF selected option has `next: improvise` (scripted Unknown path):
       - Execute Scripted Improvisation Flow (see below)
       - GOTO step 1 if outcome node specified, else GOTO step 5
+
+  6c. IF selection is a generated bonus option:
+      - Treat like emergent improvisation (same as 6a)
+      - Generate narrative response matching scenario tone
+      - Apply soft consequences only (trait ±1, add_history, improv_* flags)
+      - Display response with consequence indicators
+      - Present same choices again (step 5) — bonus option remains available
+      - Do NOT advance node or turn
+      - GOTO step 6
 
   7. Display option narrative (if present):
      - Check if selected option has a `narrative` field
