@@ -1,19 +1,29 @@
 {
   "name": "kleene",
   "version": "0.2.0",
-  "description": "Three-valued narrative engine - interactive fiction using Option types and LLM-driven scenario generation",
+  "description": "Adaptive AI text adventure engine for Claude Code. Play branching stories or improvise freely - temperature controls how much the AI adapts. 4 scenarios included.",
   "author": {
     "name": "Nathaniel Ramm",
     "email": "nathaniel@hiivmind.ai"
   },
   "repository": "https://github.com/hiivmind/kleene-plugin",
+  "homepage": "https://github.com/hiivmind/kleene-plugin#readme",
   "license": "MIT",
   "keywords": [
     "game",
-    "narrative",
-    "interactive-fiction",
-    "option-types",
     "text-adventure",
-    "three-valued-logic"
-  ]
+    "interactive-fiction",
+    "adaptive",
+    "AI-powered",
+    "storytelling",
+    "narrative-engine",
+    "emergent-storytelling"
+  ],
+  "categories": [
+    "games",
+    "entertainment",
+    "creative-writing",
+    "interactive-fiction"
+  ],
+  "minimumClaudeVersion": "3.5"
 }
