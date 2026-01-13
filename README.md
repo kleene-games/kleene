@@ -6,43 +6,6 @@ Unlike traditional choice-based games, Kleene responds to free-form actions and 
 
 🎮 [**Get Started in 5 Minutes**](GETTING_STARTED.md) | 📖 [Documentation](docs/) | 🤝 [Contributing](CONTRIBUTING.md)
 
----
-
-## Why Kleene?
-
-### True Improvisation
-**Type anything.** Don't just pick from options - describe what you want to do and the AI responds:
-- "I examine the dragon's scales closely"
-- "I try to sneak past while it's distracted"
-- "I offer it gold from my pouch"
-
-### The Temperature System (What Makes This Unique)
-Same scenario, completely different experience:
-- **Temperature 0:** Traditional branching narrative
-- **Temperature 5:** Story adapts to your exploration
-- **Temperature 10:** Fully emergent storytelling - every playthrough is unique
-
-Try playing Dragon Quest at temp 0, then replay at temp 10. Mind = blown.
-
-### Built for Claude Code
-- Native integration with seamless UX
-- Auto-saves during gameplay
-- Smart lazy loading for massive scenarios
-- No external dependencies
-
-### Four Awesome Scenarios Included
-- **Dragon Quest** (beginner) - Classic fantasy adventure
-- **The Yabba** (advanced) - Psychological thriller with dark themes
-- **Altered State Nightclub** (experimental) - Surreal mystery
-- **Corporate Banking** (intermediate) - Career drama and tough choices
-
-### Create Your Own Adventures
-- Simple YAML format (no coding required)
-- Built-in scenario generator: `/kleene generate haunted mansion`
-- Validator ensures no dead ends: `/kleene analyze`
-- Templates to get you started quickly
-
----
 
 ## Quick Start
 
@@ -106,6 +69,34 @@ When playing at temp > 0, you can type anything instead of picking from options:
 - **Meta:** "I want to leave this location"
 
 The AI evaluates feasibility and generates responses that fit the scenario tone.
+
+---
+
+## Features
+
+### For Players
+- **Improvisation Support**: Type any action—Claude interprets and responds dynamically
+- **State Persistence**: Save/load game states, pick up where you left off
+- **Auto-approval Hooks**: Seamless gameplay without permission prompts
+- **Pure Claude Code Integration**: No separate app, plays in your terminal
+
+### For Creators
+- **AI-Powered Generation**: Create complete scenarios from a single theme prompt
+- **YAML-based Format**: Human-readable, version-controllable scenario files
+- **Structural Validation**: Analyze completeness across Bronze/Silver/Gold tiers
+- **Nine Cells Framework**: Built-in guidance for rich, non-binary storytelling
+- **Preconditions & Consequences**: Full game logic with inventory, traits, flags, relationships
+
+## Create Your Own Scenarios
+
+Kleene isn't just a game engine—it's a complete authoring toolkit:
+
+1. **Generate**: Start with a theme (`/kleene generate "space station mystery"`)
+2. **Edit**: Scenarios are YAML files you can hand-edit or ask Claude to refine
+3. **Validate**: Check structural completeness (`/kleene analyze my_scenario`)
+4. **Play**: Test your creation immediately (`/kleene play my_scenario`)
+5. **Share**: Push to the community scenarios repo
+
 
 ---
 
@@ -209,6 +200,45 @@ Surreal mystery in a nightclub that defies reality.
 Navigate career challenges and ethical dilemmas in the corporate world.
 **Playtime:** 25-35 minutes | **Difficulty:** Intermediate
 
+
+---
+
+## Why Kleene?
+
+### True Improvisation
+**Type anything.** Don't just pick from options - describe what you want to do and the AI responds:
+- "I examine the dragon's scales closely"
+- "I try to sneak past while it's distracted"
+- "I offer it gold from my pouch"
+
+### The Temperature System (What Makes This Unique)
+Same scenario, completely different experience:
+- **Temperature 0:** Traditional branching narrative
+- **Temperature 5:** Story adapts to your exploration
+- **Temperature 10:** Fully emergent storytelling - every playthrough is unique
+
+Try playing Dragon Quest at temp 0, then replay at temp 10. Mind = blown.
+
+### Built for Claude Code
+- Native integration with seamless UX
+- Auto-saves during gameplay
+- Smart lazy loading for massive scenarios
+- No external dependencies
+
+### Four Awesome Scenarios Included
+- **Dragon Quest** (beginner) - Classic fantasy adventure
+- **The Yabba** (advanced) - Psychological thriller with dark themes
+- **Altered State Nightclub** (experimental) - Surreal mystery
+- **Corporate Banking** (intermediate) - Career drama and tough choices
+
+### Create Your Own Adventures
+- Simple YAML format (no coding required)
+- Built-in scenario generator: `/kleene generate haunted mansion`
+- Validator ensures no dead ends: `/kleene analyze`
+- Templates to get you started quickly
+
+---
+
 ---
 
 ## Community
@@ -235,15 +265,6 @@ Navigate career challenges and ethical dilemmas in the corporate world.
 ## Advanced: Framework Theory
 
 Kleene is built on solid theoretical foundations for those who want to dive deep.
-
-### Option Type Semantics
-
-Every narrative moment exists in one of three states:
-- **Some(value)** - The protagonist exists and can act
-- **None** - The protagonist has ceased (death, departure, transcendence)
-- **Unknown** - The narrative hasn't resolved yet (improvisation, exploration)
-
-This maps to three-valued logic formalized by Stephen Cole Kleene in 1938.
 
 ### The Nine Cells Framework
 
