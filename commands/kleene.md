@@ -9,7 +9,20 @@ arguments:
 
 # Kleene Gateway Command
 
+> **Tool Detection:** See `lib/patterns/tool-detection.md` for yq availability check.
+> **Templates:** See `lib/patterns/yaml-extraction.md` for all extraction patterns.
+
 **SILENT MODE**: Do NOT narrate your actions. No "Let me...", "Now I'll...", "Perfect!". Just use tools and present results. Be terse.
+
+## Tool Detection (at session start)
+
+Detect yq availability once per session:
+
+```bash
+command -v yq >/dev/null 2>&1 && yq --version 2>&1 | head -1
+```
+
+Set `yaml_tool: yq` if output contains "mikefarah/yq" and version >= 4, otherwise `yaml_tool: grep`.
 
 ## If no action provided, show menu FIRST
 
@@ -64,8 +77,16 @@ Parse user intent:
 **Step 2: For new games**
 
 1. **Load the registry:**
+
+   **If yaml_tool=yq (efficient extraction):**
+   ```bash
+   yq '.scenarios | to_entries | .[] | select(.value.enabled) | {"id": .key, "name": .value.name, "description": .value.description, "path": .value.path}' registry.yaml
+   ```
+
+   **If yaml_tool=grep:**
    - Read `${CLAUDE_PLUGIN_ROOT}/scenarios/registry.yaml`
-   - If registry doesn't exist, perform auto-sync first (see Registry Actions below)
+
+   If registry doesn't exist, perform auto-sync first (see Registry Actions below)
 
 2. **Check for unregistered scenarios:**
    - Glob `${CLAUDE_PLUGIN_ROOT}/scenarios/*.yaml`
@@ -81,6 +102,10 @@ Parse user intent:
 
 4. Present scenario menu via AskUserQuestion:
 
+   **Include tier badges if stats are cached:**
+   - `[Bronze]`, `[Silver]`, `[Gold]` based on stats.tier
+   - Show node count for complexity: "18 nodes"
+
 ```json
 {
   "questions": [
@@ -90,8 +115,12 @@ Parse user intent:
       "multiSelect": false,
       "options": [
         {
-          "label": "The Dragon's Choice",
-          "description": "Face the dragon and choose your fate"
+          "label": "The Dragon's Choice [Silver]",
+          "description": "Face the dragon and choose your fate (17 nodes)"
+        },
+        {
+          "label": "The Velvet Chamber [Gold]",
+          "description": "Explore a surreal nightclub mystery (24 nodes)"
         },
         {
           "label": "My New Scenario [new]",
@@ -102,6 +131,8 @@ Parse user intent:
   ]
 }
 ```
+
+   If scenario has no cached stats, omit the tier badge and node count.
 
 5. **On selection:**
    - If unregistered: auto-register (extract metadata, add to registry), then load
@@ -136,7 +167,20 @@ Parse user intent:
 
 1. Check if `./saves/[scenario_name]/` directory exists
 2. If no saves found: "No saved games found for [scenario]. Starting new game."
-3. If saves found, list them via AskUserQuestion:
+3. **Extract save metadata:**
+
+   **If yaml_tool=yq (efficient extraction):**
+   ```bash
+   for f in ./saves/SCENARIO/*.yaml; do
+     yq --arg file "$f" '{"file": $file, "turn": .turn, "node": .current_node, "saved": .last_saved, "title": .current_node_title, "preview": .current_node_preview}' "$f"
+   done
+   ```
+
+   **If yaml_tool=grep:** Read each save file fully.
+
+   If save has `current_node_title` and `current_node_preview` (cached metadata), use them for rich display. Otherwise, just show turn and node ID.
+
+4. If saves found, list them via AskUserQuestion:
 
 ```json
 {
@@ -229,17 +273,40 @@ Keywords: "sync", "registry", "enable", "disable", "list scenarios"
    - If already in registry and file exists: validate metadata is current
    - If in registry but file missing: set `missing: true`
    - If not in registry: extract metadata, add with `tags: ["discovered"]`
-4. Extract metadata using priority order:
+4. **Extract metadata:**
+
+   **If yaml_tool=yq (efficient extraction):**
+   ```bash
+   yq '{"name": .name, "description": .description}' scenario.yaml
+   ```
+
+   **If yaml_tool=grep:** Read file and parse name/description manually.
+
+   Priority order:
    - Name: `name` → `title` → `metadata.title` → filename
    - Description: `description` → `metadata.description` → "No description"
-5. Update `last_synced` timestamp to current ISO datetime
-6. Write updated `registry.yaml`
-7. Report changes:
+
+5. **Extract stats (if yaml_tool=yq):**
+   ```bash
+   yq '{"node_count": (.nodes | length), "ending_count": (.endings | length), "cells": [.nodes[].choice.options[] | select(.cell) | .cell] | unique}' scenario.yaml
+   ```
+
+   Calculate tier from cells:
+   - **Bronze**: Has chooses + avoids cells (4 corners)
+   - **Silver**: Bronze + unknown cells
+   - **Gold**: All 9 cells represented
+
+   Store in registry as `stats` field (see Phase 5 below).
+
+6. Update `last_synced` timestamp to current ISO datetime
+7. Write updated `registry.yaml`
+8. Report changes:
 ```
 Registry synced:
   Added: 2 scenarios
   Removed: 1 missing entry
   Updated: 0 scenarios
+  Stats cached: 3 scenarios
 ```
 
 **Registry Status** (`/kleene registry`):

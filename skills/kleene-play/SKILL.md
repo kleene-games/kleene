@@ -1,8 +1,8 @@
 ---
 name: kleene-play
 description: This skill should be used when the user asks to "play a game", "start kleene", "play dragon quest", "continue my game", "load my save", or wants to play an interactive narrative using the Kleene three-valued logic engine. Handles game state, choices, and narrative presentation.
-version: 0.3.0
-allowed-tools: Read, Glob, Grep, Write, Edit, AskUserQuestion
+version: 0.4.0
+allowed-tools: Read, Glob, Grep, Write, Edit, AskUserQuestion, Bash
 hooks:
   PreToolUse:
     - matcher: "Write|Edit"
@@ -29,6 +29,9 @@ This skill runs game logic **inline** (no sub-agent). Benefits:
 
 ## Scenario Loading
 
+> **Tool Detection:** See `lib/patterns/tool-detection.md` for yq availability check.
+> **Templates:** See `lib/patterns/yaml-extraction.md` for all extraction patterns.
+
 Scenarios may be loaded in two modes depending on file size.
 
 ### Standard Load (small scenarios)
@@ -39,44 +42,84 @@ For scenarios under ~20k tokens, read the entire file once and cache in context.
 
 When the Read tool returns a token limit error, switch to lazy loading:
 
-**Step 1: Load header (first 200 lines)**
+**Step 1: Detect yaml_tool capability**
+
+At session start, check for yq:
+```bash
+command -v yq >/dev/null 2>&1 && yq --version 2>&1 | head -1
+```
+
+If output contains "mikefarah/yq" and version >= 4: `yaml_tool: yq`
+Otherwise: `yaml_tool: grep`
+
+**Step 2: Load header**
+
+**If yaml_tool=yq (~75% token savings):**
+```bash
+yq '{"name": .name, "start_node": .start_node, "initial_character": .initial_character, "initial_world": .initial_world, "ending_ids": [.endings | keys | .[]]}' scenario.yaml
+```
+
+**If yaml_tool=grep (fallback):**
 ```
 Read scenario file with limit: 200
 ```
+
 Extract and cache:
-- `scenario` / `title` - scenario identifier
+- `name` - scenario identifier
 - `initial_character` - starting character state
 - `initial_world` - starting world state
-- `start_node` - first node ID (usually in header, but may need grep)
-- `endings` - all ending definitions
+- `start_node` - first node ID
+- `ending_ids` - list of ending identifiers
 
-**Step 2: Load nodes on demand**
+**Step 3: Load nodes on demand**
 
-For each node needed during gameplay, use Grep:
+**If yaml_tool=yq (~67% token savings):**
+```bash
+yq '.nodes.NODE_ID' scenario.yaml
+```
+
+For structured turn context:
+```bash
+yq '.nodes.NODE_ID as $n | {"narrative": $n.narrative, "prompt": $n.choice.prompt, "options": [$n.choice.options[] | {"id": .id, "text": .text, "cell": .cell, "precondition": .precondition, "next_node": .next_node, "has_improvise": (.next == "improvise"), "outcome_nodes": .outcome_nodes}]}' scenario.yaml
+```
+
+**If yaml_tool=grep (fallback):**
 ```
 Pattern: "^  {node_id}:"
-Context: -A 80 (captures most node content)
+Context: -A 80
 Path: scenario file
 ```
 
-Parse the YAML from grep output to extract:
-- `title` / `narrative` - display text
-- `choice.prompt` - question to ask
-- `choice.options` - available choices with preconditions/consequences
+Parse YAML from grep output to extract narrative, choice prompt, and options.
 
-**Step 3: Cache strategy**
+**Step 4: Improvise Prefetch (yq only)**
+
+When an option has `next: improvise`, prefetch outcome nodes in a single query:
+```bash
+yq '.nodes as $all | .nodes.NODE_ID.choice.options[] | select(.next == "improvise") | .outcome_nodes | to_entries | .[] | {"cell": .key, "node": $all[.value]}' scenario.yaml
+```
+
+This fetches both discovery and revelation nodes in one query, avoiding multiple round-trips.
+
+**Step 5: Cache strategy**
 - Header data: persistent (kept in context)
 - Current node: replaced each turn (don't accumulate old nodes)
 - Endings: persistent (needed for ending detection)
+- yaml_tool: persistent (detected once at session start)
 
 ### Detecting Load Mode
 
 The gateway command attempts full read first. If it fails:
 1. Sets `lazy_loading: true` in game context
-2. Loads header via partial read
-3. Passes scenario path for per-turn node loading
+2. Detects `yaml_tool: yq|grep` for extraction method
+3. Loads header via yq or partial read
+4. Passes scenario path for per-turn node loading
 
-When `lazy_loading: true`, Phase 2 must grep for each node instead of accessing cached scenario data.
+When `lazy_loading: true`, Phase 2 uses the appropriate tool to load each node.
+
+### Error Handling
+
+If yq fails during extraction, silently fall back to grep. Never interrupt gameplay to report tool failures.
 
 ## Game State Model
 
@@ -258,6 +301,25 @@ Save to disk when:
 - Game ends (victory, death, transcendence)
 - User explicitly requests save
 - Session is ending
+
+#### Save Metadata Caching
+
+When saving game state, cache node metadata for rich save listings:
+
+**If yaml_tool=yq:**
+```bash
+yq '.nodes.CURRENT_NODE | {"title": (.title // ("Node: " + "CURRENT_NODE")), "preview": (.narrative | split("\n") | map(select(. != "")) | .[0])}' scenario.yaml
+```
+
+Add to save file:
+```yaml
+current_node_title: "Village Crossroads"      # From .title or generated
+current_node_preview: "The village elder..."   # First line of narrative
+```
+
+**If yaml_tool=grep:** Skip metadata caching (graceful degradation).
+
+Old saves without cached metadata load normally - the metadata is optional and only used for richer save listings.
 
 The PreToolUse hook auto-approves saves/ writes for seamless gameplay.
 
