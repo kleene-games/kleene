@@ -122,7 +122,12 @@ Jock: -3 | Tim: 5
 
 
 ### Which Traits to Show
-- Show traits with value ≠ 0 (hide zero-initialized until modified)
+
+**Dynamic Trait Activation:** Show traits with value ≠ 0 only. Hide
+zero-initialized traits until they become relevant. When "Desperation"
+first appears in the status line, it signals the stat has activated
+and become part of the story. This reduces clutter and makes trait
+appearances narratively significant.
 
 ### Traits and Relationships
 
@@ -130,8 +135,15 @@ Jock: -3 | Tim: 5
 - Format: `[NPC]: [value]` (e.g., `Jock: -3`)
 - Omit relationships at 0
 - Show deltas from current turn in parentheses if non-zero
-- Remove delta indicator after next turn.
+- Remove delta indicator after next turn
 - Follow scenario definition order (as they appear in `initial_character.traits`)
+
+### Status Line Compression
+
+When many traits/relationships exist:
+- Show only non-zero values
+- Wrap at 70 chars onto new lines
+- Abbreviate if desperate: "Self-knowledge" → "Self-know:"
 
 
 

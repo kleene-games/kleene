@@ -387,6 +387,28 @@ Use: /kleene gallery on
 
 **Note:** Gallery mode only applies during active gameplay. The setting is saved with game state and persists across sessions.
 
+### Rewind Actions
+Keywords: "rewind", "go back", "restore", "undo"
+
+**Rewind to Turn** (`/kleene rewind [turn]`):
+1. Identify target turn from player request
+2. Restore exact numeric values (all traits and relationships)
+3. Restore narrative context (location, recent events)
+4. Continue seamlessly without "loading..." meta-commentary
+5. Present the choice menu from that point
+
+The narrative simply returns to that moment as if it always was.
+
+If no turn specified, show recent turns:
+```
+Recent turns:
+  Turn 5: The Royal Hotel - Chose to stay for another drink
+  Turn 4: The Royal Hotel - Met Doc at the bar
+  Turn 3: Main Street - Walked into town
+
+Use: /kleene rewind 4
+```
+
 ### Help Actions
 Keywords: "help", "how", "what", "?"
 
@@ -394,7 +416,7 @@ Display quick reference:
 
 ```
 ═══════════════════════════════════════════════════════════
-KLEENE - Three-Valued Narrative Engine
+KLEENE - AI Narrative Engine
 ═══════════════════════════════════════════════════════════
 
 PLAY
@@ -405,6 +427,7 @@ SAVES
   /kleene continue [scenario]     List and load saves for scenario
   /kleene list saves [scenario]   Show all saves for a scenario
   /kleene save                    Save current game to disk
+  /kleene rewind [turn]           Restore game state to earlier turn
 
 GENERATE
   /kleene generate [theme]        Create new scenario
@@ -423,12 +446,18 @@ REGISTRY
 
 SETTINGS
   /kleene temperature             Show current improvisation temperature
-  /kleene temperature [0-10]      Set adaptation level (0=verbatim, 10=fully adaptive)
+  /kleene temperature [0-10]      Set adaptation level:
+                                    0 = Verbatim (script only)
+                                    5 = Balanced (default)
+                                   10 = Fully adaptive
   /kleene gallery                 Show gallery mode status
-  /kleene gallery [on|off]        Toggle meta-commentary (like art gallery analysis cards)
+  /kleene gallery [on|off]        Toggle meta-commentary
+
+DURING GAMEPLAY
+  Select "Other" or type freely   Improvise beyond scripted choices
+  Your actions shape the story    Explore, interact, experiment!
 
 Saves: ./saves/[scenario]/[timestamp].yaml
-Registry: scenarios/registry.yaml
 
 ═══════════════════════════════════════════════════════════
 ```

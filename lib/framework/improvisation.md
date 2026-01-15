@@ -162,6 +162,84 @@ These flags:
 - Enable richer responses to repeated improvisation
 - Should NOT gate major scenario paths
 
+## Consequence Magnitude Scaling
+
+While improvised actions use soft consequences (±1), scripted choices
+scale based on narrative weight:
+
+| Action Type | Trait Delta | Relationship Delta |
+|-------------|-------------|-------------------|
+| Improvised exploration | ±1 | +1 to +3 |
+| Minor scripted choice | ±2 | ±5 |
+| Major scripted choice | ±3 to ±5 | ±15 to ±25 |
+| Catastrophic betrayal | ±5 | -50 |
+
+**Examples:**
+- Examining something interesting: +1 wisdom
+- Choosing to help someone: +2 trust, +5 relationship
+- Major confrontation: -3 dignity, -25 relationship
+- Betraying a lover: -5 dignity, -50 relationship
+
+## Relationship Damage Tiers
+
+| Offense Level | Delta | Example |
+|---------------|-------|---------|
+| Minor | ±5 | Mild disagreement, awkward moment |
+| Moderate | ±15 | Challenging someone publicly |
+| Major | ±25 | Full confrontation, harsh words |
+| Catastrophic | ±50 | Betrayal, abandonment, broken promise |
+
+**Positive relationships follow similar tiers:**
+- Casual kindness: +5
+- Genuine help: +15
+- Major sacrifice: +25
+- Life-changing bond: +50
+
+## Dynamic NPC Introduction
+
+Introduce NPCs at 0 relationship when they first become relevant.
+Don't front-load all potential NPCs in initial state.
+
+**Example:** Doc doesn't appear in relationships until he enters the
+story, then starts at 0 and tracks from there. This keeps the status
+line uncluttered and makes NPC appearances feel significant.
+
+## Turn Increment Discipline
+
+Turn++ ONLY when:
+- Moving to a new node via `next_node`
+
+Turn does NOT increment:
+- During improvised loops or sub-conversations
+- When re-presenting the same choice after free-text response
+- When player selects "Other" and provides custom input
+
+This prevents turn inflation and keeps pacing correct.
+
+## Scene Length Calibration
+
+**Extend improvised scenes when:**
+- Temperature is high (7-10)
+- Relationship is strong (40+)
+- Player choice indicates depth ("just talk" vs "leave")
+- No urgent plot pressure
+
+**Short improv:** 1-2 paragraphs, return to scripted options
+
+**Extended improv:** 3-5 paragraphs, multiple exchanges, then return
+to scripted nodes at natural transition points
+
+## Rewind (State Restoration)
+
+When player requests "rewind to [point]":
+1. Restore exact numeric values (all traits and relationships)
+2. Restore narrative context (location, recent events)
+3. Continue seamlessly without "loading..." meta-commentary
+4. Present the choice menu from that point
+
+Do NOT show restoration mechanics. The narrative simply returns to
+that moment as if it always was.
+
 ## Tone Matching
 
 Match the scenario's established voice:
@@ -261,6 +339,11 @@ The temperature setting (0-10) controls how much improvised context influences t
 | 10 | Fully Adaptive | Narrative perspective shaped by exploration |
 
 **Default:** 5 (Balanced)
+
+> **Gallery Mode:** For educational/analytical play, enable `gallery_mode`
+> in settings. This adds meta-commentary explaining psychological dynamics,
+> narrative structure, and why consequences trigger — like art gallery
+> analysis cards. See `lib/framework/presentation.md` → "Gallery Mode".
 
 ### Core Principle
 

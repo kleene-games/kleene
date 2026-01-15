@@ -108,13 +108,8 @@ yq '.nodes as $all | .nodes.NODE_ID.choice.options[] | select(.next == "improvis
 
 This fetches both discovery and revelation nodes in one query, avoiding multiple round-trips.
 
-**Step 5: Cache strategy**
-- Header data: persistent (kept in context)
-- Current node: replaced each turn (don't accumulate old nodes)
-- Endings: persistent (needed for ending detection)
-- yaml_tool: persistent (detected once at session start)
 
-**Step 6: Adaptive Node Discovery (for improvised choices)**
+**Step 5: Adaptive Node Discovery (for improvised choices)**
 
 When narrative choices lead to unexpected paths or you need to find
 appropriate continuation nodes:
@@ -141,7 +136,16 @@ grep -i 'keyword' scenario.yaml | grep -E '^\s{2}\w+:'
 
 **Result:** Seamless narrative flow that feels responsive rather than
 searching/loading. Do the keyword search, load the best-matching node,
-present it naturally as if you knew it was there all along.
+present or adapt it naturally as if you knew it was there all along.
+
+
+**Step 6: Cache strategy**
+- Header data: persistent (kept in context)
+- Current node: replaced each turn (don't accumulate old nodes)
+- Endings: persistent (needed for ending detection)
+- yaml_tool: persistent (detected once at session start)
+
+
 
 ### Detecting Load Mode
 
@@ -555,7 +559,10 @@ Outcome nodes:
 
 Use AskUserQuestion per conventions in `lib/framework/presentation.md`.
 
-**Blocked options**: NEVER show. Filter out options whose preconditions fail before presenting choices.
+**Silent Precondition Filtering**: Options failing preconditions are
+removed BEFORE presenting choices. Never show "locked" or "requires X"
+indicators. The character simply doesn't think of impossible actions.
+This maintains immersion — if you can't do it, you don't see it.
 
 ```json
 {
