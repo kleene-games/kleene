@@ -363,6 +363,30 @@ Use: /kleene temperature [0-10]
 
 **Note:** Temperature only applies during active gameplay. The setting is saved with game state and persists across sessions.
 
+### Gallery Actions
+Keywords: "gallery", "meta", "commentary", "analysis"
+
+**Toggle Gallery Mode** (`/kleene gallery [on|off]`):
+1. Parse on/off value (or toggle if not provided)
+2. Update `settings.gallery_mode` in current game state
+3. Confirm with explanation
+
+If no value provided, show current setting and explain:
+```
+Gallery mode: OFF
+
+When ON, includes meta-commentary alongside narrative — like the
+analysis cards at art galleries. Explains psychological dynamics,
+narrative structure, and why consequences trigger.
+
+When OFF (default), pure immersive narrative only.
+
+Use: /kleene gallery on
+     /kleene gallery off
+```
+
+**Note:** Gallery mode only applies during active gameplay. The setting is saved with game state and persists across sessions.
+
 ### Help Actions
 Keywords: "help", "how", "what", "?"
 
@@ -400,6 +424,8 @@ REGISTRY
 SETTINGS
   /kleene temperature             Show current improvisation temperature
   /kleene temperature [0-10]      Set adaptation level (0=verbatim, 10=fully adaptive)
+  /kleene gallery                 Show gallery mode status
+  /kleene gallery [on|off]        Toggle meta-commentary (like art gallery analysis cards)
 
 Saves: ./saves/[scenario]/[timestamp].yaml
 Registry: scenarios/registry.yaml

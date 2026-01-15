@@ -40,7 +40,14 @@ For scenarios under ~20k tokens, read the entire file once and cache in context.
 
 ### Lazy Load (large scenarios)
 
-When the Read tool returns a token limit error, switch to lazy loading:
+When the Read tool returns a token limit error, switch to lazy loading.
+
+> **Token Efficiency:** Using `yq` for YAML extraction is **dramatically more efficient** than Read/Grep:
+> - Header extraction: **~75% fewer tokens** (extracts only needed fields)
+> - Node loading: **~67% fewer tokens** (single node vs grep context)
+> - Entire large scenario playthrough: **~50% total token savings**
+>
+> Always prefer yq when available. The savings compound across every turn.
 
 **Step 1: Detect yaml_tool capability**
 
@@ -107,6 +114,35 @@ This fetches both discovery and revelation nodes in one query, avoiding multiple
 - Endings: persistent (needed for ending detection)
 - yaml_tool: persistent (detected once at session start)
 
+**Step 6: Adaptive Node Discovery (for improvised choices)**
+
+When narrative choices lead to unexpected paths or you need to find
+appropriate continuation nodes:
+
+**If yaml_tool=yq (preferred):**
+```bash
+# Find nodes by keyword/theme
+yq '.nodes | keys | .[]' scenario.yaml | grep -i 'keyword1\|keyword2\|theme'
+
+# Example: Finding morning-after scenes
+yq '.nodes | keys | .[]' scenario.yaml | grep -i 'morning\|wake\|dawn'
+```
+
+**If yaml_tool=grep (fallback):**
+```bash
+grep -i 'keyword' scenario.yaml | grep -E '^\s{2}\w+:'
+```
+
+**When to use:**
+- Player makes improvised choice that doesn't map to scripted next_node
+- Multiple potential continuation paths exist
+- Need to find thematically appropriate transition nodes
+- Lazy loading mode requires discovering relevant story branches
+
+**Result:** Seamless narrative flow that feels responsive rather than
+searching/loading. Do the keyword search, load the best-matching node,
+present it naturally as if you knew it was there all along.
+
 ### Detecting Load Mode
 
 The gateway command attempts full read first. If it fails:
@@ -170,18 +206,7 @@ GAME_STATE:
 
    Track load mode in context: `lazy_loading: true/false`
 
-2. Create save directory if needed:
-   ```
-   ./saves/[scenario_name]/
-   ```
-
-3. Generate session save filename with current timestamp:
-   ```
-   YYYY-MM-DD_HH-MM-SS.yaml
-   ```
-   Store this filename in memory - all saves this session use the same file.
-
-4. Initialize state from scenario:
+2. Initialize state in memory from scenario:
    ```yaml
    current_node: [scenario.start_node]
    turn: 0
@@ -192,9 +217,12 @@ GAME_STATE:
    recent_history: []
    ```
 
-5. Write initial save file immediately (so session has a file from start).
+3. **Do NOT create a save file yet.** Only save when:
+   - User explicitly asks to save (`/kleene save`)
+   - Reaching an ending (auto-save before exit)
+   - After 5+ turns of play (checkpoint save)
 
-6. The scenario data is now in your context - do not re-read it.
+4. The scenario data is now in your context - do not re-read it.
 
 **If resuming from save:**
 
@@ -503,21 +531,25 @@ Outcome nodes:
 
 ## Narrative Presentation
 
-> **Conventions:** See `lib/framework/presentation.md` for complete formatting rules.
+> **⚠️ MANDATORY: Follow `lib/framework/presentation.md` EXACTLY**
+>
+> **ALL OUTPUT MUST BE 70 CHARACTERS WIDE — NO EXCEPTIONS.**
+>
+> This includes:
+> - Header block ═ borders: exactly 70 ═ characters
+> - Narrative text: wrap at 70 characters
+> - Status lines: wrap at 70 characters
+>
+> Users play on small screens. Text wider than 70 chars is cut off.
 
-Display narrative with the **cinematic header format**:
+### Which Header Block to display
 
-### Header Exemplar
+- **Cinematic header**: Game start, location changes, major story beats
+- **Normal Header**: Same location, no major narrative changes 
 
-```
-═══════════════════════════════════════════════════════════════════════
-                    T H E   V E L V E T   C H A M B E R
-═══════════════════════════════════════════════════════════════════════
-                          Main Entrance
-                        Turn 1 | Time: 23:00
-                   Sobriety: ██████████ 10 | Suspicion: ████░░░░░░ 5
-═══════════════════════════════════════════════════════════════════════
-```
+> **MANDATORY:**  See `lib/framework/presentation.md` → "Header Block" for templates and examples of each header
+
+
 
 ## Choice Presentation
 
@@ -552,7 +584,7 @@ Display ending with appropriate tone:
 **Victory:**
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  VICTORY                                                  ║
+| VICTORY                                                   |
 ╚═══════════════════════════════════════════════════════════╝
 
 [Ending narrative - celebratory tone]
@@ -561,7 +593,7 @@ Display ending with appropriate tone:
 **Death:**
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  DEATH                                                    ║
+| DEATH                                                     |
 ╚═══════════════════════════════════════════════════════════╝
 
 [Ending narrative - somber, respectful]
@@ -570,7 +602,7 @@ Display ending with appropriate tone:
 **Transcendence:**
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  TRANSCENDENCE                                            ║
+| TRANSCENDENCE                                             |
 ╚═══════════════════════════════════════════════════════════╝
 
 [Ending narrative - mystical, transformative]
@@ -579,7 +611,7 @@ Display ending with appropriate tone:
 **Unchanged (Irony):**
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  UNCHANGED                                                ║
+| UNCHANGED                                                 |
 ╚═══════════════════════════════════════════════════════════╝
 
 [Ending narrative - ironic, reflective]
