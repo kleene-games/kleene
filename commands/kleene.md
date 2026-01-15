@@ -410,35 +410,41 @@ Use: /kleene rewind 4
 ```
 
 ### Export Actions
-Keywords: "export", "transcript", "save story", "save journey"
+Keywords: "export", "transcript", "save story", "save journey", "summary", "stats"
 
-**Export Journey** (`/kleene export`):
-1. Collect all narrative blocks from current session
-2. Filter OUT:
-   - Bash tool calls and output
-   - Read/Grep/Glob tool calls and output
-   - yq queries and YAML data blocks
-   - System messages and tool permission prompts
-3. Keep ONLY:
-   - Cinematic headers (══════ blocks)
-   - Narrative text (the story)
-   - Player choices (prefix with `>`)
-   - Status/footer lines
-4. Format as markdown:
-   ```markdown
-   # [Scenario Name] - A Journey
+> **Reference:** See `lib/framework/export.md` for complete format specifications.
 
-   ## Turn 1: [Location]
+**Export Modes:**
 
-   [Narrative text]
+| Mode | Command | Description |
+|------|---------|-------------|
+| **Transcript** | `/kleene export` | Clean narrative log (default) |
+| **Summary** | `/kleene export --mode=summary` | Analysis with gallery notes |
+| **Stats** | `/kleene export --mode=stats` | Numbers only |
+| **Branches** | `/kleene export --mode=branches` | Split by timeline |
+| **Gallery** | `/kleene export --mode=gallery` | Commentary only |
 
-   > **Choice:** [What player chose]
+**Options:**
+```
+--format=md|json|html    Output format (default: md)
+--split-branches         Separate file per branch
+--output=filename.md     Specific output file
+--dir=./path/            Output directory
+```
 
-   ---
-   **[Character]** | [Traits] | [Relationships]
-   ```
-5. Write to: `./exports/[scenario]_[timestamp].md`
-6. Confirm: "Journey exported to exports/the_yabba_2026-01-16.md"
+**Process (all modes):**
+1. Collect session content from conversation context
+2. Filter out technical artifacts (Bash, yq, Read, etc.)
+3. Extract relevant content based on mode
+4. Format and write to `./exports/[scenario]_[date].md`
+
+**Example:**
+```
+/kleene export                      # transcript to default location
+/kleene export --mode=summary       # full analysis
+/kleene export --mode=stats         # just numbers
+/kleene export --split-branches     # one file per timeline
+```
 
 If no active game:
 "No active game to export. Start a game with /kleene play first."
@@ -462,7 +468,12 @@ SAVES
   /kleene list saves [scenario]   Show all saves for a scenario
   /kleene save                    Save current game to disk
   /kleene rewind [turn]           Restore game state to earlier turn
-  /kleene export                  Export journey as clean narrative
+
+EXPORT
+  /kleene export                  Export as clean transcript (default)
+  /kleene export --mode=summary   Export with analysis & gallery notes
+  /kleene export --mode=stats     Export numbers only
+  /kleene export --mode=branches  Split export by timeline
 
 GENERATE
   /kleene generate [theme]        Create new scenario
