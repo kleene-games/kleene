@@ -409,6 +409,40 @@ Recent turns:
 Use: /kleene rewind 4
 ```
 
+### Export Actions
+Keywords: "export", "transcript", "save story", "save journey"
+
+**Export Journey** (`/kleene export`):
+1. Collect all narrative blocks from current session
+2. Filter OUT:
+   - Bash tool calls and output
+   - Read/Grep/Glob tool calls and output
+   - yq queries and YAML data blocks
+   - System messages and tool permission prompts
+3. Keep ONLY:
+   - Cinematic headers (══════ blocks)
+   - Narrative text (the story)
+   - Player choices (prefix with `>`)
+   - Status/footer lines
+4. Format as markdown:
+   ```markdown
+   # [Scenario Name] - A Journey
+
+   ## Turn 1: [Location]
+
+   [Narrative text]
+
+   > **Choice:** [What player chose]
+
+   ---
+   **[Character]** | [Traits] | [Relationships]
+   ```
+5. Write to: `./exports/[scenario]_[timestamp].md`
+6. Confirm: "Journey exported to exports/the_yabba_2026-01-16.md"
+
+If no active game:
+"No active game to export. Start a game with /kleene play first."
+
 ### Help Actions
 Keywords: "help", "how", "what", "?"
 
@@ -428,6 +462,7 @@ SAVES
   /kleene list saves [scenario]   Show all saves for a scenario
   /kleene save                    Save current game to disk
   /kleene rewind [turn]           Restore game state to earlier turn
+  /kleene export                  Export journey as clean narrative
 
 GENERATE
   /kleene generate [theme]        Create new scenario
