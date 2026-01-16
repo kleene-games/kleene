@@ -391,11 +391,24 @@ Add paths that transform rather than defeat:
 - High requirements should have alternative paths
 - Blocked options should explain why clearly
 
+### Writing Style
+
+> **Reference:** See `lib/framework/improvisation.md` → "Tone Matching"
+> and "Narrative Purity" for dialogue quality standards.
+
+Generated narrative and dialogue must:
+- Match the scenario's established voice (vocabulary, imagery, rhythm)
+- Keep characters in-character (no meta-narrative terms like "redemption arc")
+- Reserve analytical observations for Gallery Mode, not in-world text
+
+**Characters speak as characters, not as literary critics.**
+
 ## Additional Resources
 
 ### Reference Files
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics and Nine Cells
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/improvisation.md`** - Tone Matching & Narrative Purity
 
 ### Example Scenarios
 - **`${CLAUDE_PLUGIN_ROOT}/scenarios/dragon_quest.yaml`** - Complete example

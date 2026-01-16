@@ -133,6 +133,9 @@ Save as `scenarios/my_adventure.yaml` and run `/kleene play my_adventure`
 | `/kleene continue [scenario]` | Resume from save |
 | `/kleene temperature [0-10]` | Set adaptation level |
 | `/kleene save` | Save current game |
+| `/kleene rewind [target]` | Go back to earlier point |
+| `/kleene export [mode]` | Export gameplay to markdown |
+| `/kleene gallery [on\|off]` | Toggle meta-commentary |
 | `/kleene generate [theme]` | Create new scenario |
 | `/kleene analyze [scenario]` | Check for issues |
 
@@ -209,6 +212,54 @@ When temperature > 0, you can type anything instead of picking from options. The
 | "I examine the mysterious rune" | Provides lore, maybe +1 knowledge |
 
 **The magic:** These actions get woven into the narrative at higher temperatures!
+
+---
+
+## Understanding Progress Tracking
+
+Kleene tracks your position with three counters: **Turn · Scene · Beat**
+
+| Counter | When It Increments |
+|---------|-------------------|
+| **Turn** | When you make a scripted choice (node transition) |
+| **Scene** | Location change, time skip, or 5+ beats accumulate |
+| **Beat** | Every improvised action or scripted choice |
+
+**Example header:**
+```
+═══════════════════════════════════════════════════════════════════════
+Turn 6 · Scene 2 · Beat 3                              The Dusty Saloon
+═══════════════════════════════════════════════════════════════════════
+```
+
+**Compact notation:** T6.2.3 means Turn 6, Scene 2, Beat 3 - used in saves and rewind.
+
+---
+
+## Using Rewind
+
+Made a choice you regret? Jump back in time:
+
+```bash
+/kleene rewind -1      # Go back 1 beat
+/kleene rewind --1     # Go back 1 scene
+/kleene rewind T6.2.3  # Jump to Turn 6, Scene 2, Beat 3
+```
+
+Rewind creates a branch - your original timeline is preserved in exports.
+
+---
+
+## Exporting Your Journey
+
+Save your adventure as a clean markdown file:
+
+```bash
+/kleene export              # Clean narrative transcript
+/kleene export summary      # Includes analysis and themes
+```
+
+Exports are saved to `./exports/` - perfect for sharing or reviewing.
 
 ---
 

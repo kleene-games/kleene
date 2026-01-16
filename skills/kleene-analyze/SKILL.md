@@ -1,7 +1,8 @@
 ---
 name: kleene-analyze
 description: This skill should be used when the user asks to "analyze a scenario", "check narrative completeness", "find missing paths", "validate my scenario", "show grid coverage", or wants to understand the structure of a Kleene scenario. Performs graph analysis and nine-cell grid coverage checking.
-version: 0.2.0
+version: 0.3.0
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash
 ---
 
 # Kleene Analyze Skill
@@ -24,6 +25,9 @@ List all possible paths from start to endings.
 
 ## Workflow
 
+> **Tool Detection:** See `lib/patterns/tool-detection.md` for yq availability check.
+> **Templates:** See `lib/patterns/yaml-extraction.md` for all extraction patterns.
+
 ### Step 1: Load Scenario
 
 Read scenario from:
@@ -33,12 +37,24 @@ Read scenario from:
 
 Parse YAML and validate basic structure.
 
+**Tool Detection:** At session start, check for yq 4.x availability. Set `yaml_tool: yq|grep`.
+
 ### Step 2: Build Graph
 
 Construct directed graph:
 - Nodes: Each scenario node
 - Edges: Connections from choice options to next_node
 - Edge metadata: option_id, preconditions, consequences
+
+**yq Optimization (if yaml_tool=yq):**
+
+Extract only structural data, skipping narratives (~60% token savings):
+
+```bash
+yq '.nodes | to_entries | .[] | {"node": .key, "options": [.value.choice.options[] | {"id": .id, "cell": .cell, "next": (.next_node // .next), "precondition": .precondition}]}' scenario.yaml
+```
+
+This returns the graph structure without narrative text, significantly reducing tokens for large scenarios.
 
 ### Step 3: Analyze Reachability
 
@@ -62,6 +78,14 @@ Path 2: intro → forest_entrance → shrine_discovery → scroll_taken → ...
 Track path length and required preconditions.
 
 ### Step 5: Classify Paths into Cells
+
+**yq Optimization (if yaml_tool=yq):**
+
+Get cell coverage report in a single query:
+
+```bash
+yq '[.nodes | to_entries | .[] | .value.choice.options[] | select(.cell)] | group_by(.cell) | .[] | {"cell": .[0].cell, "count": length}' scenario.yaml
+```
 
 For each path, determine cell in the 3x3 grid based on two axes:
 
@@ -225,6 +249,20 @@ RECOMMENDATIONS
 
 ### Precondition Dependency Map
 
+**yq Optimization (if yaml_tool=yq):**
+
+Extract all preconditions in a single query (impossible with grep):
+
+```bash
+yq '.nodes | to_entries | .[] | .value.choice.options[] | select(.precondition) | {"node": (parent | parent | parent | .key), "option": .id, "requires": .precondition}' scenario.yaml
+```
+
+Find all nodes requiring a specific item:
+
+```bash
+yq '.nodes | to_entries | .[] | select(.value.choice.options[].precondition.item == "rusty_sword") | {"node": .key, "requires": "rusty_sword"}' scenario.yaml
+```
+
 Show which items/traits/flags are required for which paths:
 
 ```
@@ -241,6 +279,8 @@ courage >= 10:
   Max obtainable: 8 (starting 5 + sword +1 + victory +3)
   Status: IMPOSSIBLE (intended?)
 ```
+
+**Note:** The precondition dependency queries are only possible with yq. When using grep fallback, this analysis is limited.
 
 ### Critical Path Analysis
 

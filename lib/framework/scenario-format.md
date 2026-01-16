@@ -104,6 +104,33 @@ forest_entrance:
         next_node: village
 ```
 
+### Scene Control
+
+Nodes can force scene breaks for major narrative transitions:
+
+```yaml
+forest_entrance:
+  scene_break: true    # Forces scene increment on arrival
+  narrative: |
+    You emerge from the dark tunnel into dappled sunlight...
+```
+
+**When to use `scene_break: true`:**
+- Major location transitions
+- Significant time jumps
+- Tonal shifts in narrative
+- After climactic moments
+
+**Automatic scene breaks** occur when:
+- Location changes (via `move_to` consequence)
+- Time advances (via `advance_time` consequence)
+- 5+ beats accumulate without explicit break
+
+Scene tracking affects:
+- Gameplay headers display "Turn N · Scene S · Beat B"
+- Export granularity options (`--granularity=scene`)
+- Multi-level rewind targeting (T6.2.3 notation)
+
 ### Ending Node
 
 ```yaml

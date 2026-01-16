@@ -20,6 +20,14 @@ scenarios:
     enabled: true                    # Optional - default true
     tags: ["fantasy", "bundled"]     # Optional - categorization
     missing: false                   # System-set - true if file not found
+    stats:                           # Optional - cached during sync (yq only)
+      node_count: 17                 # Number of scenario nodes
+      ending_count: 4                # Number of endings
+      tier: "Silver"                 # Bronze/Silver/Gold based on cell coverage
+      cells_covered:                 # Cell types found in scenario
+        - chooses
+        - avoids
+        - unknown
 ```
 
 ## Fields
@@ -32,6 +40,23 @@ scenarios:
 | `enabled` | No | boolean | Toggle visibility (default: true) |
 | `tags` | No | string[] | Categorization labels |
 | `missing` | No | boolean | Set by sync when file not found |
+| `stats` | No | object | Cached scenario statistics (yq only) |
+
+### Stats Fields (cached during sync)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `node_count` | number | Total scenario nodes |
+| `ending_count` | number | Total endings |
+| `tier` | string | "Bronze", "Silver", or "Gold" |
+| `cells_covered` | string[] | Cell types present: `chooses`, `avoids`, `unknown` |
+
+**Tier Calculation:**
+- **Bronze**: Has `chooses` and `avoids` cells (4 corners covered)
+- **Silver**: Bronze + has `unknown` cells (middle row)
+- **Gold**: All 9 cells represented in analysis
+
+Stats are only cached when `yq` is available. Without yq, stats field is omitted.
 
 ## Tag Conventions
 
@@ -90,10 +115,18 @@ When building the play menu:
 ```
 Which scenario would you like to play?
 
-- The Dragon's Choice        (enabled, file exists)
-- The Velvet Chamber         (enabled, file exists)
-- New Scenario [unregistered] (file exists, not in registry)
-- Old Scenario [missing]      (in registry, file not found)
+- The Dragon's Choice [Silver] (17 nodes)   <- has cached stats
+- The Velvet Chamber [Gold] (24 nodes)      <- has cached stats
+- Corporate Banking                         <- no cached stats
+- New Scenario [unregistered]               <- file exists, not in registry
+- Old Scenario [missing]                    <- in registry, file not found
 ```
+
+**Tier badges** are shown if `stats.tier` exists:
+- `[Bronze]` - Basic coverage
+- `[Silver]` - Good coverage with uncertainty paths
+- `[Gold]` - Full nine-cell coverage
+
+**Node count** shown in parentheses if `stats.node_count` exists.
 
 Disabled scenarios are hidden from the menu unless explicitly requested.

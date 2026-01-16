@@ -9,7 +9,20 @@ arguments:
 
 # Kleene Gateway Command
 
+> **Tool Detection:** See `lib/patterns/tool-detection.md` for yq availability check.
+> **Templates:** See `lib/patterns/yaml-extraction.md` for all extraction patterns.
+
 **SILENT MODE**: Do NOT narrate your actions. No "Let me...", "Now I'll...", "Perfect!". Just use tools and present results. Be terse.
+
+## Tool Detection (at session start)
+
+Detect yq availability once per session:
+
+```bash
+command -v yq >/dev/null 2>&1 && yq --version 2>&1 | head -1
+```
+
+Set `yaml_tool: yq` if output contains "mikefarah/yq" and version >= 4, otherwise `yaml_tool: grep`.
 
 ## If no action provided, show menu FIRST
 
@@ -64,8 +77,16 @@ Parse user intent:
 **Step 2: For new games**
 
 1. **Load the registry:**
+
+   **If yaml_tool=yq (efficient extraction):**
+   ```bash
+   yq '.scenarios | to_entries | .[] | select(.value.enabled) | {"id": .key, "name": .value.name, "description": .value.description, "path": .value.path}' registry.yaml
+   ```
+
+   **If yaml_tool=grep:**
    - Read `${CLAUDE_PLUGIN_ROOT}/scenarios/registry.yaml`
-   - If registry doesn't exist, perform auto-sync first (see Registry Actions below)
+
+   If registry doesn't exist, perform auto-sync first (see Registry Actions below)
 
 2. **Check for unregistered scenarios:**
    - Glob `${CLAUDE_PLUGIN_ROOT}/scenarios/*.yaml`
@@ -81,6 +102,10 @@ Parse user intent:
 
 4. Present scenario menu via AskUserQuestion:
 
+   **Include tier badges if stats are cached:**
+   - `[Bronze]`, `[Silver]`, `[Gold]` based on stats.tier
+   - Show node count for complexity: "18 nodes"
+
 ```json
 {
   "questions": [
@@ -90,8 +115,12 @@ Parse user intent:
       "multiSelect": false,
       "options": [
         {
-          "label": "The Dragon's Choice",
-          "description": "Face the dragon and choose your fate"
+          "label": "The Dragon's Choice [Silver]",
+          "description": "Face the dragon and choose your fate (17 nodes)"
+        },
+        {
+          "label": "The Velvet Chamber [Gold]",
+          "description": "Explore a surreal nightclub mystery (24 nodes)"
         },
         {
           "label": "My New Scenario [new]",
@@ -102,6 +131,8 @@ Parse user intent:
   ]
 }
 ```
+
+   If scenario has no cached stats, omit the tier badge and node count.
 
 5. **On selection:**
    - If unregistered: auto-register (extract metadata, add to registry), then load
@@ -136,7 +167,20 @@ Parse user intent:
 
 1. Check if `./saves/[scenario_name]/` directory exists
 2. If no saves found: "No saved games found for [scenario]. Starting new game."
-3. If saves found, list them via AskUserQuestion:
+3. **Extract save metadata:**
+
+   **If yaml_tool=yq (efficient extraction):**
+   ```bash
+   for f in ./saves/SCENARIO/*.yaml; do
+     yq --arg file "$f" '{"file": $file, "turn": .turn, "node": .current_node, "saved": .last_saved, "title": .current_node_title, "preview": .current_node_preview}' "$f"
+   done
+   ```
+
+   **If yaml_tool=grep:** Read each save file fully.
+
+   If save has `current_node_title` and `current_node_preview` (cached metadata), use them for rich display. Otherwise, just show turn and node ID.
+
+4. If saves found, list them via AskUserQuestion:
 
 ```json
 {
@@ -229,17 +273,40 @@ Keywords: "sync", "registry", "enable", "disable", "list scenarios"
    - If already in registry and file exists: validate metadata is current
    - If in registry but file missing: set `missing: true`
    - If not in registry: extract metadata, add with `tags: ["discovered"]`
-4. Extract metadata using priority order:
+4. **Extract metadata:**
+
+   **If yaml_tool=yq (efficient extraction):**
+   ```bash
+   yq '{"name": .name, "description": .description}' scenario.yaml
+   ```
+
+   **If yaml_tool=grep:** Read file and parse name/description manually.
+
+   Priority order:
    - Name: `name` → `title` → `metadata.title` → filename
    - Description: `description` → `metadata.description` → "No description"
-5. Update `last_synced` timestamp to current ISO datetime
-6. Write updated `registry.yaml`
-7. Report changes:
+
+5. **Extract stats (if yaml_tool=yq):**
+   ```bash
+   yq '{"node_count": (.nodes | length), "ending_count": (.endings | length), "cells": [.nodes[].choice.options[] | select(.cell) | .cell] | unique}' scenario.yaml
+   ```
+
+   Calculate tier from cells:
+   - **Bronze**: Has chooses + avoids cells (4 corners)
+   - **Silver**: Bronze + unknown cells
+   - **Gold**: All 9 cells represented
+
+   Store in registry as `stats` field (see Phase 5 below).
+
+6. Update `last_synced` timestamp to current ISO datetime
+7. Write updated `registry.yaml`
+8. Report changes:
 ```
 Registry synced:
   Added: 2 scenarios
   Removed: 1 missing entry
   Updated: 0 scenarios
+  Stats cached: 3 scenarios
 ```
 
 **Registry Status** (`/kleene registry`):
@@ -296,6 +363,109 @@ Use: /kleene temperature [0-10]
 
 **Note:** Temperature only applies during active gameplay. The setting is saved with game state and persists across sessions.
 
+### Gallery Actions
+Keywords: "gallery", "meta", "commentary", "analysis"
+
+**Toggle Gallery Mode** (`/kleene gallery [on|off]`):
+1. Parse on/off value (or toggle if not provided)
+2. Update `settings.gallery_mode` in current game state
+3. Confirm with explanation
+
+If no value provided, show current setting and explain:
+```
+Gallery mode: OFF
+
+When ON, includes meta-commentary alongside narrative — like the
+analysis cards at art galleries. Explains psychological dynamics,
+narrative structure, and why consequences trigger.
+
+When OFF (default), pure immersive narrative only.
+
+Use: /kleene gallery on
+     /kleene gallery off
+```
+
+**Note:** Gallery mode only applies during active gameplay. The setting is saved with game state and persists across sessions.
+
+### Rewind Actions
+Keywords: "rewind", "go back", "restore", "undo"
+
+**Rewind to Position** (`/kleene rewind [target]`):
+
+Supports 3-level targeting with Turn.Scene.Beat notation:
+
+| Target | Meaning |
+|--------|---------|
+| `6` | Turn 6, Scene 1, Beat 1 |
+| `6.2` | Turn 6, Scene 2, Beat 1 |
+| `6.2.3` | Turn 6, Scene 2, Beat 3 |
+| `T6.2.3` | Same (explicit T prefix) |
+| `-1` | Back 1 beat |
+| `--1` | Back 1 scene |
+
+**Process:**
+1. Parse target to identify turn/scene/beat
+2. Restore exact numeric values (all traits and relationships)
+3. Restore turn, scene, beat counters
+4. Restore narrative context (location, recent events)
+5. Continue seamlessly without "loading..." meta-commentary
+6. Present the choice menu from that point
+
+The narrative simply returns to that moment as if it always was.
+
+If no target specified, show recent history:
+```
+Recent history:
+  T6.2.3  Tim confrontation on street
+  T6.2.2  Walk publicly (Dignity +2)
+  T6.2.1  Dish washing
+  T6.1.3  Intimacy [time passes] (Janette +5)
+  T6.1.2  Cool room scene (Dignity -1)
+  T6.1.1  Kitchen arrival
+
+Use: /kleene rewind 6.2.1
+```
+
+### Export Actions
+Keywords: "export", "transcript", "save story", "save journey", "summary", "stats"
+
+> **Reference:** See `lib/framework/export.md` for complete format specifications.
+
+**Export Modes:**
+
+| Mode | Command | Description |
+|------|---------|-------------|
+| **Transcript** | `/kleene export` | Clean narrative log (default) |
+| **Summary** | `/kleene export --mode=summary` | Analysis with gallery notes |
+| **Stats** | `/kleene export --mode=stats` | Numbers only |
+| **Branches** | `/kleene export --mode=branches` | Split by timeline |
+| **Gallery** | `/kleene export --mode=gallery` | Commentary only |
+
+**Options:**
+```
+--format=md|json|html    Output format (default: md)
+--split-branches         Separate file per branch
+--output=filename.md     Specific output file
+--dir=./path/            Output directory
+```
+
+**Process (all modes):**
+1. Collect session content from conversation context
+2. Filter out technical artifacts (Bash, yq, Read, etc.)
+3. Extract relevant content based on mode
+4. Format and write to `./exports/[scenario]_[date].md`
+
+**Example:**
+```
+/kleene export                      # transcript to default location
+/kleene export --mode=summary       # full analysis
+/kleene export --mode=stats         # just numbers
+/kleene export --split-branches     # one file per timeline
+```
+
+If no active game:
+"No active game to export. Start a game with /kleene play first."
+
 ### Help Actions
 Keywords: "help", "how", "what", "?"
 
@@ -303,7 +473,7 @@ Display quick reference:
 
 ```
 ═══════════════════════════════════════════════════════════
-KLEENE - Three-Valued Narrative Engine
+KLEENE - AI Narrative Engine
 ═══════════════════════════════════════════════════════════
 
 PLAY
@@ -314,6 +484,19 @@ SAVES
   /kleene continue [scenario]     List and load saves for scenario
   /kleene list saves [scenario]   Show all saves for a scenario
   /kleene save                    Save current game to disk
+  /kleene rewind [target]         Restore to earlier position:
+                                    6       Turn 6, Scene 1, Beat 1
+                                    6.2     Turn 6, Scene 2, Beat 1
+                                    6.2.3   Turn 6, Scene 2, Beat 3
+                                    -1      Back 1 beat
+                                    --1     Back 1 scene
+
+EXPORT
+  /kleene export                  Export as clean transcript (default)
+  /kleene export --mode=summary   Export with analysis & gallery notes
+  /kleene export --mode=stats     Export numbers only
+  /kleene export --mode=branches  Split export by timeline
+  /kleene export --granularity=beat  Export with beat-level detail
 
 GENERATE
   /kleene generate [theme]        Create new scenario
@@ -332,10 +515,23 @@ REGISTRY
 
 SETTINGS
   /kleene temperature             Show current improvisation temperature
-  /kleene temperature [0-10]      Set adaptation level (0=verbatim, 10=fully adaptive)
+  /kleene temperature [0-10]      Set adaptation level:
+                                    0 = Verbatim (script only)
+                                    5 = Balanced (default)
+                                   10 = Fully adaptive
+  /kleene gallery                 Show gallery mode status
+  /kleene gallery [on|off]        Toggle meta-commentary
+
+DURING GAMEPLAY
+  Select "Other" or type freely   Improvise beyond scripted choices
+  Your actions shape the story    Explore, interact, experiment!
+
+PROGRESS TRACKING
+  Headers show: Turn N · Scene S · Beat B
+  Compact notation: T6.2.3 = Turn 6, Scene 2, Beat 3
+  Use this notation with /kleene rewind
 
 Saves: ./saves/[scenario]/[timestamp].yaml
-Registry: scenarios/registry.yaml
 
 ═══════════════════════════════════════════════════════════
 ```

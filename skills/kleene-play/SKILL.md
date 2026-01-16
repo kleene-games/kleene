@@ -1,8 +1,8 @@
 ---
 name: kleene-play
 description: This skill should be used when the user asks to "play a game", "start kleene", "play dragon quest", "continue my game", "load my save", or wants to play an interactive narrative using the Kleene three-valued logic engine. Handles game state, choices, and narrative presentation.
-version: 0.3.0
-allowed-tools: Read, Glob, Grep, Write, Edit, AskUserQuestion
+version: 0.4.0
+allowed-tools: Read, Glob, Grep, Write, Edit, AskUserQuestion, Bash
 hooks:
   PreToolUse:
     - matcher: "Write|Edit"
@@ -29,6 +29,9 @@ This skill runs game logic **inline** (no sub-agent). Benefits:
 
 ## Scenario Loading
 
+> **Tool Detection:** See `lib/patterns/tool-detection.md` for yq availability check.
+> **Templates:** See `lib/patterns/yaml-extraction.md` for all extraction patterns.
+
 Scenarios may be loaded in two modes depending on file size.
 
 ### Standard Load (small scenarios)
@@ -37,46 +40,126 @@ For scenarios under ~20k tokens, read the entire file once and cache in context.
 
 ### Lazy Load (large scenarios)
 
-When the Read tool returns a token limit error, switch to lazy loading:
+When the Read tool returns a token limit error, switch to lazy loading.
 
-**Step 1: Load header (first 200 lines)**
+> **Token Efficiency:** Using `yq` for YAML extraction is **dramatically more efficient** than Read/Grep:
+> - Header extraction: **~75% fewer tokens** (extracts only needed fields)
+> - Node loading: **~67% fewer tokens** (single node vs grep context)
+> - Entire large scenario playthrough: **~50% total token savings**
+>
+> Always prefer yq when available. The savings compound across every turn.
+
+**Step 1: Detect yaml_tool capability**
+
+At session start, check for yq:
+```bash
+command -v yq >/dev/null 2>&1 && yq --version 2>&1 | head -1
+```
+
+If output contains "mikefarah/yq" and version >= 4: `yaml_tool: yq`
+Otherwise: `yaml_tool: grep`
+
+**Step 2: Load header**
+
+**If yaml_tool=yq (~75% token savings):**
+```bash
+yq '{"name": .name, "start_node": .start_node, "initial_character": .initial_character, "initial_world": .initial_world, "ending_ids": [.endings | keys | .[]]}' scenario.yaml
+```
+
+**If yaml_tool=grep (fallback):**
 ```
 Read scenario file with limit: 200
 ```
+
 Extract and cache:
-- `scenario` / `title` - scenario identifier
+- `name` - scenario identifier
 - `initial_character` - starting character state
 - `initial_world` - starting world state
-- `start_node` - first node ID (usually in header, but may need grep)
-- `endings` - all ending definitions
+- `start_node` - first node ID
+- `ending_ids` - list of ending identifiers
 
-**Step 2: Load nodes on demand**
+**Step 3: Load nodes on demand**
 
-For each node needed during gameplay, use Grep:
+**If yaml_tool=yq (~67% token savings):**
+```bash
+yq '.nodes.NODE_ID' scenario.yaml
+```
+
+For structured turn context:
+```bash
+yq '.nodes.NODE_ID as $n | {"narrative": $n.narrative, "prompt": $n.choice.prompt, "options": [$n.choice.options[] | {"id": .id, "text": .text, "cell": .cell, "precondition": .precondition, "next_node": .next_node, "has_improvise": (.next == "improvise"), "outcome_nodes": .outcome_nodes}]}' scenario.yaml
+```
+
+**If yaml_tool=grep (fallback):**
 ```
 Pattern: "^  {node_id}:"
-Context: -A 80 (captures most node content)
+Context: -A 80
 Path: scenario file
 ```
 
-Parse the YAML from grep output to extract:
-- `title` / `narrative` - display text
-- `choice.prompt` - question to ask
-- `choice.options` - available choices with preconditions/consequences
+Parse YAML from grep output to extract narrative, choice prompt, and options.
 
-**Step 3: Cache strategy**
+**Step 4: Improvise Prefetch (yq only)**
+
+When an option has `next: improvise`, prefetch outcome nodes in a single query:
+```bash
+yq '.nodes as $all | .nodes.NODE_ID.choice.options[] | select(.next == "improvise") | .outcome_nodes | to_entries | .[] | {"cell": .key, "node": $all[.value]}' scenario.yaml
+```
+
+This fetches both discovery and revelation nodes in one query, avoiding multiple round-trips.
+
+
+**Step 5: Adaptive Node Discovery (for improvised choices)**
+
+When narrative choices lead to unexpected paths or you need to find
+appropriate continuation nodes:
+
+**If yaml_tool=yq (preferred):**
+```bash
+# Find nodes by keyword/theme
+yq '.nodes | keys | .[]' scenario.yaml | grep -i 'keyword1\|keyword2\|theme'
+
+# Example: Finding morning-after scenes
+yq '.nodes | keys | .[]' scenario.yaml | grep -i 'morning\|wake\|dawn'
+```
+
+**If yaml_tool=grep (fallback):**
+```bash
+grep -i 'keyword' scenario.yaml | grep -E '^\s{2}\w+:'
+```
+
+**When to use:**
+- Player makes improvised choice that doesn't map to scripted next_node
+- Multiple potential continuation paths exist
+- Need to find thematically appropriate transition nodes
+- Lazy loading mode requires discovering relevant story branches
+
+**Result:** Seamless narrative flow that feels responsive rather than
+searching/loading. Do the keyword search, load the best-matching node,
+present or adapt it naturally as if you knew it was there all along.
+
+
+**Step 6: Cache strategy**
 - Header data: persistent (kept in context)
 - Current node: replaced each turn (don't accumulate old nodes)
 - Endings: persistent (needed for ending detection)
+- yaml_tool: persistent (detected once at session start)
+
+
 
 ### Detecting Load Mode
 
 The gateway command attempts full read first. If it fails:
 1. Sets `lazy_loading: true` in game context
-2. Loads header via partial read
-3. Passes scenario path for per-turn node loading
+2. Detects `yaml_tool: yq|grep` for extraction method
+3. Loads header via yq or partial read
+4. Passes scenario path for per-turn node loading
 
-When `lazy_loading: true`, Phase 2 must grep for each node instead of accessing cached scenario data.
+When `lazy_loading: true`, Phase 2 uses the appropriate tool to load each node.
+
+### Error Handling
+
+If yq fails during extraction, silently fall back to grep. Never interrupt gameplay to report tool failures.
 
 ## Game State Model
 
@@ -86,7 +169,18 @@ Track these values in your working memory across turns:
 GAME_STATE:
   scenario_name: string       # e.g., "dragon_quest"
   current_node: string        # Current node ID
-  turn: number                # Turn counter
+
+  # 3-Level Counter (see lib/framework/presentation.md)
+  turn: number                # Major node transitions
+  scene: number               # Groupings within turn (resets on turn++)
+  beat: number                # Individual moments (resets on scene++)
+  scene_title: string         # Auto-generated or from scenario
+  scene_location: string      # Location when scene started
+
+  # Beat log for export reconstruction
+  beat_log: [                 # Cleared on session end or export
+    {turn, scene, beat, type, action, consequences}
+  ]
 
   character:
     exists: boolean           # false = None (character ceased)
@@ -102,9 +196,26 @@ GAME_STATE:
   settings:
     improvisation_temperature: number  # 0-10, controls narrative adaptation
                                        # 0 = verbatim, 5 = balanced, 10 = fully adaptive
+    gallery_mode: boolean     # Enable meta-commentary
 
   recent_history: [string]    # Last 3-5 turns for context
 ```
+
+### Counter Increment Rules
+
+| Counter | Increments When | Resets |
+|---------|-----------------|--------|
+| Turn | Advancing to new node via `next_node` | scene→1, beat→1 |
+| Scene | Location change, time skip, 5+ beats, explicit marker | beat→1 |
+| Beat | Improvised action resolves, scripted choice selected | — |
+
+### Scene Detection Triggers
+
+Scene++ occurs automatically when:
+1. `world.current_location` differs from `scene_location`
+2. Narrative contains time-skip patterns: `[Time passes]`, `[Hours later]`, `[The next morning]`
+3. Beat count reaches 5+ without scene change (auto-subdivision)
+4. Node has `scene_break: true` marker
 
 ## Core Workflow
 
@@ -127,31 +238,29 @@ GAME_STATE:
 
    Track load mode in context: `lazy_loading: true/false`
 
-2. Create save directory if needed:
-   ```
-   ./saves/[scenario_name]/
-   ```
-
-3. Generate session save filename with current timestamp:
-   ```
-   YYYY-MM-DD_HH-MM-SS.yaml
-   ```
-   Store this filename in memory - all saves this session use the same file.
-
-4. Initialize state from scenario:
+2. Initialize state in memory from scenario:
    ```yaml
    current_node: [scenario.start_node]
-   turn: 0
+   turn: 1
+   scene: 1
+   beat: 1
+   scene_title: "Opening"
+   scene_location: [scenario.initial_world.current_location]
+   beat_log: []
    character: [scenario.initial_character]
    world: [scenario.initial_world]
    settings:
-     improvisation_temperature: 0  # Default (verbatim); can use scenario.settings.default_temperature if present
+     improvisation_temperature: 0  # Default (verbatim)
+     gallery_mode: false
    recent_history: []
    ```
 
-5. Write initial save file immediately (so session has a file from start).
+3. **Do NOT create a save file yet.** Only save when:
+   - User explicitly asks to save (`/kleene save`)
+   - Reaching an ending (auto-save before exit)
+   - After 5+ turns of play (checkpoint save)
 
-6. The scenario data is now in your context - do not re-read it.
+4. The scenario data is now in your context - do not re-read it.
 
 **If resuming from save:**
 
@@ -215,6 +324,9 @@ TURN:
       - Check feasibility against current state
       - Generate narrative response matching scenario tone
       - Apply soft consequences only (trait ±1, add_history, improv_* flags)
+      - Beat++ (log to beat_log with type: "improv", action: summary)
+      - Check scene triggers: location change, time skip, beat >= 5
+        - If triggered: Scene++, beat→1, update scene_title
       - Display response with consequence indicators
       - Present same choices again (step 5)
       - Do NOT advance node or turn
@@ -228,6 +340,8 @@ TURN:
       - Treat like emergent improvisation (same as 6a)
       - Generate narrative response matching scenario tone
       - Apply soft consequences only (trait ±1, add_history, improv_* flags)
+      - Beat++ (log to beat_log with type: "bonus", action: option label)
+      - Check scene triggers (same as 6a)
       - Display response with consequence indicators
       - Present same choices again (step 5) — bonus option remains available
       - Do NOT advance node or turn
@@ -243,8 +357,11 @@ TURN:
      - Update character/world state in memory
 
   9. Advance state:
+     - Log current beat: beat_log.append({turn, scene, beat, type: "scripted_choice", action: option.text})
      - Set current_node = option.next_node
-     - Increment turn
+     - Turn++ (resets scene→1, beat→1)
+     - Update scene_location = world.current_location
+     - Generate scene_title from new node context
      - Add choice to recent_history (keep last 5)
 
   10. GOTO step 1 (next turn)
@@ -258,6 +375,25 @@ Save to disk when:
 - Game ends (victory, death, transcendence)
 - User explicitly requests save
 - Session is ending
+
+#### Save Metadata Caching
+
+When saving game state, cache node metadata for rich save listings:
+
+**If yaml_tool=yq:**
+```bash
+yq '.nodes.CURRENT_NODE | {"title": (.title // ("Node: " + "CURRENT_NODE")), "preview": (.narrative | split("\n") | map(select(. != "")) | .[0])}' scenario.yaml
+```
+
+Add to save file:
+```yaml
+current_node_title: "Village Crossroads"      # From .title or generated
+current_node_preview: "The village elder..."   # First line of narrative
+```
+
+**If yaml_tool=grep:** Skip metadata caching (graceful degradation).
+
+Old saves without cached metadata load normally - the metadata is optional and only used for richer save listings.
 
 The PreToolUse hook auto-approves saves/ writes for seamless gameplay.
 
@@ -441,27 +577,34 @@ Outcome nodes:
 
 ## Narrative Presentation
 
-> **Conventions:** See `lib/framework/presentation.md` for complete formatting rules.
+> **⚠️ MANDATORY: Follow `lib/framework/presentation.md` EXACTLY**
+>
+> **ALL OUTPUT MUST BE 70 CHARACTERS WIDE — NO EXCEPTIONS.**
+>
+> This includes:
+> - Header block ═ borders: exactly 70 ═ characters
+> - Narrative text: wrap at 70 characters
+> - Status lines: wrap at 70 characters
+>
+> Users play on small screens. Text wider than 70 chars is cut off.
 
-Display narrative with the **cinematic header format**:
+### Which Header Block to display
 
-### Header Exemplar
+- **Cinematic header**: Game start, location changes, major story beats
+- **Normal Header**: Same location, no major narrative changes 
 
-```
-═══════════════════════════════════════════════════════════════════════
-                    T H E   V E L V E T   C H A M B E R
-═══════════════════════════════════════════════════════════════════════
-                          Main Entrance
-                        Turn 1 | Time: 23:00
-                   Sobriety: ██████████ 10 | Suspicion: ████░░░░░░ 5
-═══════════════════════════════════════════════════════════════════════
-```
+> **MANDATORY:**  See `lib/framework/presentation.md` → "Header Block" for templates and examples of each header
+
+
 
 ## Choice Presentation
 
 Use AskUserQuestion per conventions in `lib/framework/presentation.md`.
 
-**Blocked options**: NEVER show. Filter out options whose preconditions fail before presenting choices.
+**Silent Precondition Filtering**: Options failing preconditions are
+removed BEFORE presenting choices. Never show "locked" or "requires X"
+indicators. The character simply doesn't think of impossible actions.
+This maintains immersion — if you can't do it, you don't see it.
 
 ```json
 {
@@ -490,7 +633,7 @@ Display ending with appropriate tone:
 **Victory:**
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  VICTORY                                                  ║
+| VICTORY                                                   |
 ╚═══════════════════════════════════════════════════════════╝
 
 [Ending narrative - celebratory tone]
@@ -499,7 +642,7 @@ Display ending with appropriate tone:
 **Death:**
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  DEATH                                                    ║
+| DEATH                                                     |
 ╚═══════════════════════════════════════════════════════════╝
 
 [Ending narrative - somber, respectful]
@@ -508,7 +651,7 @@ Display ending with appropriate tone:
 **Transcendence:**
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  TRANSCENDENCE                                            ║
+| TRANSCENDENCE                                             |
 ╚═══════════════════════════════════════════════════════════╝
 
 [Ending narrative - mystical, transformative]
@@ -517,7 +660,7 @@ Display ending with appropriate tone:
 **Unchanged (Irony):**
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  UNCHANGED                                                ║
+| UNCHANGED                                                 |
 ╚═══════════════════════════════════════════════════════════╝
 
 [Ending narrative - ironic, reflective]

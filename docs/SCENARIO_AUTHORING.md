@@ -570,6 +570,54 @@ precondition:
   location: blacksmith
 ```
 
+### Scene Pacing
+
+Use `scene_break: true` on nodes that represent major transitions:
+
+```yaml
+nodes:
+  chapter_two:
+    scene_break: true
+    narrative: |
+      Three days later, you wake in an unfamiliar room...
+```
+
+**Scene break triggers:**
+- Explicit `scene_break: true` on node
+- Location change (different `current_location`)
+- Time skip (via `advance_time` consequence)
+- 5+ beats accumulated since last scene break
+
+This affects how scenes are tracked in gameplay headers and how exports are organized by granularity level.
+
+### Consequence Magnitude
+
+Scale consequences appropriately based on action significance:
+
+| Action Type | Trait Change | Relationship Change |
+|-------------|-------------|---------------------|
+| Improvised exploration | ±1 | ±1-2 |
+| Minor scripted choice | ±2-3 | ±3-5 |
+| Major decision | ±5-10 | ±10-15 |
+| Catastrophic event | ±15-50 | ±25-50 |
+
+**Example - catastrophic betrayal:**
+```yaml
+consequence:
+  - type: modify_trait
+    trait: trust
+    amount: -25    # Major negative impact
+  - type: modify_relationship
+    target: mayor
+    amount: -50    # Relationship destroyed
+```
+
+**Guidelines:**
+- Small changes accumulate over time
+- Reserve large deltas for pivotal moments
+- Negative consequences should feel proportional to player action
+- Consider trait caps (typically 0-100)
+
 ---
 
 ## Testing & Validation
