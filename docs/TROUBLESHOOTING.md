@@ -560,6 +560,139 @@ Include:
 
 ---
 
+## Export Issues
+
+### Export File Not Created
+
+**Symptom:** Running `/kleene export` produces no file.
+
+**Solutions:**
+
+**1. Check write permissions**
+```bash
+ls -la
+```
+
+Kleene needs write permission in current directory.
+
+**2. Verify exports directory**
+```bash
+mkdir -p exports
+```
+
+**3. Use explicit path**
+```bash
+/kleene export --output ./my_export.md
+```
+
+---
+
+### Export Missing Content
+
+**Symptom:** Exported file is missing parts of your game.
+
+**Explanation:** By design, exports filter mechanical artifacts:
+- Bash commands and tool outputs
+- yq queries
+- System messages
+
+**Solutions:**
+
+**1. Use maximum granularity**
+```bash
+/kleene export --granularity=beat
+```
+
+**2. Use summary mode**
+Summary mode includes analysis that might be filtered in transcript:
+```bash
+/kleene export summary
+```
+
+**3. Check beat_log**
+Content is only exportable if it was logged during gameplay.
+
+---
+
+### Branch Export Confusion
+
+**Symptom:** Branch export shows confusing timeline splits.
+
+**Solution:**
+```bash
+/kleene export --split-branches
+```
+
+This creates separate files per timeline. Each branch file shows the point where the timeline diverged.
+
+---
+
+## Rewind Issues
+
+### Rewind Command Not Working
+
+**Symptom:** `/kleene rewind` produces an error or nothing happens.
+
+**Check notation:**
+- `T6.2.3` - Turn 6, Scene 2, Beat 3 (capital T)
+- `-1` - Go back 1 beat
+- `--1` - Go back 1 scene
+
+**Common mistakes:**
+- Lowercase `t6.2.3` (use uppercase T)
+- Spaces in notation
+- Target doesn't exist in beat_log
+
+**Quick test:**
+```bash
+/kleene rewind -1
+```
+
+This basic rewind should always work if you've made at least one move.
+
+---
+
+### Lost Progress After Rewind
+
+**Symptom:** Your original timeline seems to have disappeared.
+
+**Explanation:** Rewind creates a branch - your original timeline is preserved.
+
+**To see all timelines:**
+```bash
+/kleene export branches
+```
+
+Or use `--split-branches` to create separate files per timeline.
+
+**To resume from a save:**
+```bash
+/kleene continue [scenario]
+```
+
+---
+
+### Can't Rewind to Specific Point
+
+**Symptom:** Rewind to a specific T.S.B point fails.
+
+**Causes:**
+
+**1. Point not in beat_log**
+You can only rewind to points you've actually played in the current session.
+
+**2. Check available saves**
+```bash
+/kleene continue [scenario]
+```
+
+This shows all available save points with their T.S.B notation.
+
+**3. Start a new session from save**
+If the point exists in a save file, use `/kleene continue` to load it.
+
+---
+
 ## Still Stuck?
 
 If this guide didn't solve your problem:

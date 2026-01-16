@@ -54,6 +54,9 @@ Unlike traditional choice-based games, Kleene responds to free-form actions and 
 | `/kleene continue [scenario]` | Resume from save |
 | `/kleene temperature [0-10]` | Set adaptation level |
 | `/kleene save` | Save current game |
+| `/kleene rewind [target]` | Rewind to earlier point (T6.2.3, -1, --1) |
+| `/kleene export [mode]` | Export gameplay (transcript/summary/stats/branches/gallery) |
+| `/kleene gallery [on\|off]` | Toggle educational meta-commentary |
 
 ### Temperature Guide
 
@@ -82,6 +85,10 @@ The AI evaluates feasibility and generates responses that fit the scenario tone.
 ### For Players
 - **Improvisation Support**: Type any action—Claude interprets and responds dynamically
 - **State Persistence**: Save/load game states, pick up where you left off
+- **Scene Tracking**: Turn/Scene/Beat counters show precise gameplay position
+- **Multi-Level Rewind**: Jump back to any Turn.Scene.Beat (T6.2.3 notation)
+- **Export System**: Save gameplay as clean narrative or analytical summary
+- **Gallery Mode**: Educational meta-commentary on narrative techniques
 - **Auto-approval Hooks**: Seamless gameplay without permission prompts
 - **Pure Claude Code Integration**: No separate app, plays in your terminal
 
@@ -183,7 +190,30 @@ Saves are stored at: `./saves/[scenario_name]/[timestamp].yaml`
 - **Auto-save:** Created when you start a game
 - **Manual save:** `/kleene save` during gameplay
 - **Resume:** `/kleene continue [scenario]` lists available saves
-- **Location:** Current directory is the "game folder"
+- **Rewind:** `/kleene rewind T6.2.3` jumps to Turn 6, Scene 2, Beat 3
+- **Save format v3:** Includes scene/beat counters for precise rewind
+
+---
+
+## Exporting Gameplay
+
+Export your adventures as clean markdown files:
+
+```bash
+/kleene export                    # Default transcript mode
+/kleene export summary            # Analysis with thematic notes
+/kleene export --granularity=beat # Maximum detail
+/kleene export branches           # Split by timeline
+```
+
+**Export modes:**
+- **transcript** (default): Clean narrative log
+- **summary**: Analysis with gallery notes
+- **stats**: Numbers only - trait/relationship evolution
+- **branches**: Split by timeline for rewind sessions
+- **gallery**: Meta-commentary only
+
+Exports are saved to: `./exports/[scenario]_[timestamp].md`
 
 ---
 

@@ -5,6 +5,33 @@ All notable changes to Kleene will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-01-16
+
+### Added
+- **3-Level Scene Tracking** - Headers display "Turn N · Scene S · Beat B"
+  - Scene increments on location changes, time skips, or 5+ beats
+  - Beat increments on improvised actions and scripted choices
+  - Compact T6.2.3 notation for saves and rewind targeting
+- **Export Framework** - Five export modes:
+  - Transcript: Clean narrative log (default)
+  - Summary: Analysis with gallery notes and thematic synthesis
+  - Stats: Trait/relationship evolution only
+  - Branches: Split by timeline for rewind sessions
+  - Gallery: Meta-commentary only
+- **Export Granularity** - `--granularity=turn|scene|beat`
+- **Multi-Level Rewind** - `/kleene rewind [target]` with T6.2.3, -1, --1 notation
+- **Gallery Mode** - `/kleene gallery [on|off]` for educational meta-commentary
+- **Narrative Purity Guidelines** - Characters speak as characters, not critics
+
+### Changed
+- **Save Format v3** - Added scene/beat counters and beat_log
+- **yq-Based Optimization** - ~75% token reduction when yq available
+- **Tier Badges** - Scenario menu shows Bronze/Silver/Gold badges
+- **Presentation** - 70-character width enforcement, simplified trait display
+
+### Fixed
+- Export now properly filters mechanical artifacts from transcripts
+
 ## [0.2.0] - 2025-01-13
 
 ### Added
