@@ -204,17 +204,47 @@ Don't front-load all potential NPCs in initial state.
 story, then starts at 0 and tracks from there. This keeps the status
 line uncluttered and makes NPC appearances feel significant.
 
-## Turn Increment Discipline
+## 3-Level Counter Discipline
 
-Turn++ ONLY when:
+> **Reference:** See `lib/framework/presentation.md` for display format.
+
+### Turn Increment
+
+**Turn++ WHEN:**
 - Moving to a new node via `next_node`
+- Moving to an ending node
 
-Turn does NOT increment:
-- During improvised loops or sub-conversations
-- When re-presenting the same choice after free-text response
-- When player selects "Other" and provides custom input
+**Turn++ RESETS:** scene → 1, beat → 1
 
-This prevents turn inflation and keeps pacing correct.
+### Scene Increment
+
+**Scene++ WHEN:**
+- Location changes (`world.current_location` differs from `scene_location`)
+- Time skip in narrative (`[Time passes]`, `[Hours later]`, etc.)
+- After 5+ beats without scene change (auto-subdivision)
+- Explicit `scene_break: true` in scenario YAML
+
+**Scene++ RESETS:** beat → 1
+
+**Scene++ does NOT increment turn**
+
+### Beat Increment
+
+**Beat++ WHEN:**
+- Improvised action resolves (free-text or bonus option)
+- Scripted choice selected (before node advance)
+- Scripted improvise option resolves
+
+**Beat++ does NOT increment scene or turn**
+
+### What Does NOT Increment Any Counter
+
+- Re-presenting the same choices after improv
+- Minor clarifications or meta-questions
+- Blocked actions (show error, no beat++)
+- Repeated improvisation (same action twice)
+
+This prevents counter inflation and keeps pacing correct.
 
 ## Scene Length Calibration
 
@@ -232,10 +262,20 @@ to scripted nodes at natural transition points
 ## Rewind (State Restoration)
 
 When player requests "rewind to [point]":
-1. Restore exact numeric values (all traits and relationships)
-2. Restore narrative context (location, recent events)
-3. Continue seamlessly without "loading..." meta-commentary
-4. Present the choice menu from that point
+1. Parse target: `T6.2.3` = Turn 6, Scene 2, Beat 3
+2. Restore exact numeric values (all traits and relationships)
+3. Restore turn, scene, beat counters
+4. Restore narrative context (location, recent events)
+5. Continue seamlessly without "loading..." meta-commentary
+6. Present the choice menu from that point
+
+**Rewind target formats:**
+- `6` → Turn 6, Scene 1, Beat 1
+- `6.2` → Turn 6, Scene 2, Beat 1
+- `6.2.3` → Turn 6, Scene 2, Beat 3
+- `T6.2.3` → Same (explicit T prefix)
+- `-1` → Back 1 beat
+- `--1` → Back 1 scene
 
 Do NOT show restoration mechanics. The narrative simply returns to
 that moment as if it always was.
@@ -250,6 +290,37 @@ Match the scenario's established voice:
 
 Read the current node's narrative for guidance.
 
+## Narrative Purity
+
+**Characters speak as characters, not as literary critics.**
+
+When generating improvised dialogue, NEVER include:
+- Story structure terms ("redemption arc", "character arc", "narrative")
+- Psychological jargon ("projection", "defense mechanism", "trauma response")
+- Meta-awareness of being in a story ("plot", "stakes", "tension")
+- Authorial commentary disguised as dialogue
+
+**Bad (meta-narrative leaks into dialogue):**
+> "You're turning her humiliation into a stage for your redemption arc."
+
+**Good (same insight, pure character voice):**
+> "You're not apologizing for her. You're apologizing so you can feel
+> better about yourself."
+
+**Where analysis belongs:**
+- Gallery Mode blurbs (when `gallery_mode: true`)
+- Export summary mode (`--mode=summary`)
+- Export gallery mode (`--mode=gallery`)
+
+**Where analysis does NOT belong:**
+- Character dialogue
+- Narrative description
+- Improvised scene text
+- Any output when `gallery_mode: false`
+
+This separation preserves immersion for players while still enabling
+rich analytical content for those who want it.
+
 ## Presentation
 
 > **Reference:** See `lib/framework/presentation.md` for complete formatting rules.
@@ -257,16 +328,16 @@ Read the current node's narrative for guidance.
 Display improvised action responses with the same bold box format as regular nodes. Generate a creative title based on the player's action:
 
 ```
-═══════════════════════════════════════════════════════════
+══════════════════════════════════════════════════════════════════════
 **[CREATIVE TITLE]**
-Turn [N] | Location: [location]
-═══════════════════════════════════════════════════════════
+[Location] | Turn N · Scene S · Beat B
+══════════════════════════════════════════════════════════════════════
 
 [Narrative response to player's improvised action]
 
-───────────────────────────────────────────────────────────
+══════════════════════════════════════════════════════════════════════
 [trait changes, e.g., +1 wisdom - Attention to detail]
-───────────────────────────────────────────────────────────
+══════════════════════════════════════════════════════════════════════
 ```
 
 ### Title Generation
@@ -288,11 +359,14 @@ The title should:
 
 After generating the response:
 1. Apply any soft consequences
-2. Display the response using the bold box format
-3. Present the current node's original options AGAIN
-4. Do NOT advance `current_node` or increment `turn`
+2. Increment beat counter (beat++)
+3. Log beat to `beat_log` for export
+4. Display the response using the bold box format
+5. Present the current node's original options AGAIN
+6. Do NOT advance `current_node` or increment `turn`
 
 The game stays at the same decision point, enriched by the player's exploration.
+Beat tracking enables precise rewind and granular export.
 
 ## Edge Cases
 

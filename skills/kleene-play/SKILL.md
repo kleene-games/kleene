@@ -169,7 +169,18 @@ Track these values in your working memory across turns:
 GAME_STATE:
   scenario_name: string       # e.g., "dragon_quest"
   current_node: string        # Current node ID
-  turn: number                # Turn counter
+
+  # 3-Level Counter (see lib/framework/presentation.md)
+  turn: number                # Major node transitions
+  scene: number               # Groupings within turn (resets on turn++)
+  beat: number                # Individual moments (resets on scene++)
+  scene_title: string         # Auto-generated or from scenario
+  scene_location: string      # Location when scene started
+
+  # Beat log for export reconstruction
+  beat_log: [                 # Cleared on session end or export
+    {turn, scene, beat, type, action, consequences}
+  ]
 
   character:
     exists: boolean           # false = None (character ceased)
@@ -185,9 +196,26 @@ GAME_STATE:
   settings:
     improvisation_temperature: number  # 0-10, controls narrative adaptation
                                        # 0 = verbatim, 5 = balanced, 10 = fully adaptive
+    gallery_mode: boolean     # Enable meta-commentary
 
   recent_history: [string]    # Last 3-5 turns for context
 ```
+
+### Counter Increment Rules
+
+| Counter | Increments When | Resets |
+|---------|-----------------|--------|
+| Turn | Advancing to new node via `next_node` | scene→1, beat→1 |
+| Scene | Location change, time skip, 5+ beats, explicit marker | beat→1 |
+| Beat | Improvised action resolves, scripted choice selected | — |
+
+### Scene Detection Triggers
+
+Scene++ occurs automatically when:
+1. `world.current_location` differs from `scene_location`
+2. Narrative contains time-skip patterns: `[Time passes]`, `[Hours later]`, `[The next morning]`
+3. Beat count reaches 5+ without scene change (auto-subdivision)
+4. Node has `scene_break: true` marker
 
 ## Core Workflow
 
@@ -213,11 +241,17 @@ GAME_STATE:
 2. Initialize state in memory from scenario:
    ```yaml
    current_node: [scenario.start_node]
-   turn: 0
+   turn: 1
+   scene: 1
+   beat: 1
+   scene_title: "Opening"
+   scene_location: [scenario.initial_world.current_location]
+   beat_log: []
    character: [scenario.initial_character]
    world: [scenario.initial_world]
    settings:
-     improvisation_temperature: 0  # Default (verbatim); can use scenario.settings.default_temperature if present
+     improvisation_temperature: 0  # Default (verbatim)
+     gallery_mode: false
    recent_history: []
    ```
 
@@ -290,6 +324,9 @@ TURN:
       - Check feasibility against current state
       - Generate narrative response matching scenario tone
       - Apply soft consequences only (trait ±1, add_history, improv_* flags)
+      - Beat++ (log to beat_log with type: "improv", action: summary)
+      - Check scene triggers: location change, time skip, beat >= 5
+        - If triggered: Scene++, beat→1, update scene_title
       - Display response with consequence indicators
       - Present same choices again (step 5)
       - Do NOT advance node or turn
@@ -303,6 +340,8 @@ TURN:
       - Treat like emergent improvisation (same as 6a)
       - Generate narrative response matching scenario tone
       - Apply soft consequences only (trait ±1, add_history, improv_* flags)
+      - Beat++ (log to beat_log with type: "bonus", action: option label)
+      - Check scene triggers (same as 6a)
       - Display response with consequence indicators
       - Present same choices again (step 5) — bonus option remains available
       - Do NOT advance node or turn
@@ -318,8 +357,11 @@ TURN:
      - Update character/world state in memory
 
   9. Advance state:
+     - Log current beat: beat_log.append({turn, scene, beat, type: "scripted_choice", action: option.text})
      - Set current_node = option.next_node
-     - Increment turn
+     - Turn++ (resets scene→1, beat→1)
+     - Update scene_location = world.current_location
+     - Generate scene_title from new node context
      - Add choice to recent_history (keep last 5)
 
   10. GOTO step 1 (next turn)

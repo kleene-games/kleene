@@ -13,10 +13,34 @@ Standardized rules for rendering gameplay UI elements.
 
 
 
+## 3-Level Counter System
+
+Gameplay progress is tracked with three hierarchical counters:
+
+| Level | Increments When | Resets |
+|-------|-----------------|--------|
+| **Turn** | Advancing to new node via `next_node` | — |
+| **Scene** | Location change, time skip, 5+ beats, or explicit marker | Beat → 1 |
+| **Beat** | Improvised action resolves, scripted choice selected | — |
+
+**Display format in headers:** `Turn N · Scene S · Beat B`
+
+**Compact notation (for rewind, saves):** `T6.2.3` = Turn 6, Scene 2, Beat 3
+
+### Scene Detection Triggers
+
+Scenes increment automatically on:
+1. **Location change**: `world.current_location` differs from scene start
+2. **Time skip**: Narrative contains `[Time passes]`, `[Hours later]`, etc.
+3. **Beat threshold**: After 5+ beats without scene change
+4. **Explicit marker**: `scene_break: true` in scenario YAML
+
+---
+
 ## Header Block
 
 There are two types of header that can be displayed for each turn:
-- **Cinematic Header** 
+- **Cinematic Header**
 - **Normal Header**
 
 ### Cinematic Header
@@ -40,7 +64,7 @@ There are two types of header that can be displayed for each turn:
                [T I T L E  I N  S P A C E D  C A P S]
 ══════════════════════════════════════════════════════════════════════
                        [Location Name]
-                           Turn N 
+                  Turn N · Scene S · Beat B
 ══════════════════════════════════════════════════════════════════════
 ```
 
@@ -52,7 +76,7 @@ There are two types of header that can be displayed for each turn:
                         T H E   Y A B B A
 ══════════════════════════════════════════════════════════════════════
                          The Royal Hotel
-                             Turn 1
+                    Turn 1 · Scene 1 · Beat 1
 ══════════════════════════════════════════════════════════════════════
 ```
 
@@ -69,7 +93,7 @@ Width: exactly 70 characters.
 
 ```
 ══════════════════════════════════════════════════════════════════════
-[Location Name] | Turn: [N] 
+[Location Name] | Turn N · Scene S · Beat B
 ══════════════════════════════════════════════════════════════════════
 ```
 
@@ -77,7 +101,7 @@ Width: exactly 70 characters.
 
 ```
 ══════════════════════════════════════════════════════════════════════
-The Pub | Turn 4 
+The Pub | Turn 4 · Scene 2 · Beat 3
 ══════════════════════════════════════════════════════════════════════
 ```
 
@@ -115,10 +139,16 @@ Jock: -3 | Tim: 5
 - Look up `world.current_location` in scenario's `locations` array
 - Display location `name` field, centered
 
-### Turns
-- Format: `Turn [N]`
-- Example: `Turn 3`
-- Turn should be initialised at 1. There is no 0th turn!
+### Counter Display
+
+All three counters are initialized at 1 (no 0th turn/scene/beat).
+
+**Header format:** `Turn N · Scene S · Beat B`
+
+**Examples:**
+- `Turn 1 · Scene 1 · Beat 1` — Game start
+- `Turn 6 · Scene 2 · Beat 3` — Extended play within turn 6
+- `Turn 7 · Scene 1 · Beat 1` — New node transition (resets scene/beat)
 
 
 ### Which Traits to Show
@@ -169,7 +199,7 @@ at top and footer at bottom.
 
 ```
 ══════════════════════════════════════════════════════════════════════
-The Royal Hotel
+The Royal Hotel | Turn 3 · Scene 1 · Beat 2
 ══════════════════════════════════════════════════════════════════════
 
 The old miner slaps you on the back. "Have another, mate! The Yabba

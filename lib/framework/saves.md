@@ -47,18 +47,41 @@ Save file written when:
 
 Each gameplay session creates a new timestamped save file. The `session_timestamp` in the filename is set once at game start and reused for all saves in that session.
 
-## Save File Format
+## Save File Format (v3)
 
 ```yaml
 # Save metadata
-save_version: 2
+save_version: 3
 scenario: [scenario_name]
 session_started: "[ISO timestamp from game start]"
 last_saved: "[current ISO timestamp]"
 
-# Game state
+# Game state - 3-Level Counter
 current_node: [node_id]
 turn: [turn_number]
+scene: [scene_number]          # Current scene within turn (starts at 1)
+beat: [beat_number]            # Current beat within scene (starts at 1)
+
+# Scene metadata
+scene_title: "[auto-generated or from scenario]"
+scene_location: "[location when scene started]"
+
+# Beat history for export reconstruction
+beat_log:
+  - turn: 6
+    scene: 1
+    beat: 1
+    type: arrival
+    action: "Kitchen arrival"
+  - turn: 6
+    scene: 1
+    beat: 2
+    type: improv
+    action: "Cool room scene"
+    consequences: {dignity: -1, janette: +3}
+  # ... continues for all beats in session
+
+# Character and world state
 character:
   exists: [boolean]
   traits: {...}
@@ -69,8 +92,18 @@ world:
   time: [time]
   flags: {...}
 settings:
-  improvisation_temperature: [0-10]  # Controls narrative adaptation
+  improvisation_temperature: [0-10]
+  gallery_mode: [boolean]
 ```
+
+### Backward Compatibility
+
+Saves without `scene` or `beat` fields (v2 format) default to:
+- `scene: 1`
+- `beat: 1`
+- `beat_log: []`
+
+This allows older saves to load seamlessly.
 
 ## Operations
 
@@ -95,20 +128,23 @@ When user requests to see saves for a scenario:
 1. Glob `./saves/[scenario_name]/*.yaml`
 2. Read each file's metadata:
    - `last_saved` timestamp
-   - `turn` number
+   - `turn`, `scene`, `beat` counters
    - `current_node` ID
+   - `scene_title` if available
 3. Sort by `last_saved` (most recent first)
-4. Present as numbered list with summary:
+4. Present as numbered list with summary using compact notation:
 
 ```
 Found 3 saved games for "The Dragon's Choice":
 
-1. Jan 12, 2:30 PM - Turn 12 at mountain_approach
-2. Jan 10, 9:15 AM - Turn 5 at forest_entrance
-3. Jan 8, 7:00 PM - Turn 3 at sword_taken
+1. Jan 12, 2:30 PM - T12.2.3 at mountain_approach
+2. Jan 10, 9:15 AM - T5.1.1 at forest_entrance
+3. Jan 8, 7:00 PM - T3.1.2 at sword_taken
 
 Which save would you like to load?
 ```
+
+The `T12.2.3` notation means Turn 12, Scene 2, Beat 3.
 
 ### Loading a Save
 

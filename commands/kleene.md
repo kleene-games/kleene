@@ -390,23 +390,40 @@ Use: /kleene gallery on
 ### Rewind Actions
 Keywords: "rewind", "go back", "restore", "undo"
 
-**Rewind to Turn** (`/kleene rewind [turn]`):
-1. Identify target turn from player request
+**Rewind to Position** (`/kleene rewind [target]`):
+
+Supports 3-level targeting with Turn.Scene.Beat notation:
+
+| Target | Meaning |
+|--------|---------|
+| `6` | Turn 6, Scene 1, Beat 1 |
+| `6.2` | Turn 6, Scene 2, Beat 1 |
+| `6.2.3` | Turn 6, Scene 2, Beat 3 |
+| `T6.2.3` | Same (explicit T prefix) |
+| `-1` | Back 1 beat |
+| `--1` | Back 1 scene |
+
+**Process:**
+1. Parse target to identify turn/scene/beat
 2. Restore exact numeric values (all traits and relationships)
-3. Restore narrative context (location, recent events)
-4. Continue seamlessly without "loading..." meta-commentary
-5. Present the choice menu from that point
+3. Restore turn, scene, beat counters
+4. Restore narrative context (location, recent events)
+5. Continue seamlessly without "loading..." meta-commentary
+6. Present the choice menu from that point
 
 The narrative simply returns to that moment as if it always was.
 
-If no turn specified, show recent turns:
+If no target specified, show recent history:
 ```
-Recent turns:
-  Turn 5: The Royal Hotel - Chose to stay for another drink
-  Turn 4: The Royal Hotel - Met Doc at the bar
-  Turn 3: Main Street - Walked into town
+Recent history:
+  T6.2.3  Tim confrontation on street
+  T6.2.2  Walk publicly (Dignity +2)
+  T6.2.1  Dish washing
+  T6.1.3  Intimacy [time passes] (Janette +5)
+  T6.1.2  Cool room scene (Dignity -1)
+  T6.1.1  Kitchen arrival
 
-Use: /kleene rewind 4
+Use: /kleene rewind 6.2.1
 ```
 
 ### Export Actions
@@ -467,13 +484,19 @@ SAVES
   /kleene continue [scenario]     List and load saves for scenario
   /kleene list saves [scenario]   Show all saves for a scenario
   /kleene save                    Save current game to disk
-  /kleene rewind [turn]           Restore game state to earlier turn
+  /kleene rewind [target]         Restore to earlier position:
+                                    6       Turn 6, Scene 1, Beat 1
+                                    6.2     Turn 6, Scene 2, Beat 1
+                                    6.2.3   Turn 6, Scene 2, Beat 3
+                                    -1      Back 1 beat
+                                    --1     Back 1 scene
 
 EXPORT
   /kleene export                  Export as clean transcript (default)
   /kleene export --mode=summary   Export with analysis & gallery notes
   /kleene export --mode=stats     Export numbers only
   /kleene export --mode=branches  Split export by timeline
+  /kleene export --granularity=beat  Export with beat-level detail
 
 GENERATE
   /kleene generate [theme]        Create new scenario
@@ -502,6 +525,11 @@ SETTINGS
 DURING GAMEPLAY
   Select "Other" or type freely   Improvise beyond scripted choices
   Your actions shape the story    Explore, interact, experiment!
+
+PROGRESS TRACKING
+  Headers show: Turn N · Scene S · Beat B
+  Compact notation: T6.2.3 = Turn 6, Scene 2, Beat 3
+  Use this notation with /kleene rewind
 
 Saves: ./saves/[scenario]/[timestamp].yaml
 

@@ -137,11 +137,19 @@ Just the numbers — quick reference for the journey.
 | Tim | 0 | +15 | T12: Drinking buddies |
 
 ### Major Events
-- T5: First gambling loss (Money: 8 → 3)
-- T15: Blackout drunk (Sobriety: 2)
-- T18: Relationship with Janette begins
-- T22: Borrowed money from Doc
-- T28: Missed the bus, Janette betrayal
+- T5.1.2: First gambling loss (Money: 8 → 3)
+- T15.2.4: Blackout drunk (Sobriety: 2)
+- T18.1.1: Relationship with Janette begins
+- T22.3.2: Borrowed money from Doc
+- T28.2.5: Missed the bus, Janette betrayal
+
+### Session Overview
+| Metric | Value |
+|--------|-------|
+| Total turns | 28 |
+| Total scenes | 47 |
+| Total beats | 156 |
+| Estimated playtime | ~3 hours |
 
 ### Ending
 **Type:** Catastrophic
@@ -264,6 +272,11 @@ scenario's themes.
 /kleene export --mode=branches       # split by timeline
 /kleene export --mode=gallery        # commentary only
 
+# Granularity (3-level counter)
+/kleene export --granularity=turn    # One section per turn (default)
+/kleene export --granularity=scene   # One section per scene
+/kleene export --granularity=beat    # One section per beat (most detailed)
+
 # Branch handling
 /kleene export --split-branches      # separate file per branch
 /kleene export --merged              # all branches in one file
@@ -278,6 +291,63 @@ scenario's themes.
 /kleene export --output=myfile.md    # specific filename
 /kleene export --dir=./archives/     # specific directory
 ```
+
+## Granularity Levels
+
+The `--granularity` option controls how detailed the export structure is:
+
+### Turn Granularity (default)
+One section per major turn. Beats and scenes within a turn are combined.
+
+```markdown
+## Turn 6: Morning with Janette
+
+[All scenes and beats combined in one section]
+**Consequences:** Dignity +2, Self-knowledge +3, Janette +15
+```
+
+### Scene Granularity
+One section per scene. Beats within a scene are combined.
+
+```markdown
+## Turn 6: Morning with Janette
+
+### Scene 1: Morning Intimacy (Beats 1-3)
+[Kitchen, cool room, intimacy combined]
+**Consequences:** Janette +8
+
+### Scene 2: Honest Conversations (Beats 4-6)
+[Dish washing, Robyn discussion combined]
+**Consequences:** Dignity +2, Self-knowledge +3
+```
+
+### Beat Granularity
+One section per beat. Maximum detail.
+
+```markdown
+## Turn 6: Morning with Janette
+
+### Scene 1: Morning Intimacy
+
+**T6.1.1**: Kitchen Arrival
+[Narrative]
+
+**T6.1.2**: Cool Room Scene
+[Narrative]
+*Dignity -1, Janette +3*
+
+**T6.1.3**: Intimacy
+[Narrative]
+*Janette +5*
+
+### Scene 2: Honest Conversations
+
+**T6.2.1**: Dish Washing
+[Narrative]
+*Self-knowledge +1*
+```
+
+The `T6.1.2` notation means Turn 6, Scene 1, Beat 2.
 
 ## Processing Rules
 
