@@ -370,7 +370,8 @@ TURN:
          "multiSelect": false,
          "options": [
            {"label": "Look around", "description": "Survey your surroundings"},
-           {"label": "Inventory", "description": "Check what you're carrying"}
+           {"label": "Inventory", "description": "Check what you're carrying"},
+           {"label": "Show help", "description": "See commands that might work here"}
          ]
        }]
      }
@@ -436,6 +437,56 @@ TURN:
       - Present choices again
       - Do NOT advance node or turn
       - GOTO step 6
+
+  6f. IF selection is "Show help" (classic mode):
+      - Generate adaptive help from hidden options (see below)
+      - Beat++ (log to beat_log with type: "help")
+      - Present choices again
+      - Do NOT advance node or turn
+      - GOTO step 6
+
+      **Adaptive Help Generation:**
+
+      1. Extract verbs from hidden options:
+         - Read all `options[].text` from current node
+         - Parse the leading verb (e.g., "Open the mailbox" → "open")
+         - Lowercase and deduplicate verbs
+
+      2. Categorize by action type:
+         ```
+         MOVEMENT:     go, enter, climb, descend, exit, flee, leave, walk
+         EXAMINE:      examine, look, read, search, inspect, study
+         INTERACT:     open, close, take, drop, give, use, push, pull, turn
+         COMBAT:       attack, fight, defend, strike, parry
+         COMMUNICATE:  say, ask, talk, tell, shout, whisper
+         ```
+
+      3. Generate contextual help output:
+         ```
+         ═══════════════════════════════════════════════════════════════════════
+         COMMANDS THAT MIGHT WORK HERE
+         ═══════════════════════════════════════════════════════════════════════
+
+         Movement:    go [direction], enter
+         Examine:     examine [thing], read
+         Interact:    open, take
+
+         UNIVERSAL COMMANDS
+         inventory    - check what you're carrying
+         look         - survey surroundings
+         save         - save your game
+         ═══════════════════════════════════════════════════════════════════════
+         ```
+
+      4. What to include/exclude:
+         - INCLUDE: Verbs extracted from available options
+         - INCLUDE: Universal commands (inventory, look, save)
+         - EXCLUDE: Specific objects (say "open" not "open mailbox")
+         - EXCLUDE: Which directions are valid
+         - EXCLUDE: Options blocked by preconditions
+
+      5. If no contextual verbs found (node has no options):
+         - Show only universal commands section
 
   7. Display option narrative (if present):
      - Check if selected option has a `narrative` field
