@@ -85,11 +85,7 @@ For protagonist archetype, use a separate call (progressive disclosure):
 }
 ```
 
-**Menu Guidelines:**
-- **Headers**: Max 12 characters
-- **Labels**: 1-5 words, concise
-- **Descriptions**: Action-oriented, explain consequences
-- **Recommended**: Place first with "(Recommended)" suffix
+**Menu Guidelines:** See `lib/framework/presentation.md` → "Menu Conventions".
 
 ### Step 2: Design the Narrative Skeleton
 
@@ -406,7 +402,7 @@ Generated narrative and dialogue must:
 ## Additional Resources
 
 ### Reference Files
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics and Nine Cells
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics, Nine Cells, and Improvisation Routing
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/improvisation.md`** - Tone Matching & Narrative Purity
 

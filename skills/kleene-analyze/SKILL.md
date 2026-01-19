@@ -64,8 +64,6 @@ Read scenario from:
 
 Parse YAML and validate basic structure.
 
-**Tool Detection:** At session start, check for yq 4.x availability. Set `yaml_tool: yq|grep`.
-
 ### Step 2: Build Graph
 
 Construct directed graph:
@@ -142,7 +140,7 @@ For each path, determine cell in the 3x3 grid based on two axes:
 - **Indeterminate**: Outcome pending, no ending reached, multiple continuations
 - **Blocks**: Precondition prevents progress, action fails
 
-**The Nine Cells**:
+**The Nine Cells** (see `lib/framework/core.md` for detailed definitions):
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
 | **Player Chooses** | Triumph       | Commitment          | Barrier      |
@@ -898,11 +896,7 @@ When no specific analysis is requested, use `AskUserQuestion` to let the user ch
 }
 ```
 
-**Menu Guidelines:**
-- **Headers**: Max 12 characters
-- **Labels**: 1-5 words
-- **Descriptions**: Action-oriented, explain what analysis reveals
-- **Recommended**: Place first with "(Recommended)" suffix
+**Menu Guidelines:** See `lib/framework/presentation.md` → "Menu Conventions".
 
 ## Quick Commands
 

@@ -227,6 +227,15 @@ Use `AskUserQuestion` with these constraints:
 
 If node has >4 options, select most relevant based on preconditions and current state.
 
+### Menu Conventions
+
+**AskUserQuestion constraints:**
+- **Headers**: Max 12 characters
+- **Labels**: 1-5 words, ≤20 characters
+- **Descriptions**: Action-oriented, ≤50 characters
+- **Max options**: 4 (tool limit)
+- **Recommended**: Place first with "(Recommended)" suffix
+
 
 
 
