@@ -219,7 +219,9 @@ GAME_STATE:
   settings:
     improvisation_temperature: number  # 0-10, controls narrative adaptation
                                        # 0 = verbatim, 5 = balanced, 10 = fully adaptive
-    gallery_mode: boolean     # Enable meta-commentary
+    gallery_mode: boolean              # Enable meta-commentary
+    foresight: number                  # 0-10, controls hint specificity
+    classic_mode: boolean              # Hide scripted options (parser mode)
 
   recent_history: [string]    # Last 3-5 turns for context
 ```
@@ -276,6 +278,8 @@ Scene++ occurs automatically when:
    settings:
      improvisation_temperature: 5  # Default (Balanced). See lib/framework/improvisation.md
      gallery_mode: false
+     foresight: 5                  # Default (Suggestive)
+     classic_mode: false           # Default: show choices
    recent_history: []
    ```
 
@@ -356,6 +360,24 @@ TURN:
        - See lib/framework/improvisation.md → "Bonus Options"
 
   5. Present choices via AskUserQuestion:
+
+     **IF settings.classic_mode == true:**
+     ```json
+     {
+       "questions": [{
+         "question": "[node.choice.prompt]",
+         "header": "Action",
+         "multiSelect": false,
+         "options": [
+           {"label": "Look around", "description": "Survey your surroundings"},
+           {"label": "Inventory", "description": "Check what you're carrying"}
+         ]
+       }]
+     }
+     ```
+
+     **ELSE (classic_mode == false):**
+     ```json
      {
        "questions": [{
          "question": "[node.choice.prompt]",
@@ -364,6 +386,7 @@ TURN:
          "options": [available choices + bonus option if generated]
        }]
      }
+     ```
 
   6. Wait for user selection
 
@@ -392,6 +415,25 @@ TURN:
       - Check scene triggers (same as 6a)
       - Display response with consequence indicators
       - Present same choices again (step 5) — bonus option remains available
+      - Do NOT advance node or turn
+      - GOTO step 6
+
+  6d. IF selection is "Look around" (classic mode):
+      - Re-display current node narrative (abbreviated if long)
+      - Extract and list exits mentioned in narrative
+      - Extract and list notable items/NPCs if mentioned
+      - Format as atmospheric description, not menu
+      - Beat++ (log to beat_log with type: "look")
+      - Present choices again
+      - Do NOT advance node or turn
+      - GOTO step 6
+
+  6e. IF selection is "Inventory" (classic mode):
+      - Display character.inventory as formatted list
+      - If empty: "You are empty-handed."
+      - If items: List each with brief description if available
+      - Beat++ (log to beat_log with type: "inventory")
+      - Present choices again
       - Do NOT advance node or turn
       - GOTO step 6
 
@@ -546,6 +588,38 @@ When a player selects "Other" and provides free-text input:
 6. Present same choices again - do NOT advance node or turn
 
 Soft consequences preserve scenario balance while rewarding exploration.
+
+### Hint Generation (Foresight-Gated)
+
+When player asks for help/hints during improvisation (e.g., "where is the
+treasure?", "what should I do?", "how do I get past the troll?"):
+
+1. Classify as Meta intent with hint_request subtype
+2. Read `settings.foresight` value (default: 5)
+3. Generate hint at appropriate specificity level:
+
+| Foresight | Name | Response Pattern |
+|-----------|------|------------------|
+| 0 | Blind | "You'll have to discover that yourself." (refuse hint) |
+| 1-3 | Cryptic | Atmospheric/poetic. Reference mood, themes, not specifics. |
+| 4-6 | Suggestive | Directional. Name regions/directions without exact steps. |
+| 7-9 | Helpful | Clear guidance. Name specific locations and items needed. |
+| 10 | Oracle | Full walkthrough. Step-by-step instructions to goal. |
+
+**Example responses for "Where can I find treasure?"**
+
+- **0 (Blind)**: "The adventurer must discover their own fortune."
+- **3 (Cryptic)**: "Treasures favor those who venture into the deep places..."
+- **5 (Suggestive)**: "The eastern passages and underground depths hold rewards."
+- **8 (Helpful)**: "There's a painting in the Gallery to the east, and a bar in the Loud Room."
+- **10 (Oracle)**: "Go east twice to the Gallery, take the painting. Then go down to the cellar, navigate past the troll, and find the platinum bar in the Loud Room."
+
+**Hint generation requires scenario knowledge:**
+- Standard mode: Use cached scenario data to identify goals, items, paths
+- Lazy mode: Query scenario with yq/grep to find relevant objectives
+
+Hints should reference the scenario's actual content, not generic advice.
+After delivering the hint, present the same choices again (no node advance).
 
 ## Scripted Improvisation Flow
 

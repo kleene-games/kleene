@@ -108,9 +108,17 @@ world:
 settings:
   improvisation_temperature: [0-10]
   gallery_mode: [boolean]
+  foresight: [0-10]              # Hint specificity level
+  classic_mode: [boolean]        # Hide scripted options (parser mode)
 ```
 
 ### Backward Compatibility
+
+**v6 → v7:** Saves without `classic_mode` field default to:
+- `classic_mode: false`
+
+**v5 → v6:** Saves without `foresight` field default to:
+- `foresight: 5`
 
 **v4 → v5:** Saves without NPC/event fields default to:
 - `npc_locations: {}`
