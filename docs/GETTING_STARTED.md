@@ -132,6 +132,8 @@ Save as `scenarios/my_adventure.yaml` and run `/kleene play my_adventure`
 | `/kleene play dragon_quest` | Play specific scenario |
 | `/kleene continue [scenario]` | Resume from save |
 | `/kleene temperature [0-10]` | Set adaptation level |
+| `/kleene foresight [0-10]` | Set hint specificity (0=none, 10=full walkthrough) |
+| `/kleene classic [on\|off]` | Toggle Zork-style text adventure mode |
 | `/kleene save` | Save current game |
 | `/kleene rewind [target]` | Go back to earlier point |
 | `/kleene export [mode]` | Export gameplay to markdown |

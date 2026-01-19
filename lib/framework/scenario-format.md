@@ -75,6 +75,38 @@ endings:
     type: victory | death | transcendence | unchanged
 ```
 
+## Location State System
+
+Per-location mutable state stored in `world.location_state{}`. Tracks flags, properties, and environment conditions that can change during gameplay.
+
+### Structure
+
+```yaml
+world:
+  location_state:
+    shrine:
+      flags: {discovered: true, sealed: false}
+      properties: {blessing_power: 100}
+      environment: {lighting: dim, temperature: cold}
+    village:
+      flags: {quest_completed: true}
+      properties: {population: 150}
+```
+
+### Lazy Initialization
+
+Location state is created on first modification. You don't need to pre-define state for every location—it initializes automatically when a consequence modifies it.
+
+### Components
+
+| Component | Purpose | Example Values |
+|-----------|---------|----------------|
+| `flags` | Binary states | `discovered`, `sealed`, `quest_completed` |
+| `properties` | Numeric values | `population`, `blessing_power`, `damage` |
+| `environment` | Atmospheric conditions | `lighting`, `temperature`, `weather` |
+
+See [Location Flag Preconditions](#location_flag_set) and [Location Consequences](#set_location_flag) for usage.
+
 ## Node Structure
 
 ### Narrative Node

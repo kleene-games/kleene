@@ -47,11 +47,11 @@ Save file written when:
 
 Each gameplay session creates a new timestamped save file. The `session_timestamp` in the filename is set once at game start and reused for all saves in that session.
 
-## Save File Format (v5)
+## Save File Format (v7)
 
 ```yaml
 # Save metadata
-save_version: 5
+save_version: 7
 scenario: [scenario_name]
 session_started: "[ISO timestamp from game start]"
 last_saved: "[current ISO timestamp]"
