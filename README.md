@@ -53,6 +53,8 @@ Unlike traditional choice-based games, Kleene responds to free-form actions and 
 | `/kleene play` | Start a new game (shows scenario menu) |
 | `/kleene continue [scenario]` | Resume from save |
 | `/kleene temperature [0-10]` | Set adaptation level |
+| `/kleene foresight [0-10]` | Set hint specificity |
+| `/kleene classic [on\|off]` | Toggle text adventure mode |
 | `/kleene save` | Save current game |
 | `/kleene rewind [target]` | Rewind to earlier point (T6.2.3, -1, --1) |
 | `/kleene export [mode]` | Export gameplay (transcript/summary/stats/branches/gallery) |
@@ -89,6 +91,8 @@ The AI evaluates feasibility and generates responses that fit the scenario tone.
 - **Multi-Level Rewind**: Jump back to any Turn.Scene.Beat (T6.2.3 notation)
 - **Export System**: Save gameplay as clean narrative or analytical summary
 - **Gallery Mode**: Educational meta-commentary on narrative techniques
+- **Foresight Setting**: Control how much the game reveals when you ask for hints
+- **Classic Mode**: Text adventure-style play—type commands like Zork
 - **Auto-approval Hooks**: Seamless gameplay without permission prompts
 - **Pure Claude Code Integration**: No separate app, plays in your terminal
 
@@ -98,6 +102,10 @@ The AI evaluates feasibility and generates responses that fit the scenario tone.
 - **Structural Validation**: Analyze completeness across Bronze/Silver/Gold tiers
 - **Nine Cells Framework**: Built-in guidance for rich, non-binary storytelling
 - **Preconditions & Consequences**: Full game logic with inventory, traits, flags, relationships
+- **Location State System**: Per-location flags, properties, and environment conditions
+- **Node/Location Preconditions**: Gate story nodes and location access
+- **Temporal System**: Time-based gating with scheduled events
+- **NPC Tracking**: Move NPCs and check their locations
 
 ## Create Your Own Scenarios
 
@@ -191,7 +199,7 @@ Saves are stored at: `./saves/[scenario_name]/[timestamp].yaml`
 - **Manual save:** `/kleene save` during gameplay
 - **Resume:** `/kleene continue [scenario]` lists available saves
 - **Rewind:** `/kleene rewind T6.2.3` jumps to Turn 6, Scene 2, Beat 3
-- **Save format v3:** Includes scene/beat counters for precise rewind
+- **Save format v7:** Includes scene/beat counters, location state, NPC tracking, scheduled events, foresight, and classic mode settings
 
 ---
 

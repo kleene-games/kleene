@@ -161,6 +161,12 @@ When `lazy_loading: true`, Phase 2 uses the appropriate tool to load each node.
 
 If yq fails during extraction, silently fall back to grep. Never interrupt gameplay to report tool failures.
 
+## Time Unit Constants
+
+> **Reference:** See `lib/framework/scenario-format.md` → "Time Units" for conversion table.
+
+All temporal values in `world.time` are stored in seconds.
+
 ## Game State Model
 
 Track these values in your working memory across turns:
@@ -169,6 +175,7 @@ Track these values in your working memory across turns:
 GAME_STATE:
   scenario_name: string       # e.g., "dragon_quest"
   current_node: string        # Current node ID
+  previous_node: string       # Previous node ID (for blocked restoration)
 
   # 3-Level Counter (see lib/framework/presentation.md)
   turn: number                # Major node transitions
@@ -190,13 +197,31 @@ GAME_STATE:
 
   world:
     current_location: string  # Location ID
-    time: number              # Time counter
+    time: number              # Time in seconds since game start
     flags: {flag: boolean}    # World state flags
+    location_state:           # Per-location mutable state
+      [location_id]:
+        flags: {flag: boolean}
+        properties: {name: number}
+        environment: {lighting: "dim", temperature: 20}  # Environmental conditions
+
+    # NEW in Phase 4 (v5)
+    npc_locations:            # NPC position tracking
+      [npc_id]: location_id   # Maps NPC to their current location
+
+    scheduled_events:         # Pending events
+      - event_id: string
+        trigger_at: number    # Time (seconds) when event fires
+        consequences: [...]   # Consequences to apply
+
+    triggered_events: [string]  # IDs of events that have fired
 
   settings:
     improvisation_temperature: number  # 0-10, controls narrative adaptation
                                        # 0 = verbatim, 5 = balanced, 10 = fully adaptive
-    gallery_mode: boolean     # Enable meta-commentary
+    gallery_mode: boolean              # Enable meta-commentary
+    foresight: number                  # 0-10, controls hint specificity
+    classic_mode: boolean              # Hide scripted options (parser mode)
 
   recent_history: [string]    # Last 3-5 turns for context
 ```
@@ -241,6 +266,7 @@ Scene++ occurs automatically when:
 2. Initialize state in memory from scenario:
    ```yaml
    current_node: [scenario.start_node]
+   previous_node: null            # No previous node at start
    turn: 1
    scene: 1
    beat: 1
@@ -250,8 +276,10 @@ Scene++ occurs automatically when:
    character: [scenario.initial_character]
    world: [scenario.initial_world]
    settings:
-     improvisation_temperature: 0  # Default (verbatim)
+     improvisation_temperature: 5  # Default (Balanced). See lib/framework/improvisation.md
      gallery_mode: false
+     foresight: 5                  # Default (Suggestive)
+     classic_mode: false           # Default: show choices
    recent_history: []
    ```
 
@@ -280,12 +308,36 @@ TURN:
      - Standard mode: Access scenario.nodes[current_node] from cached scenario
      - Lazy mode: Grep for "^  {current_node}:" with -A 80, parse YAML
 
+  1a. Process elapsed_since_previous (NEW in v5):
+      - If node has elapsed_since_previous:
+        - Convert to seconds: amount * TIME_UNITS[unit]
+        - Add to world.time
+        - Check scheduled events (step 1b)
+
+  1b. Check and process scheduled events (NEW in v5):
+      - For each event in scheduled_events where trigger_at <= world.time:
+        - Apply event consequences
+        - Add event_id to triggered_events
+        - Remove from scheduled_events
+      - Process events in order (lowest trigger_at first)
+      - Max cascade depth: 10 (prevent infinite loops from event chains)
+
   2. Check for ending:
      - If current_node is in scenario.endings → display ending, save state, EXIT
      - If character.exists == false → display death ending, save state, EXIT
 
+  2a. Check node precondition (if present):
+     - If current node has `precondition`:
+       - Evaluate precondition against current state
+       - If FAILS:
+         - Display blocked message (see "Blocked Display Format" below)
+         - Restore: current_node = previous node (the node we came from)
+         - Do NOT increment turn counter
+         - GOTO step 4 (re-present previous choices)
+       - If PASSES: continue normally
+
   3. Display narrative (with temperature adaptation):
-     - Read settings.improvisation_temperature (default: 0)
+     - Read settings.improvisation_temperature (default: 5)
      - Collect relevant improv_* flags from character.flags
      - IF temperature > 0 AND improv_* flags exist:
        - Generate contextual framing based on temperature level
@@ -308,6 +360,25 @@ TURN:
        - See lib/framework/improvisation.md → "Bonus Options"
 
   5. Present choices via AskUserQuestion:
+
+     **IF settings.classic_mode == true:**
+     ```json
+     {
+       "questions": [{
+         "question": "[node.choice.prompt]",
+         "header": "Action",
+         "multiSelect": false,
+         "options": [
+           {"label": "Look around", "description": "Survey your surroundings"},
+           {"label": "Inventory", "description": "Check what you're carrying"},
+           {"label": "Show help", "description": "See commands that might work here"}
+         ]
+       }]
+     }
+     ```
+
+     **ELSE (classic_mode == false):**
+     ```json
      {
        "questions": [{
          "question": "[node.choice.prompt]",
@@ -316,6 +387,7 @@ TURN:
          "options": [available choices + bonus option if generated]
        }]
      }
+     ```
 
   6. Wait for user selection
 
@@ -347,17 +419,89 @@ TURN:
       - Do NOT advance node or turn
       - GOTO step 6
 
+  6d. IF selection is "Look around" (classic mode):
+      - Re-display current node narrative (abbreviated if long)
+      - Extract and list exits mentioned in narrative
+      - Extract and list notable items/NPCs if mentioned
+      - Format as atmospheric description, not menu
+      - Beat++ (log to beat_log with type: "look")
+      - Present choices again
+      - Do NOT advance node or turn
+      - GOTO step 6
+
+  6e. IF selection is "Inventory" (classic mode):
+      - Display character.inventory as formatted list
+      - If empty: "You are empty-handed."
+      - If items: List each with brief description if available
+      - Beat++ (log to beat_log with type: "inventory")
+      - Present choices again
+      - Do NOT advance node or turn
+      - GOTO step 6
+
+  6f. IF selection is "Show help" (classic mode):
+      - Generate adaptive help from hidden options (see below)
+      - Beat++ (log to beat_log with type: "help")
+      - Present choices again
+      - Do NOT advance node or turn
+      - GOTO step 6
+
+      **Adaptive Help Generation:**
+
+      1. Extract verbs from hidden options:
+         - Read all `options[].text` from current node
+         - Parse the leading verb (e.g., "Open the mailbox" → "open")
+         - Lowercase and deduplicate verbs
+
+      2. Categorize by action type:
+         ```
+         MOVEMENT:     go, enter, climb, descend, exit, flee, leave, walk
+         EXAMINE:      examine, look, read, search, inspect, study
+         INTERACT:     open, close, take, drop, give, use, push, pull, turn
+         COMBAT:       attack, fight, defend, strike, parry
+         COMMUNICATE:  say, ask, talk, tell, shout, whisper
+         ```
+
+      3. Generate contextual help output:
+         ```
+         ═══════════════════════════════════════════════════════════════════════
+         COMMANDS THAT MIGHT WORK HERE
+         ═══════════════════════════════════════════════════════════════════════
+
+         Movement:    go [direction], enter
+         Examine:     examine [thing], read
+         Interact:    open, take
+
+         UNIVERSAL COMMANDS
+         inventory    - check what you're carrying
+         look         - survey surroundings
+         save         - save your game
+         ═══════════════════════════════════════════════════════════════════════
+         ```
+
+      4. What to include/exclude:
+         - INCLUDE: Verbs extracted from available options
+         - INCLUDE: Universal commands (inventory, look, save)
+         - EXCLUDE: Specific objects (say "open" not "open mailbox")
+         - EXCLUDE: Which directions are valid
+         - EXCLUDE: Options blocked by preconditions
+
+      5. If no contextual verbs found (node has no options):
+         - Show only universal commands section
+
   7. Display option narrative (if present):
      - Check if selected option has a `narrative` field
      - If present: display it (plain text, no box format)
      - This is the immediate feedback to the player's choice
 
   8. Apply consequences of chosen option:
-     - Execute each consequence type
+     - Execute each consequence type (see Consequence Application table)
      - Update character/world state in memory
+     - After all consequences: re-check scheduled events (step 1b)
+       - This handles advance_time or schedule_event consequences
 
   9. Advance state:
      - Log current beat: beat_log.append({turn, scene, beat, type: "scripted_choice", action: option.text})
+     - Set previous_node = current_node   # Save for blocked restoration
      - Set current_node = option.next_node
      - Turn++ (resets scene→1, beat→1)
      - Update scene_location = world.current_location
@@ -399,44 +543,87 @@ The PreToolUse hook auto-approves saves/ writes for seamless gameplay.
 
 ## Precondition & Consequence Evaluation
 
+> **Reference:** See `lib/framework/evaluation-reference.md` for precondition evaluation and consequence application tables.
 > **Schema Reference:** See `lib/framework/scenario-format.md` for all types and YAML syntax.
 
-### Precondition Evaluation
+### Location Access Validation
 
-Evaluate preconditions against current state:
+When evaluating a `move_to` consequence or presenting location-based options:
 
-| Type | Check |
-|------|-------|
-| `has_item` | `item in character.inventory` |
-| `missing_item` | `item not in character.inventory` |
-| `trait_minimum` | `character.traits[trait] >= minimum` |
-| `trait_maximum` | `character.traits[trait] <= maximum` |
-| `flag_set` | `character.flags[flag] == true` |
-| `flag_not_set` | `character.flags[flag] != true` |
-| `at_location` | `world.current_location == location` |
-| `relationship_minimum` | `character.relationships[npc] >= minimum` |
-| `all_of` | All nested conditions pass |
-| `any_of` | At least one nested condition passes |
-| `none_of` | No nested conditions pass |
+1. Find target location in `scenario.initial_world.locations[]`
+2. If location has `precondition`:
+   - Evaluate precondition against current state
+   - If FAILS, apply `access_mode`:
+     - `filter` (default): Hide the option entirely
+     - `show_locked`: Show option with "[Locked]" indicator, disabled
+     - `show_normal`: Show normally, fail with message if selected
 
-### Consequence Application
+**Access Denied Display (for show_normal mode):**
+```
+╭──────────────────────────────────────────────────────────────────────╮
+│ ACCESS DENIED                                                        │
+╰──────────────────────────────────────────────────────────────────────╯
 
-Apply consequences to modify state in memory:
+[access_denied_narrative or generated fallback]
 
-| Type | Action |
-|------|--------|
-| `gain_item` | Add to `character.inventory` |
-| `lose_item` | Remove from `character.inventory` |
-| `modify_trait` | `character.traits[trait] += delta` |
-| `set_trait` | `character.traits[trait] = value` |
-| `set_flag` | `character.flags[flag] = value` |
-| `clear_flag` | `character.flags[flag] = false` |
-| `move_to` | `world.current_location = location` |
-| `advance_time` | `world.time += delta` |
-| `modify_relationship` | `character.relationships[npc] += delta` |
-| `character_dies` | `character.exists = false`, add reason to history |
-| `character_departs` | `character.exists = false` (transcendence) |
-| `add_history` | Append entry to `recent_history` |
+You cannot enter [location name].
+```
+
+**Location Access Fallback Messages:**
+| Precondition Type | Fallback Template |
+|-------------------|-------------------|
+| `has_item` | "You need the **[item]** to enter this place." |
+| `trait_minimum` | "Your **[trait]** is insufficient to access this location." |
+| `flag_set` | "Something must happen before this place opens to you." |
+| `environment_is` | "The **[property]** here must be **[value]**." |
+| `environment_minimum` | "The **[property]** here is too low." |
+| `environment_maximum` | "The **[property]** here is too high." |
+| `all_of` | Generate message for first failing sub-condition |
+
+### Blocked Display Format
+
+When a node precondition fails, display:
+
+```
+╭──────────────────────────────────────────────────────────────────────╮
+│ BLOCKED                                                              │
+╰──────────────────────────────────────────────────────────────────────╯
+
+[blocked_narrative or generated fallback]
+
+You remain where you are.
+```
+
+The header uses the standard 70-character width with rounded corners.
+
+### Fallback Message Generation
+
+If a node has a `precondition` but no `blocked_narrative`, generate a fallback:
+
+| Precondition Type | Fallback Template |
+|-------------------|-------------------|
+| `has_item` | "You need the **[item]** to proceed here." |
+| `missing_item` | "The **[item]** you carry prevents this path." |
+| `trait_minimum` | "Your **[trait]** ([current]) is insufficient. Requires at least [minimum]." |
+| `trait_maximum` | "Your **[trait]** ([current]) is too high. Requires [maximum] or less." |
+| `flag_set` | "Something must happen before you can proceed." |
+| `flag_not_set` | "Your past actions have closed this path." |
+| `relationship_minimum` | "Your relationship with **[npc]** ([current]) is insufficient. Requires at least [minimum]." |
+| `location_flag_set` | "The **[location]** is not yet prepared for this." |
+| `location_flag_not_set` | "Conditions at **[location]** prevent this path." |
+| `location_property_minimum` | "The **[property]** at **[location]** is insufficient." |
+| `location_property_maximum` | "The **[property]** at **[location]** is too high." |
+| `all_of` | Generate message for first failing sub-condition |
+| `any_of` | "You need at least one of several requirements." |
+| `none_of` | "Your current situation prevents this path." |
+
+**Edge Case - Start Node with Precondition:**
+If `start_node` has a `precondition`, this is a scenario design error. Display:
+```
+ERROR: Start node cannot have a precondition.
+The scenario "[name]" has an invalid configuration.
+```
+Refuse to start the game.
 
 ## Improvised Action Handling
 
@@ -452,6 +639,38 @@ When a player selects "Other" and provides free-text input:
 6. Present same choices again - do NOT advance node or turn
 
 Soft consequences preserve scenario balance while rewarding exploration.
+
+### Hint Generation (Foresight-Gated)
+
+When player asks for help/hints during improvisation (e.g., "where is the
+treasure?", "what should I do?", "how do I get past the troll?"):
+
+1. Classify as Meta intent with hint_request subtype
+2. Read `settings.foresight` value (default: 5)
+3. Generate hint at appropriate specificity level:
+
+| Foresight | Name | Response Pattern |
+|-----------|------|------------------|
+| 0 | Blind | "You'll have to discover that yourself." (refuse hint) |
+| 1-3 | Cryptic | Atmospheric/poetic. Reference mood, themes, not specifics. |
+| 4-6 | Suggestive | Directional. Name regions/directions without exact steps. |
+| 7-9 | Helpful | Clear guidance. Name specific locations and items needed. |
+| 10 | Oracle | Full walkthrough. Step-by-step instructions to goal. |
+
+**Example responses for "Where can I find treasure?"**
+
+- **0 (Blind)**: "The adventurer must discover their own fortune."
+- **3 (Cryptic)**: "Treasures favor those who venture into the deep places..."
+- **5 (Suggestive)**: "The eastern passages and underground depths hold rewards."
+- **8 (Helpful)**: "There's a painting in the Gallery to the east, and a bar in the Loud Room."
+- **10 (Oracle)**: "Go east twice to the Gallery, take the painting. Then go down to the cellar, navigate past the troll, and find the platinum bar in the Loud Room."
+
+**Hint generation requires scenario knowledge:**
+- Standard mode: Use cached scenario data to identify goals, items, paths
+- Lazy mode: Query scenario with yq/grep to find relevant objectives
+
+Hints should reference the scenario's actual content, not generic advice.
+After delivering the hint, present the same choices again (no node advance).
 
 ## Scripted Improvisation Flow
 

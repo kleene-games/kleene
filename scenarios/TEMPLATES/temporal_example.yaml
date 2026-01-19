@@ -1,0 +1,938 @@
+# Temporal System Example
+# Demonstrates time advancement, scheduled events, and time-gated content
+# ~20-30 minutes of gameplay
+
+name: "Temporal Example"
+description: "Focused demonstration of Kleene v5 time and event systems: scheduled events, time-gated content, deadlines, and NPC schedules"
+
+initial_character:
+  name: "Timekeeper"
+  traits:
+    speed: 5
+    preparation: 5
+  inventory: []
+  relationships:
+    innkeeper: 0
+    courier: 0
+    clockmaker: 0
+  flags: {}
+
+initial_world:
+  current_location: "village_inn"
+  time: 28800  # Start at 8 AM (8 * 3600 seconds)
+  flags:
+    day_one: true
+
+  # NPC schedules - they move based on time
+  npc_locations:
+    innkeeper: village_inn
+    courier: village_inn
+    clockmaker: clock_tower
+
+  # Pre-scheduled events that will trigger at specific times
+  scheduled_events:
+    # Noon bells ring at 12 PM
+    - event_id: noon_bells
+      trigger_at: 43200  # 12 * 3600
+      consequences:
+        - type: set_flag
+          flag: past_noon
+          value: true
+
+    # Courier departs at 2 PM
+    - event_id: courier_departs
+      trigger_at: 50400  # 14 * 3600
+      consequences:
+        - type: move_npc
+          npc: courier
+          location: departed
+        - type: set_flag
+          flag: courier_gone
+          value: true
+
+    # Evening falls at 6 PM
+    - event_id: evening_falls
+      trigger_at: 64800  # 18 * 3600
+      consequences:
+        - type: set_flag
+          flag: evening
+          value: true
+        - type: set_environment
+          location: village_square
+          property: lighting
+          value: dusk
+
+    # Deadline: Market closes at 5 PM
+    - event_id: market_closes
+      trigger_at: 61200  # 17 * 3600
+      consequences:
+        - type: set_flag
+          flag: market_closed
+          value: true
+        - type: move_npc
+          npc: clockmaker
+          location: clockmaker_home
+
+  triggered_events: []
+
+  locations:
+    - id: village_inn
+      name: "Village Inn"
+      connections: [village_square]
+      initial_state:
+        environment:
+          lighting: warm
+          ambiance: cozy
+
+    - id: village_square
+      name: "Village Square"
+      connections: [village_inn, market, clock_tower]
+      initial_state:
+        environment:
+          lighting: daylight
+          ambiance: busy
+
+    - id: market
+      name: "Village Market"
+      connections: [village_square]
+      # Market access based on time
+      precondition:
+        type: event_not_triggered
+        event_id: market_closes
+      access_denied_narrative: |
+        The market stalls are shuttered for the evening.
+        You'll need to return tomorrow morning.
+      access_mode: show_locked
+
+    - id: clock_tower
+      name: "Clock Tower"
+      connections: [village_square]
+
+    - id: clockmaker_home
+      name: "Clockmaker's Home"
+      connections: [village_square]
+
+start_node: morning_wake
+
+nodes:
+  morning_wake:
+    narrative: |
+      You wake to the sounds of the inn coming alive. Sunlight streams
+      through the window - it's early morning.
+
+      Downstairs, you hear the innkeeper bustling about. A courier
+      sits at the bar, nursing a drink, waiting for something.
+
+      The day stretches before you with its possibilities.
+
+      **Current Time: 8:00 AM**
+    choice:
+      prompt: "How do you start your day?"
+      options:
+        - id: talk_innkeeper
+          text: "Speak with the innkeeper"
+          precondition:
+            type: npc_at_location
+            npc: innkeeper
+            location: current
+          consequence:
+            - type: modify_relationship
+              npc: innkeeper
+              delta: 2
+            # Small time cost
+            - type: advance_time
+              amount: 15
+              unit: minutes
+          next_node: innkeeper_chat
+
+        - id: talk_courier
+          text: "Approach the courier"
+          precondition:
+            type: npc_at_location
+            npc: courier
+            location: current
+          consequence:
+            - type: modify_relationship
+              npc: courier
+              delta: 2
+            - type: advance_time
+              amount: 15
+              unit: minutes
+          next_node: courier_conversation
+
+        - id: head_out
+          text: "Head out to the village square"
+          consequence:
+            - type: move_to
+              location: village_square
+            - type: advance_time
+              amount: 10
+              unit: minutes
+          next_node: village_morning
+
+  innkeeper_chat:
+    narrative: |
+      The innkeeper wipes down the counter, a knowing look in her eyes.
+
+      "Staying another day, then? The clock tower's worth a visit if
+      you've the time. Old Gideon knows more about this village than
+      anyone alive."
+
+      She leans closer. "But mind the market - it closes at five sharp.
+      And that courier? He's leaving at two. If you need anything sent,
+      don't dally."
+    choice:
+      prompt: "Useful information."
+      options:
+        - id: ask_more
+          text: "Ask about Gideon the clockmaker"
+          consequence:
+            - type: set_flag
+              flag: knows_gideon
+              value: true
+            - type: advance_time
+              amount: 10
+              unit: minutes
+          next_node: gideon_info
+
+        - id: head_out
+          text: "Thank her and head out"
+          consequence:
+            - type: move_to
+              location: village_square
+            - type: advance_time
+              amount: 5
+              unit: minutes
+          next_node: village_morning
+
+  gideon_info:
+    narrative: |
+      "Gideon? He's been the village timekeeper for fifty years.
+      Some say he can read the future in the clockwork. Others say
+      he's just an eccentric old man."
+
+      She shrugs. "Either way, he knows secrets. If you want to
+      understand this village, start with him."
+    choice:
+      prompt: "The clockmaker sounds intriguing."
+      options:
+        - id: go_tower
+          text: "Visit the clock tower immediately"
+          consequence:
+            - type: move_to
+              location: clock_tower
+            - type: advance_time
+              amount: 20
+              unit: minutes
+          next_node: clock_tower_morning
+
+        - id: explore
+          text: "Explore the village first"
+          consequence:
+            - type: move_to
+              location: village_square
+            - type: advance_time
+              amount: 10
+              unit: minutes
+          next_node: village_morning
+
+  courier_conversation:
+    narrative: |
+      The courier looks up from his drink. "You need something sent?
+      I'm heading east at two o'clock. After that, you'll wait a week
+      for the next rider."
+
+      He taps his bag. "Letters, packages, small valuables. Standard
+      rates apply."
+    choice:
+      prompt: "The courier has a deadline."
+      options:
+        - id: remember
+          text: "Thank him and remember the time"
+          consequence:
+            - type: set_flag
+              flag: knows_courier_schedule
+              value: true
+          next_node: morning_wake
+
+        - id: ask_destination
+          text: "Ask where he's heading"
+          consequence:
+            - type: set_flag
+              flag: knows_courier_route
+              value: true
+            - type: advance_time
+              amount: 15
+              unit: minutes
+          next_node: courier_route_info
+
+  courier_route_info:
+    narrative: |
+      "East road, through the mountains. Takes three days to reach
+      the capital." He finishes his drink. "If you've business there,
+      a letter's faster than walking."
+    choice:
+      prompt: "Capital business might be useful."
+      options:
+        - id: continue
+          text: "Continue your morning"
+          next_node: morning_wake
+
+  village_morning:
+    narrative: |
+      The village square bustles with morning activity. The market
+      stalls are open, selling fresh produce and crafted goods.
+
+      The clock tower looms at the north end of the square, its
+      ancient mechanisms marking the hours.
+    choice:
+      prompt: "The day awaits."
+      options:
+        - id: visit_market
+          text: "Browse the market"
+          precondition:
+            type: event_not_triggered
+            event_id: market_closes
+          consequence:
+            - type: move_to
+              location: market
+            - type: advance_time
+              amount: 30
+              unit: minutes
+          next_node: market_browse
+
+        - id: visit_tower
+          text: "Visit the clock tower"
+          consequence:
+            - type: move_to
+              location: clock_tower
+            - type: advance_time
+              amount: 15
+              unit: minutes
+          next_node: clock_tower_visit
+
+        - id: return_inn
+          text: "Return to the inn"
+          consequence:
+            - type: move_to
+              location: village_inn
+            - type: advance_time
+              amount: 10
+              unit: minutes
+          next_node: morning_wake
+
+        # Time-gated option: only available after noon
+        - id: afternoon_rest
+          text: "Find a shady spot to rest"
+          precondition:
+            type: event_triggered
+            event_id: noon_bells
+          consequence:
+            - type: advance_time
+              amount: 1
+              unit: hours
+            - type: modify_trait
+              trait: preparation
+              delta: 1
+          next_node: afternoon_rest
+
+  market_browse:
+    narrative: |
+      The market is alive with color and sound. Merchants call out
+      their wares, and the smell of fresh bread mingles with exotic
+      spices.
+
+      One stall catches your eye - a vendor selling hourglasses and
+      sundials. Curious items for a village with a clock tower.
+    choice:
+      prompt: "The market has interesting offerings."
+      options:
+        - id: buy_hourglass
+          text: "Purchase a pocket hourglass"
+          consequence:
+            - type: gain_item
+              item: pocket_hourglass
+            - type: advance_time
+              amount: 15
+              unit: minutes
+          next_node: hourglass_acquired
+
+        - id: browse_more
+          text: "Continue browsing"
+          consequence:
+            - type: advance_time
+              amount: 45
+              unit: minutes
+          next_node: market_continued
+
+        - id: leave
+          text: "Leave the market"
+          consequence:
+            - type: move_to
+              location: village_square
+          next_node: village_morning
+
+  hourglass_acquired:
+    narrative: |
+      The merchant hands you a small brass hourglass. "An hour's
+      worth of sand," she says. "Use it wisely. Time waits for no one."
+
+      The hourglass fits perfectly in your palm, its sand glittering
+      in the morning light.
+    choice:
+      prompt: "You now have a way to mark the passing hour."
+      options:
+        - id: continue
+          text: "Continue in the market"
+          next_node: market_continued
+
+        - id: tower
+          text: "Head to the clock tower"
+          consequence:
+            - type: move_to
+              location: clock_tower
+            - type: advance_time
+              amount: 10
+              unit: minutes
+          next_node: clock_tower_visit
+
+  market_continued:
+    narrative: |
+      You wander through the stalls, taking in the village's
+      daily commerce. Time slips by almost unnoticed.
+    choice:
+      prompt: "The market has much to offer."
+      options:
+        - id: tower
+          text: "Visit the clock tower"
+          precondition:
+            type: event_not_triggered
+            event_id: evening_falls
+          consequence:
+            - type: move_to
+              location: clock_tower
+            - type: advance_time
+              amount: 15
+              unit: minutes
+          next_node: clock_tower_visit
+
+        - id: inn
+          text: "Return to the inn"
+          consequence:
+            - type: move_to
+              location: village_inn
+            - type: advance_time
+              amount: 10
+              unit: minutes
+          next_node: inn_return
+
+  clock_tower_morning:
+    narrative: |
+      The clock tower rises above you, its mechanisms clicking and
+      whirring within. An old man sits at a workbench, surrounded
+      by gears and springs.
+
+      "Early visitor," he says without looking up. "The tower
+      reveals different secrets at different hours. Come back at
+      noon if you want to see something special."
+    choice:
+      prompt: "The clockmaker speaks of noon."
+      options:
+        - id: wait
+          text: "Ask what happens at noon"
+          consequence:
+            - type: set_flag
+              flag: knows_noon_secret
+              value: true
+            - type: advance_time
+              amount: 20
+              unit: minutes
+          next_node: noon_secret_hint
+
+        - id: explore
+          text: "Explore the tower now"
+          consequence:
+            - type: advance_time
+              amount: 45
+              unit: minutes
+          next_node: tower_exploration
+
+  clock_tower_visit:
+    # Different narrative based on time of day
+    narrative: |
+      You enter the clock tower. The massive clockwork mechanism
+      dominates the space, gears turning in an endless dance.
+    choice:
+      prompt: "The tower awaits exploration."
+      options:
+        - id: meet_clockmaker
+          text: "Speak with the clockmaker"
+          precondition:
+            type: npc_at_location
+            npc: clockmaker
+            location: current
+          consequence:
+            - type: modify_relationship
+              npc: clockmaker
+              delta: 5
+            - type: advance_time
+              amount: 30
+              unit: minutes
+          next_node: clockmaker_conversation
+
+        - id: climb
+          text: "Climb to the top"
+          consequence:
+            - type: advance_time
+              amount: 20
+              unit: minutes
+          next_node: tower_top
+
+        - id: leave
+          text: "Leave the tower"
+          consequence:
+            - type: move_to
+              location: village_square
+          next_node: village_morning
+
+  noon_secret_hint:
+    narrative: |
+      Gideon's eyes twinkle. "At noon, when the bells ring, the
+      clock shows its true face. The mechanism aligns in a way
+      that happens only once per day."
+
+      He returns to his work. "If you're here when it happens,
+      you'll understand why time matters."
+    choice:
+      prompt: "You've learned about the noon revelation."
+      options:
+        - id: wait_here
+          text: "Wait here until noon"
+          consequence:
+            # Advance to just before noon
+            - type: advance_time
+              amount: 3
+              unit: hours
+          next_node: waiting_for_noon
+
+        - id: explore_first
+          text: "Explore the village and return"
+          consequence:
+            - type: move_to
+              location: village_square
+          next_node: village_morning
+
+  waiting_for_noon:
+    # This node triggers around noon
+    precondition:
+      type: time_elapsed_minimum
+      amount: 4
+      unit: hours
+
+    blocked_narrative: |
+      It's still early. You'll need to wait a bit longer for
+      the noon revelation.
+
+    narrative: |
+      As the hands approach twelve, Gideon gestures for you to
+      watch the central mechanism.
+
+      The clock strikes noon. The bells ring out, and something
+      extraordinary happens - the gears align to form a perfect
+      pattern, revealing a hidden compartment.
+    choice:
+      prompt: "The noon secret is revealed!"
+      options:
+        - id: take_item
+          text: "Reach into the compartment"
+          consequence:
+            - type: gain_item
+              item: clockwork_key
+            - type: set_flag
+              flag: discovered_secret
+              value: true
+          next_node: secret_obtained
+
+  secret_obtained:
+    narrative: |
+      Your fingers close around a small brass key, warm from
+      the mechanism's heat.
+
+      "That key," Gideon says quietly, "opens doors that exist
+      between moments. Use it when time seems to stand still."
+
+      Outside, the village has changed - the noon sun casts
+      everything in sharp relief.
+    choice:
+      prompt: "You possess a mysterious key."
+      options:
+        - id: ask_meaning
+          text: "Ask what the key opens"
+          consequence:
+            - type: set_flag
+              flag: knows_key_purpose
+              value: true
+            - type: advance_time
+              amount: 30
+              unit: minutes
+          next_node: key_explanation
+
+        - id: leave
+          text: "Leave with the key"
+          consequence:
+            - type: move_to
+              location: village_square
+            - type: advance_time
+              amount: 10
+              unit: minutes
+          next_node: afternoon_square
+
+  key_explanation:
+    narrative: |
+      "The key opens moments frozen in time. When you find a place
+      where the world seems to hold its breath, use the key."
+
+      Gideon returns to his work. "But be warned - time taken
+      cannot be returned. The key costs as much as it gives."
+    choice:
+      prompt: "The key has a price."
+      options:
+        - id: continue
+          text: "Leave to explore"
+          consequence:
+            - type: move_to
+              location: village_square
+          next_node: afternoon_square
+
+  tower_exploration:
+    narrative: |
+      You explore the clock tower's lower levels. Ancient mechanisms
+      line the walls, some still functioning, others long dormant.
+
+      Time seems to pass differently here, each tick echoing
+      through the ages.
+    choice:
+      prompt: "The tower holds many secrets."
+      options:
+        - id: continue
+          text: "Continue exploring"
+          next_node: clock_tower_visit
+
+  tower_top:
+    narrative: |
+      From the top of the clock tower, you can see the entire
+      village laid out below. The market, the inn, the roads
+      leading away into distant lands.
+
+      The massive clock face rotates slowly beside you, counting
+      the moments of countless lives.
+    choice:
+      prompt: "The view is breathtaking."
+      options:
+        - id: descend
+          text: "Descend the tower"
+          next_node: clock_tower_visit
+
+  clockmaker_conversation:
+    narrative: |
+      Gideon sets down his tools. "You've come seeking something.
+      Everyone who enters this tower does."
+
+      His ancient eyes study you. "What is it you wish to understand
+      about time?"
+    choice:
+      prompt: "The clockmaker offers wisdom."
+      options:
+        - id: ask_time
+          text: "Ask about the nature of time"
+          consequence:
+            - type: modify_trait
+              trait: preparation
+              delta: 3
+            - type: advance_time
+              amount: 1
+              unit: hours
+          next_node: time_lesson
+
+        - id: ask_village
+          text: "Ask about the village's history"
+          consequence:
+            - type: set_flag
+              flag: knows_village_history
+              value: true
+            - type: advance_time
+              amount: 45
+              unit: minutes
+          next_node: village_history
+
+  time_lesson:
+    narrative: |
+      "Time," Gideon says, "is not a river that flows in one
+      direction. It is a web, with moments connected to moments.
+      What you do now ripples forward and backward."
+
+      He gestures at the clock. "This mechanism doesn't just
+      measure time. It remembers it."
+    choice:
+      prompt: "A profound lesson."
+      options:
+        - id: understand
+          text: "Contemplate his words"
+          consequence:
+            - type: set_flag
+              flag: understands_time
+              value: true
+          next_node: ending_wisdom
+
+        - id: practical
+          text: "Ask for practical advice"
+          next_node: practical_advice
+
+  village_history:
+    narrative: |
+      "This village was founded at a crossroads of time. The
+      clock tower marks the center, where past, present, and
+      future meet."
+
+      Gideon's voice grows distant. "Many have sought to control
+      time here. None have succeeded. But some have learned to
+      walk with it."
+    choice:
+      prompt: "The village has deep roots."
+      options:
+        - id: continue
+          text: "Thank him for the history"
+          next_node: clock_tower_visit
+
+  practical_advice:
+    narrative: |
+      Gideon chuckles. "Practical? Very well. The courier leaves
+      at two. The market closes at five. The inn serves dinner
+      at seven."
+
+      He pauses. "And if you haven't found what you seek by
+      nightfall, you'll have to wait for tomorrow."
+    choice:
+      prompt: "Concrete guidance."
+      options:
+        - id: hurry
+          text: "Hurry to accomplish your goals"
+          consequence:
+            - type: modify_trait
+              trait: speed
+              delta: 2
+          next_node: afternoon_square
+
+  afternoon_rest:
+    narrative: |
+      You find a shaded bench and let the afternoon warmth
+      wash over you. The village moves at its own pace, unhurried
+      by the concerns of travelers.
+
+      Time passes. You feel refreshed, ready for what comes next.
+    choice:
+      prompt: "Rest has its benefits."
+      options:
+        - id: continue
+          text: "Continue your explorations"
+          next_node: village_morning
+
+  afternoon_square:
+    # Different scene based on time
+    narrative: |
+      The afternoon sun hangs lower now. The village square is
+      quieter - the morning rush has passed.
+    choice:
+      prompt: "Afternoon in the village."
+      options:
+        - id: courier
+          text: "Check on the courier"
+          precondition:
+            type: event_not_triggered
+            event_id: courier_departs
+          consequence:
+            - type: move_to
+              location: village_inn
+            - type: advance_time
+              amount: 10
+              unit: minutes
+          next_node: courier_check
+
+        - id: market
+          text: "Visit the market before it closes"
+          precondition:
+            type: event_not_triggered
+            event_id: market_closes
+          consequence:
+            - type: move_to
+              location: market
+            - type: advance_time
+              amount: 20
+              unit: minutes
+          next_node: market_afternoon
+
+        - id: wait_evening
+          text: "Wait for evening"
+          consequence:
+            - type: advance_time
+              amount: 3
+              unit: hours
+          next_node: evening_falls_node
+
+  courier_check:
+    narrative: |
+      The courier is still at the inn, but he's checking his
+      saddlebags with purpose.
+
+      "Not long now," he says. "If you have a letter, speak now."
+    choice:
+      prompt: "The courier prepares to leave."
+      options:
+        - id: send_letter
+          text: "Send a letter to the capital"
+          consequence:
+            - type: set_flag
+              flag: letter_sent
+              value: true
+            - type: advance_time
+              amount: 15
+              unit: minutes
+          next_node: letter_sent
+
+        - id: nothing
+          text: "You have nothing to send"
+          next_node: afternoon_square
+
+  letter_sent:
+    narrative: |
+      You hastily compose a letter and hand it to the courier.
+      He nods and tucks it securely in his bag.
+
+      "It'll reach the capital in three days. Expect a reply
+      in a week, if one comes."
+
+      With that, he finishes his preparations.
+    choice:
+      prompt: "Your message is on its way."
+      options:
+        - id: continue
+          text: "Continue your day"
+          next_node: afternoon_square
+
+  market_afternoon:
+    narrative: |
+      The market is less crowded now, the morning's frenzy
+      subsided. Merchants sit in the shade, waiting for the
+      late afternoon customers.
+    choice:
+      prompt: "A quieter market."
+      options:
+        - id: browse
+          text: "Make a quick purchase"
+          consequence:
+            - type: advance_time
+              amount: 30
+              unit: minutes
+          next_node: market_browse
+
+        - id: leave
+          text: "Return to the square"
+          consequence:
+            - type: move_to
+              location: village_square
+          next_node: afternoon_square
+
+  evening_falls_node:
+    # Triggered when evening event fires
+    precondition:
+      type: event_triggered
+      event_id: evening_falls
+
+    blocked_narrative: |
+      The sun is still up. Evening hasn't arrived yet.
+
+    narrative: |
+      The sky turns gold and pink as the sun descends.
+      Villagers head home, closing shops and locking doors.
+
+      The clock tower strikes six. Evening has come.
+
+      It's time to decide how your day ends.
+    choice:
+      prompt: "Evening falls on the village."
+      options:
+        - id: inn
+          text: "Return to the inn for dinner"
+          consequence:
+            - type: move_to
+              location: village_inn
+          next_node: ending_peaceful
+
+        - id: tower
+          text: "Watch the sunset from the tower"
+          consequence:
+            - type: move_to
+              location: clock_tower
+          next_node: ending_contemplative
+
+  inn_return:
+    narrative: |
+      The inn offers warmth and comfort. You settle into a
+      chair, reflecting on the day's events.
+    choice:
+      prompt: "A moment of rest."
+      options:
+        - id: continue
+          text: "Head back out"
+          consequence:
+            - type: move_to
+              location: village_square
+          next_node: village_morning
+
+endings:
+  ending_peaceful:
+    narrative: |
+      You share a meal at the inn, watching the last light
+      fade through the windows.
+
+      The day has passed, filled with moments both small and
+      significant. Tomorrow will bring new opportunities, but
+      tonight, you are content.
+
+      Time, you realize, is not something to race against.
+      It is something to live within.
+    type: unchanged
+
+  ending_contemplative:
+    narrative: |
+      From the clock tower, you watch the sun sink below the
+      horizon. The mechanism clicks on, indifferent to beauty.
+
+      Gideon joins you silently. "You understand now," he says.
+      "Time gives meaning to moments. Without its passage,
+      nothing would matter."
+
+      You carry this wisdom with you as the stars emerge.
+    type: victory
+
+  ending_wisdom:
+    narrative: |
+      Gideon's words settle into your understanding like gears
+      finding their proper place.
+
+      Time is not your enemy. It is your teacher.
+
+      You leave the clock tower changed, seeing the world
+      through the lens of moments interconnected, each one
+      precious and fleeting.
+    type: transcendence
+
+# This template demonstrates:
+# - Pre-scheduled events in initial_world.scheduled_events
+# - Time advancement with various units (minutes, hours)
+# - Event-triggered preconditions (noon_bells, courier_departs)
+# - Event-based NPC movement (courier leaving)
+# - Time-elapsed preconditions (waiting_for_noon node)
+# - Market closing based on scheduled event
+# - Time-gated options (afternoon_rest only after noon)
+# - Deadline mechanics (courier at 2 PM, market at 5 PM)

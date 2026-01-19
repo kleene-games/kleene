@@ -387,6 +387,62 @@ Use: /kleene gallery on
 
 **Note:** Gallery mode only applies during active gameplay. The setting is saved with game state and persists across sessions.
 
+### Foresight Actions
+Keywords: "foresight", "hints", "help level", "guidance"
+
+**Set Foresight** (`/kleene foresight [0-10]`):
+1. Parse foresight value (0-10)
+2. Update `settings.foresight` in current game state
+3. Confirm: "Foresight set to [N] ([Name])"
+
+If no value provided, show current setting and explain scale:
+```
+Current foresight: 5 (Suggestive)
+
+Scale:
+  0     Blind       - No hints given
+  1-3   Cryptic     - Atmospheric, poetic hints
+  4-6   Suggestive  - Directional nudges (default)
+  7-9   Helpful     - Clear guidance
+  10    Oracle      - Full walkthrough instructions
+
+Use: /kleene foresight [0-10]
+```
+
+**Note:** Foresight only applies during active gameplay when players ask questions like "where is the treasure?" or "what should I do?". The setting is saved with game state.
+
+### Classic Mode Actions
+Keywords: "classic", "parser", "text adventure", "zork mode", "manual"
+
+**Toggle Classic Mode** (`/kleene classic [on|off]`):
+1. Parse on/off value (or toggle if not provided)
+2. Update `settings.classic_mode` in current game state
+3. Confirm with explanation
+
+If no value provided, show current setting and explain:
+```
+Classic mode: OFF
+
+When ON, hides pre-scripted choice options. You must type commands
+like original text adventures (Zork, Colossal Cave, etc.).
+
+Only "Look around" and "Inventory" remain as safety options -
+everything else requires typing via "Other". Try commands like:
+  - go north / enter cave / climb ladder
+  - examine painting / look at sword
+  - take key / pick up torch
+  - talk to merchant / attack troll
+
+When OFF (default), shows 2-4 scripted choices with descriptions.
+
+Use: /kleene classic on
+     /kleene classic off
+```
+
+**Note:** Classic mode only affects choice presentation. The
+improvisation system handles all typed commands. Setting is
+saved with game state.
+
 ### Rewind Actions
 Keywords: "rewind", "go back", "restore", "undo"
 
@@ -521,6 +577,15 @@ SETTINGS
                                    10 = Fully adaptive
   /kleene gallery                 Show gallery mode status
   /kleene gallery [on|off]        Toggle meta-commentary
+  /kleene foresight               Show current foresight level
+  /kleene foresight [0-10]        Set hint specificity:
+                                    0 = Blind (no hints)
+                                    5 = Suggestive (default)
+                                   10 = Oracle (full walkthrough)
+  /kleene classic                 Show classic mode status
+  /kleene classic [on|off]        Toggle text adventure mode:
+                                    on = Type commands (Zork-style)
+                                    off = Show choice menu (default)
 
 DURING GAMEPLAY
   Select "Other" or type freely   Improvise beyond scripted choices

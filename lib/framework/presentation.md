@@ -227,6 +227,15 @@ Use `AskUserQuestion` with these constraints:
 
 If node has >4 options, select most relevant based on preconditions and current state.
 
+### Menu Conventions
+
+**AskUserQuestion constraints:**
+- **Headers**: Max 12 characters
+- **Labels**: 1-5 words, ≤20 characters
+- **Descriptions**: Action-oriented, ≤50 characters
+- **Max options**: 4 (tool limit)
+- **Recommended**: Place first with "(Recommended)" suffix
+
 
 
 
@@ -411,3 +420,103 @@ Bonus option descriptions should:
 - Reference the discovery that triggered them
 - Use present tense
 - Be concise (under 50 characters)
+
+---
+
+## Adaptive Help in Classic Mode
+
+Classic mode hides scripted choices, presenting only "Look around",
+"Inventory", and "Show help". The adaptive help system dynamically
+generates hints by extracting verbs from the hidden options.
+
+### User Insight
+
+> "Help options can be derived from the game options that are not being
+> shown in classic mode!"
+
+The hidden options already contain contextually relevant verbs. Instead
+of a static help screen, we extract and present these as hints without
+revealing specific objects.
+
+### Verb Extraction Algorithm
+
+1. **Collect option texts**: Read all `options[].text` from current node
+2. **Parse leading verb**: Extract first word, lowercase it
+   - "Open the mailbox" → "open"
+   - "Go north around the house" → "go"
+   - "Read the leaflet" → "read"
+3. **Deduplicate**: Remove duplicate verbs
+4. **Filter by preconditions**: Only include verbs from options that
+   pass precondition checks (don't hint at impossible actions)
+
+### Verb Categories
+
+```
+MOVEMENT:     go, enter, climb, descend, exit, flee, leave, walk
+EXAMINE:      examine, look, read, search, inspect, study
+INTERACT:     open, close, take, drop, give, use, push, pull, turn
+COMBAT:       attack, fight, defend, strike, parry
+COMMUNICATE:  say, ask, talk, tell, shout, whisper
+```
+
+Verbs not matching any category are grouped under "Other".
+
+### Help Output Format
+
+Width: exactly 70 characters.
+
+```
+═══════════════════════════════════════════════════════════════════════
+COMMANDS THAT MIGHT WORK HERE
+═══════════════════════════════════════════════════════════════════════
+
+Movement:    go [direction], enter
+Examine:     examine [thing], read
+Interact:    open, take
+
+UNIVERSAL COMMANDS
+inventory    - check what you're carrying
+look         - survey surroundings
+save         - save your game
+═══════════════════════════════════════════════════════════════════════
+```
+
+### Display Rules
+
+- **Show verb only**: "open" not "open mailbox"
+- **Add placeholders**: "go [direction]", "examine [thing]"
+- **Show categories with verbs only**: Omit empty categories
+- **Always show universal commands**: inventory, look, save
+- **Respect 70-char width**: Wrap long verb lists
+
+### Example Extraction
+
+**Current node has hidden options:**
+```yaml
+- text: "Open the mailbox"
+- text: "Go north around the house"
+- text: "Go south around the house"
+- text: "Read the leaflet"
+```
+
+**Extracted verbs:** open, go, read
+
+**Generated help:**
+```
+═══════════════════════════════════════════════════════════════════════
+COMMANDS THAT MIGHT WORK HERE
+═══════════════════════════════════════════════════════════════════════
+
+Movement:    go [direction]
+Examine:     read [thing]
+Interact:    open [thing]
+
+UNIVERSAL COMMANDS
+inventory    - check what you're carrying
+look         - survey surroundings
+save         - save your game
+═══════════════════════════════════════════════════════════════════════
+```
+
+The player learns that "go", "read", and "open" are relevant without
+knowing the specific objects or directions.
