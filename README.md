@@ -100,7 +100,7 @@ The AI evaluates feasibility and generates responses that fit the scenario tone.
 - **AI-Powered Generation**: Create complete scenarios from a single theme prompt
 - **YAML-based Format**: Human-readable, version-controllable scenario files
 - **Structural Validation**: Analyze completeness across Bronze/Silver/Gold tiers
-- **Nine Cells Framework**: Built-in guidance for rich, non-binary storytelling
+- **Decision Grid Framework**: Built-in guidance for rich, non-binary storytelling
 - **Preconditions & Consequences**: Full game logic with inventory, traits, flags, relationships
 - **Location State System**: Per-location flags, properties, and environment conditions
 - **Node/Location Preconditions**: Gate story nodes and location access
@@ -309,7 +309,7 @@ Try playing Dragon Quest at temp 0, then replay at temp 10. Mind = blown.
 
 Kleene is built on solid theoretical foundations for those who want to dive deep.
 
-### The Nine Cells Framework
+### The Decision Grid
 
 Every choice exists at the intersection of player intent and world response:
 

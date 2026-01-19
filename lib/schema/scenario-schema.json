@@ -331,7 +331,7 @@
         "cell": {
           "type": "string",
           "enum": ["chooses", "unknown", "avoids"],
-          "description": "Nine Cells grid classification"
+          "description": "Decision Grid classification"
         },
         "precondition": {
           "$ref": "#/$defs/precondition",

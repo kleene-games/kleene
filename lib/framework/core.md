@@ -61,9 +61,21 @@ The character continues only if a condition is met:
 hero.filter(has_courage >= 5) → Some(hero) OR None(courage failed)
 ```
 
-## The Nine Cells
+## The Decision Grid
 
-Every choice exists at the intersection of three player states and three world responses:
+The Kleene Decision Grid emerges from the intersection of two theoretical frameworks:
+
+1. **Kleene's three-valued logic (1938)** → The World axis
+   - **Permits** (True) — the action succeeds
+   - **Blocks** (False) — the action fails
+   - **Indeterminate** (Unknown) — the outcome hasn't resolved yet
+
+2. **Game-theoretic decision theory** → The Player axis
+   - **Chooses** — decisive action toward a goal
+   - **Unknown** — hesitation, exploration, or improvised action
+   - **Avoids** — retreat, refusal, or evasion
+
+Every choice exists at the intersection of player intent and world response, forming a 3×3 grid:
 
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
@@ -176,7 +188,7 @@ None propagated from an earlier state (character was already gone).
 
 ## Completeness Tiers
 
-Narrative completeness is measured by coverage of the nine cells:
+Narrative completeness is measured by grid coverage:
 
 ### Bronze (Original Model)
 Cover the four corners - the binary foundation:
@@ -196,7 +208,7 @@ Bronze requirements plus 2+ middle cells from:
 - **Limbo** - pure potential (typically via improvisation)
 
 ### Gold (Full Model)
-All nine cells represented. The scenario natively supports hesitation, improvisation, and indeterminate outcomes.
+All 9 grid intersections represented. The scenario natively supports hesitation, improvisation, and indeterminate outcomes.
 
 ## A Complete Narrative
 
@@ -327,7 +339,7 @@ Improvised actions naturally map to the "Player Unknown" row:
 - **Limbo** - when intent is ambiguous
 - **Revelation** - when improvisation reveals constraints
 
-The meta-game ensures generated content maintains narrative completeness across the nine cells, with particular attention to the chaos center (Limbo) where side quests and improvised adventures thrive.
+The meta-game ensures generated content maintains narrative completeness across the Decision Grid, with particular attention to the chaos center (Limbo) where side quests and improvised adventures thrive.
 
 ## Improvisation Routing
 

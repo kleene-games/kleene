@@ -1,12 +1,12 @@
 ---
 name: kleene-generate
-description: This skill should be used when the user asks to "generate a scenario", "create a new quest", "make me a game about...", "expand the story", "generate a new path", or when the player ventures beyond known scenario boundaries during gameplay. Generates narratively complete scenarios using Option type semantics and the Nine Cells framework.
+description: This skill should be used when the user asks to "generate a scenario", "create a new quest", "make me a game about...", "expand the story", "generate a new path", or when the player ventures beyond known scenario boundaries during gameplay. Generates narratively complete scenarios using Option type semantics and the Kleene Decision Grid.
 version: 0.2.0
 ---
 
 # Kleene Generate Skill
 
-Generate new scenarios or expand existing ones using LLM capabilities while maintaining Option type semantics and narrative completeness according to the Nine Cells framework.
+Generate new scenarios or expand existing ones using LLM capabilities while maintaining Option type semantics and narrative completeness according to the Kleene Decision Grid.
 
 ## Generation Modes
 
@@ -58,7 +58,7 @@ Use `AskUserQuestion` to gather key decisions. Group related choices in a single
       "options": [
         {"label": "Bronze (Recommended)", "description": "4 corner cells - focused, clear narrative"},
         {"label": "Silver", "description": "6+ cells - adds uncertainty and exploration"},
-        {"label": "Gold", "description": "All 9 cells - full chaos, improv-friendly"}
+        {"label": "Gold", "description": "Full grid - chaos and improv-friendly"}
       ]
     }
   ]
@@ -116,7 +116,7 @@ START
       └── C2: Deferral (Avoids + Indeterminate) → Tension building
 ```
 
-**Gold (all 9 cells):**
+**Gold (full grid coverage):**
 Include explicit nodes for all cells. The "Unknown" row (Discovery, Limbo, Revelation) can be reached through exploration options or improvised play.
 
 ### Step 3: Define Key Elements
@@ -176,7 +176,7 @@ Verify scenario coverage based on target tier:
 - [ ] Deferral (Avoids + Indeterminate) - avoidance postpones consequence
 - [ ] Limbo (Unknown + Indeterminate) - typically via improvisation
 
-**Gold:** All nine cells represented
+**Gold:** All 9 grid intersections represented
 
 ### Step 6: Write YAML
 
@@ -402,7 +402,7 @@ Generated narrative and dialogue must:
 ## Additional Resources
 
 ### Reference Files
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics, Nine Cells, and Improvisation Routing
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics, Decision Grid, and Improvisation Routing
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/improvisation.md`** - Tone Matching & Narrative Purity
 

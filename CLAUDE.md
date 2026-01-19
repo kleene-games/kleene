@@ -31,7 +31,7 @@ kleene/
 │   ├── kleene-generate/      # Scenario generation
 │   └── kleene-analyze/       # Structural analysis
 ├── lib/framework/
-│   ├── core.md               # Option type semantics & Nine Cells framework
+│   ├── core.md               # Option type semantics & Decision Grid
 │   ├── scenario-format.md    # YAML specification
 │   ├── presentation.md       # Header, trait, and choice formatting
 │   ├── improvisation.md      # Free-text action handling
@@ -45,9 +45,9 @@ kleene/
 
 ## Core Concepts
 
-### The Nine Cells
+### The Decision Grid
 
-Every choice exists at the intersection of three player states and three world responses:
+Every choice exists at the intersection of player intent (Chooses/Unknown/Avoids) and world response (Permits/Indeterminate/Blocks):
 
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
@@ -63,7 +63,7 @@ Every choice exists at the intersection of three player states and three world r
 
 - **Bronze**: 4 corner cells (Triumph, Barrier, Escape, Fate) - the original quadrants
 - **Silver**: Bronze + 2 middle cells (adds uncertainty/exploration)
-- **Gold**: All 9 cells - full narrative possibility space
+- **Gold**: All 9 intersections - full narrative possibility space
 
 ### Null Cases
 

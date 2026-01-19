@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2025-01-13
 
 ### Added
-- **Nine Cells Framework** - Expanded from four quadrants to nine cells for richer narrative possibility space
+- **Decision Grid Framework** - Expanded from four quadrants to 3×3 grid for richer narrative possibility space
 - **Temperature System** - Improvisation temperature (0-10) controls adaptive storytelling depth
 - **The Yabba Scenario** - Psychological thriller inspired by Wake in Fright (1971)
 - **Scenario Registry System** - Centralized metadata management for all scenarios
@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Refactored game loop** - Removed agent layer for 60-70% faster turn response
-- **Updated framework documentation** - Comprehensive guides for Nine Cells model
+- **Updated framework documentation** - Comprehensive guides for Decision Grid model
 - **Enhanced presentation** - New convention guidelines for headers, traits, choices
 
 ### Fixed

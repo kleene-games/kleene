@@ -57,8 +57,8 @@ Kleene is now ready for public use! An adaptive AI text adventure engine built s
 
 ## What's New in v0.2.0
 
-### Nine Cells Framework
-- Expanded from four quadrants to nine cells for richer narrative possibilities
+### Decision Grid Framework
+- Expanded from four quadrants to 3×3 grid for richer narrative possibilities
 - Player Unknown state captures improvisation and exploration
 - World Indeterminate state for outcomes not yet resolved
 
