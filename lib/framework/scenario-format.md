@@ -345,7 +345,7 @@ options:
 
 ### Grid Cell Classification
 
-Options can specify which Nine Cells grid cell they represent. This helps the analyze skill track coverage:
+Options can specify which Decision Grid cell they represent. This helps the analyze skill track coverage:
 
 ```yaml
 options:
@@ -364,7 +364,7 @@ Valid `cell` values: `chooses`, `unknown`, `avoids`
 
 ### Improvise Options (Unknown Row)
 
-For the "Player Unknown" row of the Nine Cells (Discovery, Limbo, Revelation), options can trigger improvisation instead of advancing to a fixed node:
+For the "Player Unknown" row of the Decision Grid (Discovery, Limbo, Revelation), options can trigger improvisation instead of advancing to a fixed node:
 
 ```yaml
 options:

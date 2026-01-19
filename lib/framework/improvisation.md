@@ -6,7 +6,7 @@ Rules for responding to player free-text input beyond predefined choices.
 
 ## Grid Integration
 
-Improvised actions map to the **Player Unknown** row of the Nine Cells:
+Improvised actions map to the **Player Unknown** row of the Decision Grid:
 
 | Feasibility | Grid Cell   | Response Pattern |
 |-------------|-------------|------------------|

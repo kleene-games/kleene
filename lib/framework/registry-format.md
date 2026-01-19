@@ -54,7 +54,7 @@ scenarios:
 **Tier Calculation:**
 - **Bronze**: Has `chooses` and `avoids` cells (4 corners covered)
 - **Silver**: Bronze + has `unknown` cells (middle row)
-- **Gold**: All 9 cells represented in analysis
+- **Gold**: Full grid coverage in analysis
 
 Stats are only cached when `yq` is available. Without yq, stats field is omitted.
 

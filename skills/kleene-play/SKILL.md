@@ -674,7 +674,7 @@ After delivering the hint, present the same choices again (no node advance).
 
 ## Scripted Improvisation Flow
 
-When a player selects an option with `next: improvise`, execute this special flow for the Unknown row of the Nine Cells.
+When a player selects an option with `next: improvise`, execute this special flow for the Unknown row of the Decision Grid.
 
 > **CRITICAL:** See `lib/framework/presentation.md` → "Improvise Option Flow" for seamless presentation rules. Never output internal processing notes.
 

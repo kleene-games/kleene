@@ -294,7 +294,7 @@ Keywords: "sync", "registry", "enable", "disable", "list scenarios"
    Calculate tier from cells:
    - **Bronze**: Has chooses + avoids cells (4 corners)
    - **Silver**: Bronze + unknown cells
-   - **Gold**: All 9 cells represented
+   - **Gold**: Full grid coverage
 
    Store in registry as `stats` field (see Phase 5 below).
 

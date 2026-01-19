@@ -450,7 +450,7 @@ Design scenarios that work well at ALL temperature levels.
 
 ### Improvisation Contexts (Advanced)
 
-Add `improvise` options for the "Unknown" row of the Nine Cells:
+Add `improvise` options for the "Unknown" row of the Decision Grid:
 
 ```yaml
 options:

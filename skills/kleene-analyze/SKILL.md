@@ -1,6 +1,6 @@
 ---
 name: kleene-analyze
-description: This skill should be used when the user asks to "analyze a scenario", "check narrative completeness", "find missing paths", "validate my scenario", "show grid coverage", "check item obtainability", "analyze traits", "find cycles", or wants to understand the structure of a Kleene scenario. Performs graph analysis, nine-cell grid coverage checking, and deep structural analysis (yq-enabled) including item/trait/flag dependencies, relationship networks, consequence magnitude, scene pacing, and path diversity.
+description: This skill should be used when the user asks to "analyze a scenario", "check narrative completeness", "find missing paths", "validate my scenario", "show grid coverage", "check item obtainability", "analyze traits", "find cycles", or wants to understand the structure of a Kleene scenario. Performs graph analysis, Decision Grid coverage checking, and deep structural analysis (yq-enabled) including item/trait/flag dependencies, relationship networks, consequence magnitude, scene pacing, and path diversity.
 version: 0.4.0
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash
 ---
@@ -140,7 +140,7 @@ For each path, determine cell in the 3x3 grid based on two axes:
 - **Indeterminate**: Outcome pending, no ending reached, multiple continuations
 - **Blocks**: Precondition prevents progress, action fails
 
-**The Nine Cells** (see `lib/framework/core.md` for detailed definitions):
+**The Decision Grid** (see `lib/framework/core.md` for detailed definitions):
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
 | **Player Chooses** | Triumph       | Commitment          | Barrier      |
@@ -953,5 +953,5 @@ These keywords trigger specific analysis types without the menu:
 ## Additional Resources
 
 ### Reference Files
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Nine Cells and tier definitions
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Decision Grid and tier definitions
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML format
