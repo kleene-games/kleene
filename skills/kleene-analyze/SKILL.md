@@ -87,9 +87,25 @@ This returns the graph structure without narrative text, significantly reducing 
 
 From start_node, find all reachable nodes using BFS/DFS.
 
+**IMPORTANT:** Distinguish between static and dynamic edges:
+
+- **Static edges** (`next_node`) - Always in graph, unconditionally reachable
+- **Dynamic edges** (`next: improvise` with `outcome_nodes`) - Conditionally reachable via pattern matching
+
+Nodes referenced ONLY in `outcome_nodes` should be reported as "conditionally reachable via improvisation" NOT as "unreachable".
+
 ```
-Reachable: [intro, sword_taken, forest_entrance, ...]
-Unreachable: [orphan_node_1, orphan_node_2]
+REACHABILITY ANALYSIS
+─────────────────────
+Static reachable: [intro, sword_taken, forest_entrance, ...]
+Conditionally reachable (via improvisation): [guardian_respect, guardian_dismissal, elder_lore, elder_silence]
+Unreachable: [orphan_node_1]
+```
+
+**yq query to identify improvisation outcome nodes:**
+```bash
+# Extract all nodes reachable via improvisation
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | select(.next == "improvise") | .outcome_nodes | to_entries | .[] | .value] | flatten | unique | .[]' scenario.yaml
 ```
 
 ### Step 4: Find All Paths
@@ -260,6 +276,16 @@ STRUCTURAL ISSUES
 ! Railroad detected: intro → sword_taken → mountain_approach (3 nodes, 1 path)
 ✓ No illusory choices
 
+DYNAMIC EDGES (Improvisation)
+─────────────────────────────
+2 scripted Unknown options found:
+  - temple_gates/observe → Discovery: guardian_respect, Revelation: guardian_dismissal
+  - intro/ask_elder → Discovery: elder_lore, Revelation: elder_silence
+
+Pattern coverage:
+  permits: ritual, pattern, ceremony, weakness, history, legend
+  blocks: attack, force, break, demand, threaten
+
 DEEP STRUCTURAL ANALYSIS (yq-enabled)
 ─────────────────────────────────────
 CYCLES
@@ -298,6 +324,33 @@ PATH DIVERSITY
 ENDING REACHABILITY
   ✓ 5/6 endings reachable
   ✗ ending_secret: no path found
+
+LOCATION STATE VALIDATION (v5)
+──────────────────────────────
+Location flags set: village.quest_completed, shrine.blessed
+Location flags checked: village.quest_completed ✓, shrine.visited ✗ (never set)
+Location properties: shrine.blessing_power (modified: +50, -10)
+
+NODE PRECONDITION VALIDATION (v5)
+─────────────────────────────────
+Gated nodes: 3 (inner_sanctum, dragon_lair, secret_chamber)
+✓ inner_sanctum: blocked_narrative defined
+⚠ dragon_lair: missing blocked_narrative (will use fallback)
+✓ secret_chamber: blocked_narrative defined
+
+NPC LOCATION VALIDATION (v5)
+────────────────────────────
+NPCs defined: guardian, merchant, oracle
+NPCs moved: guardian (temple_gates → temple_interior)
+NPCs checked: guardian ✓, merchant ✓, oracle (never checked)
+⚠ herald: referenced but never defined in npc_locations
+
+TEMPORAL/EVENT VALIDATION (v5)
+──────────────────────────────
+Events scheduled: quest_deadline, guardian_moves
+Events checked: quest_deadline ✓, dragon_attack ✗ (never scheduled)
+Time preconditions: 2 (time_elapsed_minimum at inner_sanctum)
+⚠ midnight_ritual: scheduled but never checked
 
 RECOMMENDATIONS
 ───────────────
@@ -608,6 +661,176 @@ Reachable: 5 endings
 ✗ ending_secret: No path found
 ```
 
+### Location State Validation (v5)
+
+Verify location flags and properties are used correctly:
+
+```bash
+# Location flags that get set
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | select(.type == "set_location_flag") | {location: .location, flag: .flag}] | unique | .[]' scenario.yaml
+
+# Location flags checked in preconditions
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .precondition? | select(.type | test("location_flag")) | {location: .location, flag: .flag}] | unique | .[]' scenario.yaml
+
+# Location properties modified
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | select(.type | test("location_property")) | {location: .location, property: .property}] | unique | .[]' scenario.yaml
+
+# Location properties checked
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .precondition? | select(.type | test("location_property")) | {location: .location, property: .property}] | unique | .[]' scenario.yaml
+
+# Environment changes
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | select(.type | test("environment"))] | unique | .[]' scenario.yaml
+```
+
+**Report:**
+```
+LOCATION STATE VALIDATION
+─────────────────────────
+Flags set:     village.quest_completed, shrine.blessed
+Flags checked: village.quest_completed ✓, shrine.visited ✗ (never set)
+Properties:    shrine.blessing_power (modified: +50, -10)
+Environment:   shrine.lighting → dark, temple.ambiance → sacred
+
+⚠ shrine.visited: checked but never set
+```
+
+### Node Precondition Validation (v5)
+
+Verify all gated nodes have proper blocked narratives:
+
+```bash
+# Nodes with preconditions
+yq '[.nodes | to_entries | .[] | select(.value.precondition) | .key] | .[]' scenario.yaml
+
+# Nodes with preconditions but missing blocked_narrative
+yq '.nodes | to_entries | .[] | select(.value.precondition and (.value.blocked_narrative | not)) | .key' scenario.yaml
+
+# Check precondition types used in node gating
+yq '[.nodes | to_entries | .[] | select(.value.precondition) | {node: .key, precondition_type: .value.precondition.type}] | .[]' scenario.yaml
+```
+
+**Report:**
+```
+NODE PRECONDITION VALIDATION
+────────────────────────────
+Gated nodes: 3
+  ✓ inner_sanctum: all_of - blocked_narrative defined
+  ⚠ dragon_lair: has_item - missing blocked_narrative (will use fallback)
+  ✓ secret_chamber: flag_set - blocked_narrative defined
+
+Recommendation: Add blocked_narrative to dragon_lair for better player experience.
+```
+
+### NPC Location Validation (v5)
+
+Verify NPC tracking is consistent:
+
+```bash
+# NPCs defined in initial_world
+yq '.initial_world.npc_locations | keys | .[]' scenario.yaml
+
+# NPCs moved via consequences
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | select(.type == "move_npc") | .npc] | unique | .[]' scenario.yaml
+
+# NPCs checked in preconditions
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .precondition? | select(.type | test("npc_")) | .npc] | unique | .[]' scenario.yaml
+
+# NPCs moved via scheduled events
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | select(.type == "schedule_event") | .consequences[]? | select(.type == "move_npc") | .npc] | unique | .[]' scenario.yaml
+```
+
+**Report:**
+```
+NPC LOCATION VALIDATION
+───────────────────────
+Defined:  guardian (temple_gates), merchant (market), oracle (temple_interior)
+Moved:    guardian (via trial_choice → temple_interior)
+Checked:  guardian ✓, merchant ✓
+Unused:   oracle (never checked)
+
+⚠ herald: referenced in precondition at temple_announcement but not defined in npc_locations
+```
+
+### Temporal/Event Validation (v5)
+
+Verify scheduled events and time preconditions are consistent:
+
+```bash
+# Events scheduled
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | select(.type == "schedule_event") | .event_id] | unique | .[]' scenario.yaml
+
+# Events triggered manually
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | select(.type == "trigger_event") | .event_id] | unique | .[]' scenario.yaml
+
+# Events cancelled
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | select(.type == "cancel_event") | .event_id] | unique | .[]' scenario.yaml
+
+# Events checked in preconditions
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .precondition? | select(.type | test("event_")) | .event_id] | unique | .[]' scenario.yaml
+
+# Time-based preconditions
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .precondition? | select(.type | test("time_elapsed"))] | length' scenario.yaml
+
+# Time advancements
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | select(.type == "advance_time")] | length' scenario.yaml
+```
+
+**Report:**
+```
+TEMPORAL/EVENT VALIDATION
+─────────────────────────
+Events:
+  Scheduled: guardian_moves, quest_deadline, midnight_ritual
+  Checked:   guardian_moves ✓, quest_deadline ✓
+  Cancelled: quest_deadline (via complete_quest)
+
+Time mechanics:
+  advance_time: 8 consequences
+  time_elapsed_minimum: 2 preconditions
+  time_elapsed_maximum: 1 precondition
+
+⚠ midnight_ritual: scheduled but never checked (dead event?)
+⚠ dragon_arrival: checked but never scheduled
+```
+
+### Improvisation Coverage Analysis (v5)
+
+Detailed analysis of scripted Unknown options:
+
+```bash
+# Find all improvise options
+yq '.nodes | to_entries | .[] | {node: .key, options: [.value.choice.options[] | select(.next == "improvise") | {id: .id, theme: .improvise_context.theme, permits: .improvise_context.permits, blocks: .improvise_context.blocks, outcomes: .outcome_nodes}]}' scenario.yaml
+
+# Aggregate all permits patterns
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | select(.next == "improvise") | .improvise_context.permits[]?] | flatten | unique | .[]' scenario.yaml
+
+# Aggregate all blocks patterns
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | select(.next == "improvise") | .improvise_context.blocks[]?] | flatten | unique | .[]' scenario.yaml
+```
+
+**Report:**
+```
+IMPROVISATION COVERAGE
+──────────────────────
+2 scripted Unknown options:
+
+  temple_gates / observe:
+    Theme: "observing the temple guardian"
+    → Discovery: guardian_respect (permits: ritual, pattern, ceremony)
+    → Revelation: guardian_dismissal (blocks: attack, force, break)
+    → Limbo: stays at node (fallback)
+
+  intro / ask_elder:
+    Theme: "seeking wisdom before action"
+    → Discovery: elder_lore (permits: history, weakness, legend)
+    → Revelation: elder_silence (blocks: demand, threaten, force)
+    → Limbo: stays at node (fallback)
+
+Pattern keywords:
+  Permits (Discovery): ritual, pattern, ceremony, history, weakness, legend, why, story
+  Blocks (Revelation): attack, force, break, demand, threaten, lie
+```
+
 ## Validation Checks
 
 ### Structural Validation
@@ -623,6 +846,16 @@ Reachable: 5 endings
 - [ ] Referenced flags can be set
 - [ ] Trait requirements are achievable
 - [ ] At least one ending is always reachable
+
+### v5 Feature Validation
+
+- [ ] Location flags checked are also set somewhere
+- [ ] Location properties checked are also modified somewhere
+- [ ] Gated nodes have blocked_narrative defined
+- [ ] NPCs referenced in preconditions are defined in npc_locations
+- [ ] Scheduled events are checked somewhere (not dead events)
+- [ ] Event preconditions reference scheduled events
+- [ ] Improvisation outcome_nodes reference valid nodes
 
 ### Narrative Validation
 

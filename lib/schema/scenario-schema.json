@@ -1,0 +1,1067 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kleene.dev/schemas/scenario.json",
+  "title": "Kleene Scenario Schema",
+  "description": "JSON Schema for Kleene interactive narrative scenarios (v4 format)",
+  "type": "object",
+  "required": ["name", "initial_character", "initial_world", "start_node", "nodes", "endings"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Display name for the scenario"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the scenario (1-2 sentences)"
+    },
+    "version": {
+      "type": "string",
+      "description": "Scenario version (semver format)"
+    },
+    "initial_character": {
+      "$ref": "#/$defs/character_state"
+    },
+    "initial_world": {
+      "$ref": "#/$defs/world_state"
+    },
+    "start_node": {
+      "type": "string",
+      "description": "ID of the first node to display"
+    },
+    "nodes": {
+      "type": "object",
+      "description": "Map of node IDs to node definitions",
+      "additionalProperties": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "endings": {
+      "type": "object",
+      "description": "Map of ending IDs to ending definitions",
+      "additionalProperties": {
+        "$ref": "#/$defs/ending"
+      }
+    }
+  },
+  "$defs": {
+    "character_state": {
+      "type": "object",
+      "description": "Character state (initial or current)",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Character name"
+        },
+        "exists": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether character still exists (false = death/departure)"
+        },
+        "traits": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Named numeric traits (courage, wisdom, luck, etc.)"
+        },
+        "inventory": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of item IDs held by character"
+        },
+        "relationships": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Relationship values with NPCs"
+        },
+        "flags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "Character-specific boolean flags"
+        }
+      }
+    },
+    "world_state": {
+      "type": "object",
+      "description": "World state (initial or current)",
+      "properties": {
+        "current_location": {
+          "type": "string",
+          "description": "Current location ID"
+        },
+        "time": {
+          "type": "number",
+          "default": 0,
+          "description": "Time counter"
+        },
+        "flags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "World-level boolean flags"
+        },
+        "location_state": {
+          "type": "object",
+          "description": "Per-location mutable state (NEW in v4)",
+          "additionalProperties": {
+            "$ref": "#/$defs/location_state_entry"
+          }
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/location"
+          },
+          "description": "Static location definitions"
+        },
+        "npc_locations": {
+          "type": "object",
+          "description": "Map of NPC IDs to their current location IDs",
+          "additionalProperties": { "type": "string" }
+        },
+        "scheduled_events": {
+          "type": "array",
+          "description": "Events scheduled to trigger at specific times",
+          "items": { "$ref": "#/$defs/scheduled_event" }
+        },
+        "triggered_events": {
+          "type": "array",
+          "description": "IDs of events that have been triggered",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "location_state_entry": {
+      "type": "object",
+      "description": "Mutable state for a single location",
+      "properties": {
+        "flags": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "Location-specific boolean flags"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Location-specific numeric properties"
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number" }
+            ]
+          },
+          "description": "Environmental conditions (lighting, weather, temperature, etc.)"
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "description": "Static location definition",
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique location identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Location description"
+        },
+        "connections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "IDs of connected locations"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Items present at this location"
+        },
+        "precondition": {
+          "$ref": "#/$defs/precondition",
+          "description": "Condition that must be true to access this location"
+        },
+        "access_denied_narrative": {
+          "type": "string",
+          "description": "Custom message shown when location access is denied"
+        },
+        "access_mode": {
+          "type": "string",
+          "enum": ["filter", "show_locked", "show_normal"],
+          "default": "filter",
+          "description": "How to handle inaccessible location in choices"
+        },
+        "initial_state": {
+          "$ref": "#/$defs/location_state_entry",
+          "description": "Initial mutable state for this location"
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "description": "A narrative node with choices",
+      "required": ["narrative", "choice"],
+      "properties": {
+        "narrative": {
+          "type": "string",
+          "description": "Narrative text shown to the player"
+        },
+        "title": {
+          "type": "string",
+          "description": "Optional title for the node"
+        },
+        "scene_break": {
+          "type": "boolean",
+          "default": false,
+          "description": "Force scene increment on arrival"
+        },
+        "precondition": {
+          "$ref": "#/$defs/precondition",
+          "description": "Condition that must be true to enter this node"
+        },
+        "blocked_narrative": {
+          "type": "string",
+          "description": "Custom message shown when precondition fails"
+        },
+        "elapsed_since_previous": {
+          "$ref": "#/$defs/time_amount",
+          "description": "Time elapsed since previous node (Phase 2: parsing only)"
+        },
+        "duration": {
+          "$ref": "#/$defs/time_amount",
+          "description": "Duration of node events (Phase 2: parsing only)"
+        },
+        "choice": {
+          "$ref": "#/$defs/choice"
+        }
+      }
+    },
+    "time_amount": {
+      "type": "object",
+      "description": "A time duration with amount and unit",
+      "required": ["amount", "unit"],
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "Numeric amount of time"
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"],
+          "description": "Unit of time measurement"
+        }
+      },
+      "additionalProperties": false
+    },
+    "scheduled_event": {
+      "type": "object",
+      "description": "An event scheduled to trigger at a specific time",
+      "required": ["event_id", "trigger_at", "consequences"],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "description": "Unique identifier for this event"
+        },
+        "trigger_at": {
+          "type": "number",
+          "description": "World time (seconds) when event triggers"
+        },
+        "consequences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/consequence" },
+          "description": "Consequences to apply when event triggers"
+        }
+      },
+      "additionalProperties": false
+    },
+    "choice": {
+      "type": "object",
+      "description": "A choice presented to the player",
+      "required": ["prompt", "options"],
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Question posed to the player"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/option"
+          },
+          "minItems": 1,
+          "description": "Available choices"
+        }
+      }
+    },
+    "option": {
+      "type": "object",
+      "description": "A single choice option",
+      "required": ["id", "text"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique option identifier within the choice"
+        },
+        "text": {
+          "type": "string",
+          "description": "Option text shown to player"
+        },
+        "cell": {
+          "type": "string",
+          "enum": ["chooses", "unknown", "avoids"],
+          "description": "Nine Cells grid classification"
+        },
+        "precondition": {
+          "$ref": "#/$defs/precondition",
+          "description": "Condition that must be true for option to appear"
+        },
+        "consequence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/consequence"
+          },
+          "description": "State changes when option is selected"
+        },
+        "narrative": {
+          "type": "string",
+          "description": "Immediate feedback narrative"
+        },
+        "next_node": {
+          "type": "string",
+          "description": "Node to advance to (mutually exclusive with next: improvise)"
+        },
+        "next": {
+          "type": "string",
+          "enum": ["improvise"],
+          "description": "Triggers improvisation flow instead of fixed next_node"
+        },
+        "improvise_context": {
+          "$ref": "#/$defs/improvise_context",
+          "description": "Context for improvisation when next: improvise"
+        },
+        "outcome_nodes": {
+          "$ref": "#/$defs/outcome_nodes",
+          "description": "Cell-dependent destination nodes for improvisation"
+        }
+      }
+    },
+    "improvise_context": {
+      "type": "object",
+      "description": "Context for processing improvised actions",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "description": "Thematic context for narrative generation"
+        },
+        "permits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Regex patterns indicating Discovery (world permits)"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Regex patterns indicating Revelation (world blocks)"
+        },
+        "limbo_fallback": {
+          "type": "string",
+          "description": "Narrative for ambiguous responses (Limbo cell)"
+        }
+      }
+    },
+    "outcome_nodes": {
+      "type": "object",
+      "description": "Maps grid cells to destination nodes",
+      "properties": {
+        "discovery": {
+          "type": "string",
+          "description": "Node for Discovery cell"
+        },
+        "revelation": {
+          "type": "string",
+          "description": "Node for Revelation cell"
+        },
+        "limbo": {
+          "type": "string",
+          "description": "Node for Limbo cell (optional - stay at current if omitted)"
+        }
+      }
+    },
+    "ending": {
+      "type": "object",
+      "description": "An ending state",
+      "required": ["narrative", "type"],
+      "properties": {
+        "narrative": {
+          "type": "string",
+          "description": "Ending narrative text"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["victory", "death", "transcendence", "unchanged"],
+          "description": "Type of ending"
+        }
+      }
+    },
+    "precondition": {
+      "type": "object",
+      "description": "A condition to evaluate against game state",
+      "required": ["type"],
+      "oneOf": [
+        { "$ref": "#/$defs/precondition_has_item" },
+        { "$ref": "#/$defs/precondition_missing_item" },
+        { "$ref": "#/$defs/precondition_trait_minimum" },
+        { "$ref": "#/$defs/precondition_trait_maximum" },
+        { "$ref": "#/$defs/precondition_flag_set" },
+        { "$ref": "#/$defs/precondition_flag_not_set" },
+        { "$ref": "#/$defs/precondition_at_location" },
+        { "$ref": "#/$defs/precondition_relationship_minimum" },
+        { "$ref": "#/$defs/precondition_location_flag_set" },
+        { "$ref": "#/$defs/precondition_location_flag_not_set" },
+        { "$ref": "#/$defs/precondition_location_property_minimum" },
+        { "$ref": "#/$defs/precondition_location_property_maximum" },
+        { "$ref": "#/$defs/precondition_environment_is" },
+        { "$ref": "#/$defs/precondition_environment_minimum" },
+        { "$ref": "#/$defs/precondition_environment_maximum" },
+        { "$ref": "#/$defs/precondition_all_of" },
+        { "$ref": "#/$defs/precondition_any_of" },
+        { "$ref": "#/$defs/precondition_none_of" },
+        { "$ref": "#/$defs/precondition_npc_at_location" },
+        { "$ref": "#/$defs/precondition_npc_not_at_location" },
+        { "$ref": "#/$defs/precondition_time_elapsed_minimum" },
+        { "$ref": "#/$defs/precondition_time_elapsed_maximum" },
+        { "$ref": "#/$defs/precondition_event_triggered" },
+        { "$ref": "#/$defs/precondition_event_not_triggered" }
+      ]
+    },
+    "precondition_has_item": {
+      "type": "object",
+      "required": ["type", "item"],
+      "properties": {
+        "type": { "const": "has_item" },
+        "item": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_missing_item": {
+      "type": "object",
+      "required": ["type", "item"],
+      "properties": {
+        "type": { "const": "missing_item" },
+        "item": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_trait_minimum": {
+      "type": "object",
+      "required": ["type", "trait", "minimum"],
+      "properties": {
+        "type": { "const": "trait_minimum" },
+        "trait": { "type": "string" },
+        "minimum": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_trait_maximum": {
+      "type": "object",
+      "required": ["type", "trait", "maximum"],
+      "properties": {
+        "type": { "const": "trait_maximum" },
+        "trait": { "type": "string" },
+        "maximum": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_flag_set": {
+      "type": "object",
+      "required": ["type", "flag"],
+      "properties": {
+        "type": { "const": "flag_set" },
+        "flag": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_flag_not_set": {
+      "type": "object",
+      "required": ["type", "flag"],
+      "properties": {
+        "type": { "const": "flag_not_set" },
+        "flag": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_at_location": {
+      "type": "object",
+      "required": ["type", "location"],
+      "properties": {
+        "type": { "const": "at_location" },
+        "location": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_relationship_minimum": {
+      "type": "object",
+      "required": ["type", "npc", "minimum"],
+      "properties": {
+        "type": { "const": "relationship_minimum" },
+        "npc": { "type": "string" },
+        "minimum": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_location_flag_set": {
+      "type": "object",
+      "description": "Check if a location-specific flag is true (NEW in v4)",
+      "required": ["type", "location", "flag"],
+      "properties": {
+        "type": { "const": "location_flag_set" },
+        "location": { "type": "string" },
+        "flag": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_location_flag_not_set": {
+      "type": "object",
+      "description": "Check if a location-specific flag is false/missing (NEW in v4)",
+      "required": ["type", "location", "flag"],
+      "properties": {
+        "type": { "const": "location_flag_not_set" },
+        "location": { "type": "string" },
+        "flag": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_location_property_minimum": {
+      "type": "object",
+      "description": "Check if a location property meets minimum threshold (NEW in v4)",
+      "required": ["type", "location", "property", "minimum"],
+      "properties": {
+        "type": { "const": "location_property_minimum" },
+        "location": { "type": "string" },
+        "property": { "type": "string" },
+        "minimum": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_location_property_maximum": {
+      "type": "object",
+      "description": "Check if a location property is at or below maximum (NEW in v4)",
+      "required": ["type", "location", "property", "maximum"],
+      "properties": {
+        "type": { "const": "location_property_maximum" },
+        "location": { "type": "string" },
+        "property": { "type": "string" },
+        "maximum": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_environment_is": {
+      "type": "object",
+      "description": "Check if environment property equals value (NEW in v4)",
+      "required": ["type", "property", "value"],
+      "properties": {
+        "type": { "const": "environment_is" },
+        "location": {
+          "type": "string",
+          "description": "Location ID (omit for current location)"
+        },
+        "property": { "type": "string" },
+        "value": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "precondition_environment_minimum": {
+      "type": "object",
+      "description": "Check if numeric environment property >= minimum (NEW in v4)",
+      "required": ["type", "property", "minimum"],
+      "properties": {
+        "type": { "const": "environment_minimum" },
+        "location": {
+          "type": "string",
+          "description": "Location ID (omit for current location)"
+        },
+        "property": { "type": "string" },
+        "minimum": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_environment_maximum": {
+      "type": "object",
+      "description": "Check if numeric environment property <= maximum (NEW in v4)",
+      "required": ["type", "property", "maximum"],
+      "properties": {
+        "type": { "const": "environment_maximum" },
+        "location": {
+          "type": "string",
+          "description": "Location ID (omit for current location)"
+        },
+        "property": { "type": "string" },
+        "maximum": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "precondition_all_of": {
+      "type": "object",
+      "description": "All nested conditions must pass (AND)",
+      "required": ["type", "conditions"],
+      "properties": {
+        "type": { "const": "all_of" },
+        "conditions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/precondition" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "precondition_any_of": {
+      "type": "object",
+      "description": "At least one nested condition must pass (OR)",
+      "required": ["type", "conditions"],
+      "properties": {
+        "type": { "const": "any_of" },
+        "conditions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/precondition" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "precondition_none_of": {
+      "type": "object",
+      "description": "No nested conditions may pass (NOT)",
+      "required": ["type", "conditions"],
+      "properties": {
+        "type": { "const": "none_of" },
+        "conditions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/precondition" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "precondition_npc_at_location": {
+      "type": "object",
+      "description": "Check if NPC is at a specific location (NEW in v5)",
+      "required": ["type", "npc", "location"],
+      "properties": {
+        "type": { "const": "npc_at_location" },
+        "npc": {
+          "type": "string",
+          "description": "NPC identifier"
+        },
+        "location": {
+          "type": "string",
+          "description": "Location ID, or 'current' for player's current location"
+        }
+      },
+      "additionalProperties": false
+    },
+    "precondition_npc_not_at_location": {
+      "type": "object",
+      "description": "Check if NPC is NOT at a specific location (NEW in v5)",
+      "required": ["type", "npc", "location"],
+      "properties": {
+        "type": { "const": "npc_not_at_location" },
+        "npc": {
+          "type": "string",
+          "description": "NPC identifier"
+        },
+        "location": {
+          "type": "string",
+          "description": "Location ID, or 'current' for player's current location"
+        }
+      },
+      "additionalProperties": false
+    },
+    "precondition_time_elapsed_minimum": {
+      "type": "object",
+      "description": "Check if minimum time has elapsed since game start or event (NEW in v5)",
+      "required": ["type", "amount", "unit"],
+      "properties": {
+        "type": { "const": "time_elapsed_minimum" },
+        "amount": { "type": "number" },
+        "unit": {
+          "type": "string",
+          "enum": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
+        },
+        "since": {
+          "type": "string",
+          "default": "game_start",
+          "description": "'game_start' or an event_id"
+        }
+      },
+      "additionalProperties": false
+    },
+    "precondition_time_elapsed_maximum": {
+      "type": "object",
+      "description": "Check if time has NOT exceeded maximum since game start or event (NEW in v5)",
+      "required": ["type", "amount", "unit"],
+      "properties": {
+        "type": { "const": "time_elapsed_maximum" },
+        "amount": { "type": "number" },
+        "unit": {
+          "type": "string",
+          "enum": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
+        },
+        "since": {
+          "type": "string",
+          "default": "game_start",
+          "description": "'game_start' or an event_id"
+        }
+      },
+      "additionalProperties": false
+    },
+    "precondition_event_triggered": {
+      "type": "object",
+      "description": "Check if an event has been triggered (NEW in v5)",
+      "required": ["type", "event_id"],
+      "properties": {
+        "type": { "const": "event_triggered" },
+        "event_id": {
+          "type": "string",
+          "description": "ID of the event to check"
+        }
+      },
+      "additionalProperties": false
+    },
+    "precondition_event_not_triggered": {
+      "type": "object",
+      "description": "Check if an event has NOT been triggered (NEW in v5)",
+      "required": ["type", "event_id"],
+      "properties": {
+        "type": { "const": "event_not_triggered" },
+        "event_id": {
+          "type": "string",
+          "description": "ID of the event to check"
+        }
+      },
+      "additionalProperties": false
+    },
+    "consequence": {
+      "type": "object",
+      "description": "A state modification to apply",
+      "required": ["type"],
+      "oneOf": [
+        { "$ref": "#/$defs/consequence_gain_item" },
+        { "$ref": "#/$defs/consequence_lose_item" },
+        { "$ref": "#/$defs/consequence_modify_trait" },
+        { "$ref": "#/$defs/consequence_set_trait" },
+        { "$ref": "#/$defs/consequence_set_flag" },
+        { "$ref": "#/$defs/consequence_clear_flag" },
+        { "$ref": "#/$defs/consequence_modify_relationship" },
+        { "$ref": "#/$defs/consequence_move_to" },
+        { "$ref": "#/$defs/consequence_advance_time" },
+        { "$ref": "#/$defs/consequence_character_dies" },
+        { "$ref": "#/$defs/consequence_character_departs" },
+        { "$ref": "#/$defs/consequence_add_history" },
+        { "$ref": "#/$defs/consequence_set_location_flag" },
+        { "$ref": "#/$defs/consequence_clear_location_flag" },
+        { "$ref": "#/$defs/consequence_modify_location_property" },
+        { "$ref": "#/$defs/consequence_set_location_property" },
+        { "$ref": "#/$defs/consequence_set_environment" },
+        { "$ref": "#/$defs/consequence_modify_environment" },
+        { "$ref": "#/$defs/consequence_move_npc" },
+        { "$ref": "#/$defs/consequence_schedule_event" },
+        { "$ref": "#/$defs/consequence_trigger_event" },
+        { "$ref": "#/$defs/consequence_cancel_event" }
+      ]
+    },
+    "consequence_gain_item": {
+      "type": "object",
+      "required": ["type", "item"],
+      "properties": {
+        "type": { "const": "gain_item" },
+        "item": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_lose_item": {
+      "type": "object",
+      "required": ["type", "item"],
+      "properties": {
+        "type": { "const": "lose_item" },
+        "item": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_modify_trait": {
+      "type": "object",
+      "required": ["type", "trait", "delta"],
+      "properties": {
+        "type": { "const": "modify_trait" },
+        "trait": { "type": "string" },
+        "delta": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_set_trait": {
+      "type": "object",
+      "required": ["type", "trait", "value"],
+      "properties": {
+        "type": { "const": "set_trait" },
+        "trait": { "type": "string" },
+        "value": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_set_flag": {
+      "type": "object",
+      "required": ["type", "flag", "value"],
+      "properties": {
+        "type": { "const": "set_flag" },
+        "flag": { "type": "string" },
+        "value": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_clear_flag": {
+      "type": "object",
+      "required": ["type", "flag"],
+      "properties": {
+        "type": { "const": "clear_flag" },
+        "flag": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_modify_relationship": {
+      "type": "object",
+      "required": ["type", "npc", "delta"],
+      "properties": {
+        "type": { "const": "modify_relationship" },
+        "npc": { "type": "string" },
+        "delta": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_move_to": {
+      "type": "object",
+      "required": ["type", "location"],
+      "properties": {
+        "type": { "const": "move_to" },
+        "location": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_advance_time": {
+      "type": "object",
+      "description": "Advance world time by specified amount (NEW: supports units in v5)",
+      "required": ["type", "amount"],
+      "properties": {
+        "type": { "const": "advance_time" },
+        "amount": { "type": "number" },
+        "unit": {
+          "type": "string",
+          "enum": ["seconds", "minutes", "hours", "days", "weeks", "months", "years"],
+          "default": "hours",
+          "description": "Time unit (default: hours for backwards compatibility)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "consequence_character_dies": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "character_dies" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_character_departs": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "character_departs" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_add_history": {
+      "type": "object",
+      "required": ["type", "entry"],
+      "properties": {
+        "type": { "const": "add_history" },
+        "entry": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_set_location_flag": {
+      "type": "object",
+      "description": "Set a location-specific flag (NEW in v4)",
+      "required": ["type", "location", "flag", "value"],
+      "properties": {
+        "type": { "const": "set_location_flag" },
+        "location": { "type": "string" },
+        "flag": { "type": "string" },
+        "value": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_clear_location_flag": {
+      "type": "object",
+      "description": "Clear a location-specific flag (NEW in v4)",
+      "required": ["type", "location", "flag"],
+      "properties": {
+        "type": { "const": "clear_location_flag" },
+        "location": { "type": "string" },
+        "flag": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_modify_location_property": {
+      "type": "object",
+      "description": "Modify a location numeric property by delta (NEW in v4)",
+      "required": ["type", "location", "property", "delta"],
+      "properties": {
+        "type": { "const": "modify_location_property" },
+        "location": { "type": "string" },
+        "property": { "type": "string" },
+        "delta": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_set_location_property": {
+      "type": "object",
+      "description": "Set a location numeric property to absolute value (NEW in v4)",
+      "required": ["type", "location", "property", "value"],
+      "properties": {
+        "type": { "const": "set_location_property" },
+        "location": { "type": "string" },
+        "property": { "type": "string" },
+        "value": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_set_environment": {
+      "type": "object",
+      "description": "Set an environmental condition at a location (NEW in v4)",
+      "required": ["type", "property", "value"],
+      "properties": {
+        "type": { "const": "set_environment" },
+        "location": {
+          "type": "string",
+          "description": "Location ID (omit for current location)"
+        },
+        "property": { "type": "string" },
+        "value": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "number" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "consequence_modify_environment": {
+      "type": "object",
+      "description": "Modify a numeric environmental property (NEW in v4)",
+      "required": ["type", "property", "delta"],
+      "properties": {
+        "type": { "const": "modify_environment" },
+        "location": {
+          "type": "string",
+          "description": "Location ID (omit for current location)"
+        },
+        "property": { "type": "string" },
+        "delta": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "consequence_move_npc": {
+      "type": "object",
+      "description": "Move an NPC to a location (NEW in v5)",
+      "required": ["type", "npc", "location"],
+      "properties": {
+        "type": { "const": "move_npc" },
+        "npc": {
+          "type": "string",
+          "description": "NPC identifier"
+        },
+        "location": {
+          "type": "string",
+          "description": "Location ID, or 'current' for player's current location"
+        }
+      },
+      "additionalProperties": false
+    },
+    "consequence_schedule_event": {
+      "type": "object",
+      "description": "Schedule consequences to trigger after a delay (NEW in v5)",
+      "required": ["type", "event_id", "delay", "consequences"],
+      "properties": {
+        "type": { "const": "schedule_event" },
+        "event_id": {
+          "type": "string",
+          "description": "Unique identifier for this event"
+        },
+        "delay": {
+          "$ref": "#/$defs/time_amount",
+          "description": "Time delay before event triggers"
+        },
+        "consequences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/consequence" },
+          "description": "Consequences to apply when event triggers"
+        }
+      },
+      "additionalProperties": false
+    },
+    "consequence_trigger_event": {
+      "type": "object",
+      "description": "Trigger a scheduled event immediately (NEW in v5)",
+      "required": ["type", "event_id"],
+      "properties": {
+        "type": { "const": "trigger_event" },
+        "event_id": {
+          "type": "string",
+          "description": "ID of the event to trigger"
+        }
+      },
+      "additionalProperties": false
+    },
+    "consequence_cancel_event": {
+      "type": "object",
+      "description": "Cancel a scheduled event (NEW in v5)",
+      "required": ["type", "event_id"],
+      "properties": {
+        "type": { "const": "cancel_event" },
+        "event_id": {
+          "type": "string",
+          "description": "ID of the event to cancel"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

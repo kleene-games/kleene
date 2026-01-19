@@ -47,11 +47,11 @@ Save file written when:
 
 Each gameplay session creates a new timestamped save file. The `session_timestamp` in the filename is set once at game start and reused for all saves in that session.
 
-## Save File Format (v3)
+## Save File Format (v5)
 
 ```yaml
 # Save metadata
-save_version: 3
+save_version: 5
 scenario: [scenario_name]
 session_started: "[ISO timestamp from game start]"
 last_saved: "[current ISO timestamp]"
@@ -89,8 +89,22 @@ character:
   flags: {...}
 world:
   current_location: [location]
-  time: [time]
+  time: [time]                 # Time in seconds since game start
   flags: {...}
+  location_state:              # Per-location mutable state (v4)
+    [location_id]:
+      flags: {flag: boolean}
+      properties: {name: number}
+
+  # NEW in v5 - NPC and event tracking
+  npc_locations:               # NPC position tracking
+    [npc_id]: [location_id]
+  scheduled_events:            # Pending events
+    - event_id: [string]
+      trigger_at: [number]     # Time (seconds) when event fires
+      consequences: [...]
+  triggered_events: [string]   # IDs of events that have fired
+
 settings:
   improvisation_temperature: [0-10]
   gallery_mode: [boolean]
@@ -98,7 +112,15 @@ settings:
 
 ### Backward Compatibility
 
-Saves without `scene` or `beat` fields (v2 format) default to:
+**v4 → v5:** Saves without NPC/event fields default to:
+- `npc_locations: {}`
+- `scheduled_events: []`
+- `triggered_events: []`
+
+**v3 → v4:** Saves without `location_state` field default to:
+- `location_state: {}`
+
+**v2 → v3:** Saves without `scene` or `beat` fields default to:
 - `scene: 1`
 - `beat: 1`
 - `beat_log: []`

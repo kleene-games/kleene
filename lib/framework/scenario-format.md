@@ -131,6 +131,151 @@ Scene tracking affects:
 - Export granularity options (`--granularity=scene`)
 - Multi-level rewind targeting (T6.2.3 notation)
 
+### Node-Level Preconditions
+
+Nodes can have preconditions that must be satisfied to enter. When a player's choice leads to a node whose precondition fails, the game displays a "blocked" message and returns to the previous node's choices without advancing the turn counter.
+
+```yaml
+dragon_lair:
+  precondition:
+    type: all_of
+    conditions:
+      - type: has_item
+        item: dragon_scale
+      - type: trait_minimum
+        trait: courage
+        minimum: 10
+
+  blocked_narrative: |
+    The lair's entrance pulses with ancient wards. You sense
+    powerful forces judging your worthiness.
+
+    Without proof of dragon-kind and sufficient bravery,
+    you cannot pass.
+
+  narrative: |
+    You enter the dragon's lair...
+
+  choice:
+    prompt: "What do you do?"
+    options:
+      - id: explore
+        text: "Explore the cavern"
+        next_node: cavern_depths
+```
+
+**Behavior when precondition fails:**
+- Player does NOT advance to blocked node
+- Turn counter does NOT increment
+- `blocked_narrative` shown (or generated fallback if not provided)
+- Previous node's choices re-presented
+
+**Fallback messages:** If no `blocked_narrative` is provided, the system generates a contextual message based on the precondition type:
+- `has_item`: "You need the **[item]** to proceed here."
+- `trait_minimum`: "Your **[trait]** ([current]) is insufficient. Requires at least [minimum]."
+- `all_of`: Message for first failing sub-condition
+- And so on for other precondition types.
+
+### Temporal Metadata (Phase 2: Parsing Only)
+
+Nodes can include temporal metadata for future time-tracking features:
+
+```yaml
+temple_interior:
+  elapsed_since_previous:
+    amount: 2
+    unit: hours
+
+  duration:
+    amount: 1
+    unit: hours
+
+  narrative: |
+    After a long journey, you arrive at the temple interior...
+```
+
+| Field | Purpose |
+|-------|---------|
+| `elapsed_since_previous` | Time passed since leaving the previous node |
+| `duration` | How long the events of this node take |
+
+**Valid time units:** `seconds`, `minutes`, `hours`, `days`, `weeks`, `months`, `years`
+
+**Note:** In Phase 2, temporal metadata is parsed and validated but not yet used for gameplay mechanics. Full time tracking will be implemented in Phase 5.
+
+### Location-Level Preconditions
+
+Locations can have preconditions that control access. When a `move_to` consequence targets a location whose precondition fails, the game handles it based on `access_mode`:
+
+```yaml
+initial_world:
+  locations:
+    - id: shrine
+      name: "Ancient Shrine"
+      connections: [forest, mountain_path]
+
+      precondition:
+        type: all_of
+        conditions:
+          - type: has_item
+            item: shrine_key
+          - type: flag_set
+            flag: elder_blessing
+
+      access_denied_narrative: |
+        The shrine's ancient wards shimmer before you.
+        Without the proper key and the elder's blessing,
+        the way remains sealed.
+
+      access_mode: show_locked  # filter | show_locked | show_normal
+
+      initial_state:
+        flags: { discovered: false }
+        environment: { lighting: dim, ambiance: sacred }
+```
+
+#### Access Modes
+
+| Mode | Behavior |
+|------|----------|
+| `filter` | Hide inaccessible location from options (default, backwards compatible) |
+| `show_locked` | Show with "[Locked]" indicator, explain requirements on hover/select |
+| `show_normal` | Show normally, display access_denied_narrative if selected |
+
+#### Environment State
+
+Environment properties track conditions like lighting, weather, and temperature:
+
+```yaml
+# Set environment
+- type: set_environment
+  location: shrine  # Omit for current location
+  property: lighting
+  value: dark
+
+# Modify numeric environment
+- type: modify_environment
+  location: dragon_lair
+  property: temperature
+  delta: 100
+
+# Check environment (precondition)
+precondition:
+  type: environment_is
+  property: lighting
+  value: lit
+```
+
+#### Environment Precondition Types
+
+| Type | Check |
+|------|-------|
+| `environment_is` | `location.environment[property] == value` |
+| `environment_minimum` | `location.environment[property] >= minimum` |
+| `environment_maximum` | `location.environment[property] <= maximum` |
+
+**Note:** If `location` is omitted in environment preconditions/consequences, the current location is used. Missing environment properties default to `null`; preconditions fail on null.
+
 ### Ending Node
 
 ```yaml
@@ -359,6 +504,42 @@ precondition:
       flag: coward
 ```
 
+### location_flag_set
+```yaml
+precondition:
+  type: location_flag_set
+  location: village
+  flag: quest_completed
+```
+
+### location_flag_not_set
+```yaml
+precondition:
+  type: location_flag_not_set
+  location: shrine
+  flag: sealed
+```
+
+### location_property_minimum
+```yaml
+precondition:
+  type: location_property_minimum
+  location: shrine
+  property: blessing_power
+  minimum: 50
+```
+
+### location_property_maximum
+```yaml
+precondition:
+  type: location_property_maximum
+  location: dragon_lair
+  property: heat_level
+  maximum: 500
+```
+
+**Note:** Location preconditions gracefully handle missing state. If `world.location_state[location]` doesn't exist or the flag/property is missing, it defaults to `false` (for flags) or `0` (for properties).
+
 ## Consequence Types
 
 ### gain_item
@@ -417,7 +598,10 @@ precondition:
 ```yaml
 - type: advance_time
   amount: 1
+  unit: hours  # Optional: seconds, minutes, hours (default), days, weeks, months, years
 ```
+
+**NEW in v5:** The `unit` field allows specifying time units. Default is `hours` for backwards compatibility. Time is stored internally as seconds.
 
 ### character_dies
 ```yaml
@@ -436,6 +620,175 @@ precondition:
 - type: add_history
   entry: "The hero made a fateful choice"
 ```
+
+### set_location_flag
+```yaml
+- type: set_location_flag
+  location: village
+  flag: quest_completed
+  value: true
+```
+
+### clear_location_flag
+```yaml
+- type: clear_location_flag
+  location: shrine
+  flag: sealed
+```
+
+### modify_location_property
+```yaml
+- type: modify_location_property
+  location: village
+  property: population
+  delta: -10    # Can be negative
+```
+
+### set_location_property
+```yaml
+- type: set_location_property
+  location: shrine
+  property: blessing_power
+  value: 100
+```
+
+**Note:** Location consequences use lazy initialization. If `world.location_state[location]` doesn't exist when applying a consequence, it is created with empty `flags: {}` and `properties: {}` before applying the change.
+
+## NPC Location Tracking (NEW in v5)
+
+Track where NPCs are in the world. NPCs can move dynamically and their presence can gate options.
+
+### Initial NPC Locations
+
+Set starting positions in `initial_world`:
+
+```yaml
+initial_world:
+  npc_locations:
+    guardian: temple_gates
+    merchant: temple_interior
+    oracle: temple_interior
+```
+
+### move_npc
+```yaml
+- type: move_npc
+  npc: guardian
+  location: temple_interior  # or "current" for player's location
+```
+
+**Special value `current`:** Resolves to `world.current_location` at execution time.
+
+### npc_at_location
+```yaml
+precondition:
+  type: npc_at_location
+  npc: guardian
+  location: current  # NPC is where player is
+```
+
+### npc_not_at_location
+```yaml
+precondition:
+  type: npc_not_at_location
+  npc: guardian
+  location: temple_gates  # NPC has left this location
+```
+
+**Note:** If an NPC is at a non-existent location or not in `npc_locations`, preconditions treat them as "offscreen" (not at any named location).
+
+## Scheduled Events (NEW in v5)
+
+Schedule consequences to trigger after time passes. Events fire automatically when `world.time` reaches their `trigger_at` value.
+
+### schedule_event
+```yaml
+- type: schedule_event
+  event_id: dragon_attack
+  delay:
+    amount: 24
+    unit: hours
+  consequences:
+    - type: set_flag
+      flag: village_destroyed
+      value: true
+    - type: move_npc
+      npc: dragon
+      location: village
+```
+
+The event is added to `world.scheduled_events` with `trigger_at = world.time + delay_in_seconds`.
+
+### trigger_event
+```yaml
+- type: trigger_event
+  event_id: dragon_attack
+```
+
+Triggers a scheduled event immediately, applying its consequences and moving it to `triggered_events`.
+
+### cancel_event
+```yaml
+- type: cancel_event
+  event_id: dragon_attack
+```
+
+Removes an event from `scheduled_events` (silent no-op if not found).
+
+### event_triggered
+```yaml
+precondition:
+  type: event_triggered
+  event_id: dragon_attack
+```
+
+Checks if an event has been triggered (exists in `world.triggered_events`).
+
+### event_not_triggered
+```yaml
+precondition:
+  type: event_not_triggered
+  event_id: dragon_attack
+```
+
+Checks if an event has NOT been triggered.
+
+## Time-Based Preconditions (NEW in v5)
+
+Gate content by elapsed time since game start.
+
+### time_elapsed_minimum
+```yaml
+precondition:
+  type: time_elapsed_minimum
+  amount: 8
+  unit: hours
+```
+
+Requires at least 8 hours (28800 seconds) to have passed since game start.
+
+### time_elapsed_maximum
+```yaml
+precondition:
+  type: time_elapsed_maximum
+  amount: 24
+  unit: hours
+```
+
+Requires no more than 24 hours to have passed. Useful for time-limited opportunities.
+
+### Time Units
+
+Valid units: `seconds`, `minutes`, `hours`, `days`, `weeks`, `months`, `years`
+
+Conversion to seconds:
+- seconds: 1
+- minutes: 60
+- hours: 3600
+- days: 86400
+- weeks: 604800
+- months: 2592000 (30 days)
+- years: 31536000 (365 days)
 
 ## Game State File
 
@@ -466,6 +819,16 @@ world:
   time: 3
   flags:
     dragon_alive: true
+  location_state:              # Per-location mutable state
+    village:
+      flags:
+        quest_completed: true
+      properties:
+        population: 150
+    shrine:
+      flags: {}
+      properties:
+        blessing_power: 75
   locations: { ... }
 
 history:

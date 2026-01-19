@@ -328,3 +328,55 @@ Improvised actions naturally map to the "Player Unknown" row:
 - **Revelation** - when improvisation reveals constraints
 
 The meta-game ensures generated content maintains narrative completeness across the nine cells, with particular attention to the chaos center (Limbo) where side quests and improvised adventures thrive.
+
+## Improvisation Routing
+
+When a player selects an option with `next: improvise`, the system uses pattern matching to determine the outcome.
+
+### Scripted Unknown Options
+
+```yaml
+options:
+  - id: observe_dragon
+    text: "Wait and observe"
+    cell: unknown           # Indicates Unknown row (middle of 3x3 grid)
+    next: improvise         # Triggers improvisation routing
+    improvise_context:
+      theme: "observing the dragon"
+      permits: ["patience", "learn", "watch", "study"]  # Patterns → Discovery
+      blocks: ["attack", "steal", "trick", "provoke"]   # Patterns → Revelation
+      limbo_fallback: "Time stretches in the dragon's presence..."
+    outcome_nodes:
+      discovery: dragon_notices_patience  # Player input matches permits
+      revelation: dragon_dismisses        # Player input matches blocks
+      # limbo: (omitted) - stays at current node (default Limbo)
+```
+
+### Resolution Flow
+
+1. Player selects improvise option → freeform text input requested
+2. System evaluates input against `permits[]` and `blocks[]` patterns
+3. **Discovery**: Input matches permits → navigate to `outcome_nodes.discovery`
+4. **Revelation**: Input matches blocks → navigate to `outcome_nodes.revelation`
+5. **Limbo**: No pattern match → stay at current node (use `limbo_fallback` narrative)
+
+### Pattern Matching
+
+Patterns in `permits` and `blocks` are treated as case-insensitive substrings:
+- `"patience"` matches "I wait patiently", "patience is key", "with patience"
+- `"attack"` matches "I attack the dragon", "launch an attack", "attack!"
+
+More specific patterns should be listed before general ones for clarity.
+
+### Static Analysis Implications
+
+Nodes referenced in `outcome_nodes` are **conditionally reachable**:
+- They cannot be reached via normal `next_node` traversal
+- They ARE reachable when player input matches the appropriate pattern
+- Analysis tools should report these as "reachable via improvisation" not "unreachable"
+
+The analyze skill distinguishes between:
+- **Static edges** (`next_node`) - Always in graph, unconditionally reachable
+- **Dynamic edges** (`next: improvise` with `outcome_nodes`) - Conditionally reachable
+
+This distinction is critical for accurate reachability analysis.
