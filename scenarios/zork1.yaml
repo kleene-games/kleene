@@ -1,0 +1,2274 @@
+# Zork I: The Great Underground Empire
+# A Kleene narrative scenario adaptation of the classic Infocom adventure
+# Based on the original ZIL source code (c) 1983 Infocom, Inc.
+
+name: "Zork I: The Great Underground Empire"
+description: "Explore the ruins of an ancient empire, collect treasures, and survive the perils of the Great Underground Empire."
+version: "1.0.0"
+
+# Initial character state
+initial_character:
+  name: "Adventurer"
+  traits:
+    score: 0
+    lamp_turns: 200
+    treasure_count: 0
+  inventory: []
+  relationships: {}
+  flags: {}
+
+# Initial world state
+initial_world:
+  current_location: west_of_house
+  time: 0
+  flags:
+    mailbox_opened: false
+    window_opened: false
+    rug_moved: false
+    trapdoor_opened: false
+    troll_defeated: false
+    cyclops_asleep: false
+    cyclops_fed: false
+    magic_wall_opened: false
+    thief_encountered: false
+    thief_defeated: false
+    grate_unlocked: false
+    lld_flag: false
+    # Treasure flags
+    has_egg: false
+    has_painting: false
+    has_platinum_bar: false
+    has_coffin: false
+    has_skull: false
+    has_jewels: false
+    has_torch: false
+    has_chalice: false
+  npc_locations:
+    troll: troll_room
+    cyclops: cyclops_room
+    thief: treasure_room
+  locations:
+    - id: west_of_house
+      name: "West of House"
+      description: "Open field west of a white house with a boarded front door"
+      connections: [north_of_house, south_of_house, forest_path]
+    - id: living_room
+      name: "Living Room"
+      description: "The living room of the white house"
+      connections: [kitchen, cellar]
+    - id: cellar
+      name: "Cellar"
+      description: "A dark cellar beneath the white house"
+      connections: [living_room, troll_room]
+    - id: troll_room
+      name: "Troll Room"
+      description: "A room inhabited by a dangerous troll"
+      connections: [cellar, maze_entrance]
+    - id: cyclops_room
+      name: "Cyclops Room"
+      description: "A large chamber with stairs blocked by a cyclops"
+      connections: [maze_exit, treasure_room, strange_passage]
+    - id: treasure_room
+      name: "Treasure Room"
+      description: "The thief's lair, filled with stolen goods"
+      connections: [cyclops_room]
+
+start_node: west_of_house
+
+# =============================================================================
+# NODES
+# =============================================================================
+
+nodes:
+
+  # ---------------------------------------------------------------------------
+  # ABOVE GROUND - WHITE HOUSE EXTERIOR
+  # ---------------------------------------------------------------------------
+
+  west_of_house:
+    narrative: |
+      You are standing in an open field west of a white house, with a boarded
+      front door.
+
+      A rubber mat saying 'Welcome to Zork!' lies by the door. There is a small
+      mailbox here.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: open_mailbox
+          text: "Open the mailbox"
+          cell: chooses
+          precondition:
+            type: flag_not_set
+            flag: mailbox_opened
+          consequence:
+            - type: set_flag
+              flag: mailbox_opened
+              value: true
+            - type: gain_item
+              item: leaflet
+          narrative: |
+            Opening the small mailbox reveals a leaflet.
+          next_node: west_of_house_explored
+        - id: read_leaflet_first
+          text: "Read the leaflet"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: leaflet
+          narrative: |
+            "WELCOME TO ZORK!
+
+            ZORK is a game of adventure, danger, and low cunning. In it you
+            will explore some of the most amazing territory ever seen by mortals.
+            No computer should be without one!"
+          next_node: west_of_house_explored
+        - id: go_north
+          text: "Go north around the house"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: north_of_house
+          next_node: north_of_house
+        - id: go_south
+          text: "Go south around the house"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: south_of_house
+          next_node: south_of_house
+
+  west_of_house_explored:
+    narrative: |
+      You stand west of the white house. The front door is boarded shut and
+      cannot be opened. The mailbox is open.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_north_exp
+          text: "Go north around the house"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: north_of_house
+          next_node: north_of_house
+        - id: go_south_exp
+          text: "Go south around the house"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: south_of_house
+          next_node: south_of_house
+        - id: examine_house
+          text: "Examine the house"
+          cell: unknown
+          narrative: |
+            The house is a beautiful colonial house which is painted white.
+            It is clear that the owners must have been extremely wealthy.
+            All the windows on this side are boarded shut.
+          next_node: west_of_house_explored
+
+  north_of_house:
+    narrative: |
+      You are facing the north side of a white house. There is no door here,
+      and all the windows are boarded up. To the west stretches an open field,
+      and to the east the house continues.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_west_north
+          text: "Go west to the field"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: west_of_house
+          next_node: west_of_house_explored
+        - id: go_east_north
+          text: "Go east behind the house"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: behind_house
+          next_node: behind_house
+        - id: climb_tree
+          text: "Climb the large tree"
+          cell: unknown
+          consequence:
+            - type: move_to
+              location: up_tree
+          next_node: up_tree
+
+  south_of_house:
+    narrative: |
+      You are facing the south side of a white house. There is no door here,
+      and all the windows are boarded. The forest begins to the south.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_west_south
+          text: "Go west to the field"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: west_of_house
+          next_node: west_of_house_explored
+        - id: go_east_south
+          text: "Go east behind the house"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: behind_house
+          next_node: behind_house
+        - id: enter_forest
+          text: "Enter the forest"
+          cell: avoids
+          narrative: |
+            The forest becomes thick and impassable to the south.
+            You sense this is not the way to adventure.
+          next_node: south_of_house
+
+  behind_house:
+    narrative: |
+      You are behind the white house. A path leads into the forest to the east.
+      In one corner of the house there is a small window which is slightly ajar.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: open_window
+          text: "Open the window"
+          cell: chooses
+          precondition:
+            type: flag_not_set
+            flag: window_opened
+          consequence:
+            - type: set_flag
+              flag: window_opened
+              value: true
+          narrative: |
+            With great effort, you open the window far enough to allow entry.
+          next_node: behind_house_open
+        - id: enter_window_closed
+          text: "Climb through the window"
+          cell: chooses
+          precondition:
+            type: flag_set
+            flag: window_opened
+          consequence:
+            - type: move_to
+              location: kitchen
+          next_node: kitchen
+        - id: go_west_behind
+          text: "Go north around the house"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: north_of_house
+          next_node: north_of_house
+        - id: enter_forest_east
+          text: "Enter the forest path"
+          cell: avoids
+          narrative: |
+            The forest path winds away to the east, but something tells you
+            the real adventure lies within the house.
+          next_node: behind_house
+
+  behind_house_open:
+    narrative: |
+      You are behind the white house. The window is now open wide enough
+      to climb through.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: enter_window
+          text: "Climb through the window"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: kitchen
+          next_node: kitchen
+        - id: go_around_north
+          text: "Go north around the house"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: north_of_house
+          next_node: north_of_house
+        - id: go_around_south
+          text: "Go south around the house"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: south_of_house
+          next_node: south_of_house
+
+  up_tree:
+    narrative: |
+      You are about 10 feet above the ground nestled among some large branches.
+      On the branch is a small bird's nest.
+
+      In the bird's nest is a jewel-encrusted egg!
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_egg
+          text: "Take the jeweled egg"
+          cell: chooses
+          precondition:
+            type: flag_not_set
+            flag: has_egg
+          consequence:
+            - type: gain_item
+              item: jeweled_egg
+            - type: set_flag
+              flag: has_egg
+              value: true
+            - type: modify_trait
+              trait: score
+              delta: 5
+            - type: modify_trait
+              trait: treasure_count
+              delta: 1
+          narrative: |
+            Taken. The egg is beautiful, covered in precious jewels.
+          next_node: up_tree_empty
+        - id: climb_down
+          text: "Climb down the tree"
+          cell: avoids
+          consequence:
+            - type: move_to
+              location: north_of_house
+          next_node: north_of_house
+
+  up_tree_empty:
+    narrative: |
+      You are nestled among the branches of a large tree. The bird's nest
+      is now empty.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: climb_down_empty
+          text: "Climb down the tree"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: north_of_house
+          next_node: north_of_house
+        - id: look_around_tree
+          text: "Look around from up here"
+          cell: unknown
+          narrative: |
+            From up here you can see the white house to the south, and dense
+            forest in all other directions. Far to the north, mountains rise
+            against the sky.
+          next_node: up_tree_empty
+
+  # ---------------------------------------------------------------------------
+  # INSIDE THE WHITE HOUSE
+  # ---------------------------------------------------------------------------
+
+  kitchen:
+    narrative: |
+      You are in the kitchen of the white house. A table seems to have been
+      used recently for the preparation of food. A passage leads to the west
+      and a dark staircase can be seen leading upward. To the east is a small
+      window which is open.
+
+      On the table is an elongated brown sack, smelling of hot peppers.
+      A bottle of water is also here.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_sack
+          text: "Take the brown sack"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: brown_sack
+          consequence:
+            - type: gain_item
+              item: brown_sack
+          narrative: |
+            Taken. The sack contains a lunch and a clove of garlic.
+          next_node: kitchen_explored
+        - id: take_bottle
+          text: "Take the bottle of water"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: water_bottle
+          consequence:
+            - type: gain_item
+              item: water_bottle
+          narrative: |
+            Taken.
+          next_node: kitchen_explored
+        - id: go_west_kitchen
+          text: "Go west to the living room"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: living_room
+          next_node: living_room
+        - id: go_upstairs
+          text: "Go upstairs to the attic"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: attic
+          next_node: attic
+
+  kitchen_explored:
+    narrative: |
+      You are in the kitchen. The table is now bare. A passage leads west,
+      stairs lead up, and the window leads outside to the east.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_west_kitchen2
+          text: "Go west to the living room"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: living_room
+          next_node: living_room
+        - id: go_upstairs2
+          text: "Go upstairs to the attic"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: attic
+          next_node: attic
+        - id: exit_window
+          text: "Climb out the window"
+          cell: avoids
+          consequence:
+            - type: move_to
+              location: behind_house
+          next_node: behind_house_open
+
+  attic:
+    narrative: |
+      This is the attic. The only exit is a stairway leading down.
+      A large coil of rope is lying in the corner. On a table is a
+      nasty-looking knife.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_rope
+          text: "Take the rope"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: rope
+          consequence:
+            - type: gain_item
+              item: rope
+          narrative: |
+            Taken.
+          next_node: attic_explored
+        - id: take_knife
+          text: "Take the knife"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: nasty_knife
+          consequence:
+            - type: gain_item
+              item: nasty_knife
+          narrative: |
+            Taken.
+          next_node: attic_explored
+        - id: go_down_attic
+          text: "Go downstairs"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: kitchen
+          next_node: kitchen_explored
+
+  attic_explored:
+    narrative: |
+      This is the attic. The table and corner are now bare.
+      A stairway leads down.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_down_attic2
+          text: "Go downstairs to the kitchen"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: kitchen
+          next_node: kitchen_explored
+
+  living_room:
+    narrative: |
+      You are in the living room. There is a doorway to the east, a wooden
+      door with strange gothic lettering to the west, which appears to be
+      nailed shut, and a large oriental rug in the center of the room.
+
+      Above the mantelpiece hangs an elvish sword of great antiquity.
+      A battery-powered brass lantern is on the trophy case.
+      The trophy case is empty.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_sword
+          text: "Take the elvish sword"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: elvish_sword
+          consequence:
+            - type: gain_item
+              item: elvish_sword
+          narrative: |
+            Taken. The sword is inscribed with ancient runes.
+          next_node: living_room_explored
+        - id: take_lamp
+          text: "Take the brass lantern"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: brass_lantern
+          consequence:
+            - type: gain_item
+              item: brass_lantern
+          narrative: |
+            Taken. The lamp is battery-powered.
+          next_node: living_room_explored
+        - id: move_rug
+          text: "Move the oriental rug"
+          cell: unknown
+          precondition:
+            type: flag_not_set
+            flag: rug_moved
+          consequence:
+            - type: set_flag
+              flag: rug_moved
+              value: true
+          narrative: |
+            With a great effort, the rug is moved to one side of the room,
+            revealing a closed trap door!
+          next_node: living_room_trapdoor
+        - id: go_east_living
+          text: "Go east to the kitchen"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: kitchen
+          next_node: kitchen_explored
+
+  living_room_explored:
+    narrative: |
+      You are in the living room. The trophy case stands empty, awaiting
+      treasures. A doorway leads east to the kitchen.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_sword2
+          text: "Take the elvish sword"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: elvish_sword
+          consequence:
+            - type: gain_item
+              item: elvish_sword
+          narrative: |
+            Taken.
+          next_node: living_room_explored
+        - id: take_lamp2
+          text: "Take the brass lantern"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: brass_lantern
+          consequence:
+            - type: gain_item
+              item: brass_lantern
+          narrative: |
+            Taken.
+          next_node: living_room_explored
+        - id: move_rug2
+          text: "Move the oriental rug"
+          cell: unknown
+          precondition:
+            type: flag_not_set
+            flag: rug_moved
+          consequence:
+            - type: set_flag
+              flag: rug_moved
+              value: true
+          narrative: |
+            With a great effort, the rug is moved to one side of the room,
+            revealing a closed trap door!
+          next_node: living_room_trapdoor
+        - id: go_east_living2
+          text: "Go east to the kitchen"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: kitchen
+          next_node: kitchen_explored
+
+  living_room_trapdoor:
+    narrative: |
+      The rug has been moved, revealing a closed trap door.
+      The trophy case awaits treasures.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: open_trapdoor
+          text: "Open the trap door"
+          cell: chooses
+          precondition:
+            type: flag_not_set
+            flag: trapdoor_opened
+          consequence:
+            - type: set_flag
+              flag: trapdoor_opened
+              value: true
+          narrative: |
+            The door reluctantly opens to reveal a rickety staircase
+            descending into darkness.
+          next_node: living_room_open
+        - id: go_east_trapdoor
+          text: "Go east to the kitchen"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: kitchen
+          next_node: kitchen_explored
+        - id: take_remaining
+          text: "Check what items remain"
+          cell: unknown
+          narrative: |
+            The sword hangs above the mantelpiece. The brass lantern
+            sits on the trophy case.
+          next_node: living_room_trapdoor
+
+  living_room_open:
+    narrative: |
+      The trap door is open, revealing a staircase descending into darkness.
+      You'll need a light source to explore below safely.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: descend_with_lamp
+          text: "Descend into the cellar (lamp lit)"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: brass_lantern
+          consequence:
+            - type: move_to
+              location: cellar
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: cellar
+        - id: descend_no_lamp
+          text: "Descend into the cellar (in darkness)"
+          cell: avoids
+          precondition:
+            type: missing_item
+            item: brass_lantern
+          next_node: grue_death
+        - id: go_east_open
+          text: "Go east to the kitchen"
+          cell: avoids
+          consequence:
+            - type: move_to
+              location: kitchen
+          next_node: kitchen_explored
+        - id: take_items_open
+          text: "Take any remaining items first"
+          cell: chooses
+          narrative: |
+            Good thinking. You should be well-equipped before venturing
+            into the darkness.
+          next_node: living_room_open
+
+  # ---------------------------------------------------------------------------
+  # THE CELLAR AND TROLL AREA
+  # ---------------------------------------------------------------------------
+
+  cellar:
+    scene_break: true
+    precondition:
+      type: has_item
+      item: brass_lantern
+    blocked_narrative: |
+      It is pitch black. You are likely to be eaten by a grue.
+      You need a light source to proceed safely.
+    narrative: |
+      You are in a dark and damp cellar with a narrow passageway leading
+      north, and a crawlway to the south. The trap door above you is open.
+
+      Your lamp casts flickering shadows on the walls. The air smells of
+      age and forgotten things.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_up_cellar
+          text: "Climb back up to the living room"
+          cell: avoids
+          consequence:
+            - type: move_to
+              location: living_room
+          next_node: living_room_open
+        - id: go_north_cellar
+          text: "Go north through the passage"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: troll_room
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: troll_room
+        - id: examine_cellar
+          text: "Search the cellar"
+          cell: unknown
+          narrative: |
+            The cellar is mostly empty. Dust and cobwebs are the only
+            inhabitants. The passage north seems well-traveled.
+          next_node: cellar
+
+  troll_room:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    blocked_narrative: |
+      It is pitch black. You are likely to be eaten by a grue.
+    narrative: |
+      This is a small room with passages to the north and south, and a
+      dark, forbidding staircase leading down to the west.
+
+      A nasty-looking troll, brandishing a bloody axe, blocks all passages
+      out of the room. He looks hungry.
+    choice:
+      prompt: "The troll snarls at you menacingly. What do you do?"
+      options:
+        - id: attack_troll
+          text: "Attack the troll with your sword"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: elvish_sword
+          next_node: troll_combat
+        - id: offer_food
+          text: "Offer the troll your lunch"
+          cell: unknown
+          precondition:
+            type: has_item
+            item: brown_sack
+          consequence:
+            - type: lose_item
+              item: brown_sack
+          narrative: |
+            The troll grabs the sack and peers inside suspiciously.
+            He takes a bite of the hot pepper sandwich and howls in pain!
+
+            While distracted by his burning mouth, the troll stumbles away,
+            leaving the passages clear.
+          next_node: troll_fed
+        - id: flee_south
+          text: "Flee back south to the cellar"
+          cell: avoids
+          consequence:
+            - type: move_to
+              location: cellar
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: cellar
+        - id: attack_unarmed
+          text: "Attack the troll with bare hands"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: elvish_sword
+          next_node: troll_death
+
+  troll_combat:
+    narrative: |
+      Your sword begins to glow with a faint blue light!
+
+      You engage the troll in combat. The troll swings his axe wildly,
+      but your elvish blade finds its mark. With a final thrust, the
+      troll collapses!
+
+      The troll is slain. His axe clatters to the ground.
+    consequence:
+      - type: set_flag
+        flag: troll_defeated
+        value: true
+      - type: modify_trait
+        trait: score
+        delta: 10
+    choice:
+      prompt: "The way is now clear. What do you do?"
+      options:
+        - id: take_axe
+          text: "Take the bloody axe"
+          cell: unknown
+          consequence:
+            - type: gain_item
+              item: bloody_axe
+          narrative: |
+            Taken. It's heavy and crudely made, but effective.
+          next_node: troll_room_clear
+        - id: continue_north
+          text: "Continue north into the dungeon"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: east_west_passage
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: east_west_passage
+        - id: go_back_south
+          text: "Go back south to the cellar"
+          cell: avoids
+          consequence:
+            - type: move_to
+              location: cellar
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: cellar
+
+  troll_fed:
+    consequence:
+      - type: set_flag
+        flag: troll_defeated
+        value: true
+      - type: modify_trait
+        trait: score
+        delta: 5
+    choice:
+      prompt: "The passages are now clear. What do you do?"
+      options:
+        - id: continue_north_fed
+          text: "Continue north into the dungeon"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: east_west_passage
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: east_west_passage
+        - id: go_back_south_fed
+          text: "Go back south to the cellar"
+          cell: avoids
+          consequence:
+            - type: move_to
+              location: cellar
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: cellar
+
+  troll_room_clear:
+    precondition:
+      type: flag_set
+      flag: troll_defeated
+    narrative: |
+      This is the troll room. The troll has been dealt with, and the
+      passages are now open. An exit leads north, and stairs descend
+      to the west.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_north_clear
+          text: "Go north into the dungeon"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: east_west_passage
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: east_west_passage
+        - id: go_south_clear
+          text: "Go south to the cellar"
+          cell: avoids
+          consequence:
+            - type: move_to
+              location: cellar
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: cellar
+
+  # ---------------------------------------------------------------------------
+  # THE DUNGEON - GALLERY AND PASSAGES
+  # ---------------------------------------------------------------------------
+
+  east_west_passage:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    blocked_narrative: |
+      It is pitch black. You are likely to be eaten by a grue.
+    narrative: |
+      This is a narrow east-west passageway. There is a narrow stairway
+      leading down at the north end of the room. The passage continues
+      to the east and west.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_west_passage
+          text: "Go west toward the troll room"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: troll_room_clear
+        - id: go_east_gallery
+          text: "Go east to the gallery"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: gallery
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: gallery
+        - id: go_down_chasm
+          text: "Descend the stairs"
+          cell: unknown
+          consequence:
+            - type: move_to
+              location: round_room
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: round_room
+
+  gallery:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is an art gallery. Most of the paintings have been stolen by
+      vandals with exceptional taste. The vandals left through either the
+      north or west exits.
+
+      Fortunately, there is still one chance for you to be a vandal, for on
+      the far wall is a painting of unparalleled beauty.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_painting
+          text: "Take the painting"
+          cell: chooses
+          precondition:
+            type: flag_not_set
+            flag: has_painting
+          consequence:
+            - type: gain_item
+              item: painting
+            - type: set_flag
+              flag: has_painting
+              value: true
+            - type: modify_trait
+              trait: score
+              delta: 6
+            - type: modify_trait
+              trait: treasure_count
+              delta: 1
+          narrative: |
+            Taken. A masterpiece of artistic genius.
+          next_node: gallery_empty
+        - id: go_west_gallery
+          text: "Go west to the passage"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: east_west_passage
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: east_west_passage
+        - id: go_north_studio
+          text: "Go north to the studio"
+          cell: unknown
+          consequence:
+            - type: move_to
+              location: studio
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: studio
+
+  gallery_empty:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is the art gallery. All the paintings have now been taken,
+      leaving only empty frames on the walls.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_west_gallery2
+          text: "Go west to the passage"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: east_west_passage
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: east_west_passage
+        - id: go_north_studio2
+          text: "Go north to the studio"
+          cell: unknown
+          consequence:
+            - type: move_to
+              location: studio
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: studio
+
+  studio:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This appears to have been an artist's studio. The walls and floors are
+      splattered with paints of 69 different colors. Strangely enough, nothing
+      of value is hanging here.
+
+      A dark and narrow chimney leads up from a fireplace. At the south end
+      is an open door leading to the gallery.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: climb_chimney
+          text: "Climb up the chimney"
+          cell: unknown
+          narrative: |
+            You manage to squeeze into the chimney. After much struggling,
+            you emerge... back in the kitchen!
+          consequence:
+            - type: move_to
+              location: kitchen
+          next_node: kitchen_explored
+        - id: go_south_studio
+          text: "Go south to the gallery"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: gallery
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: gallery_empty
+
+  round_room:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is a circular stone room with passages in all directions. Several
+      of them have unfortunately been blocked by cave-ins.
+
+      Passages lead east, west, north, and southeast.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_east_round
+          text: "Go east to the loud room"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: loud_room
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: loud_room
+        - id: go_west_round
+          text: "Go west to the passage"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: east_west_passage
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: east_west_passage
+        - id: go_south_narrow
+          text: "Go south to a narrow passage"
+          cell: unknown
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_entrance
+
+  # ---------------------------------------------------------------------------
+  # THE LOUD ROOM - PLATINUM BAR PUZZLE
+  # ---------------------------------------------------------------------------
+
+  loud_room:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is a large room with a ceiling which cannot be detected from the
+      ground. There is a narrow passage from east to west and a stone stairway
+      leading upward.
+
+      The room is deafeningly loud with an unknown sound echoing from all
+      directions.
+
+      On the ground is a large platinum bar.
+    choice:
+      prompt: "What do you do? (Your voice echoes strangely here)"
+      options:
+        - id: take_bar
+          text: "Take the platinum bar"
+          cell: chooses
+          precondition:
+            type: flag_not_set
+            flag: has_platinum_bar
+          narrative: |
+            As you pick up the bar, the room falls silent for a moment...
+            then the echoing returns even louder!
+
+            "ECHO... echo... echo..."
+
+            The bar is incredibly heavy but valuable.
+          consequence:
+            - type: gain_item
+              item: platinum_bar
+            - type: set_flag
+              flag: has_platinum_bar
+              value: true
+            - type: modify_trait
+              trait: score
+              delta: 10
+            - type: modify_trait
+              trait: treasure_count
+              delta: 1
+          next_node: loud_room_empty
+        - id: shout_echo
+          text: "Shout 'ECHO'"
+          cell: unknown
+          narrative: |
+            "ECHO... echo... echo..." the room responds.
+            The acoustic properties here are remarkable.
+          next_node: loud_room
+        - id: go_west_loud
+          text: "Go west to the round room"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: round_room
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: round_room
+
+  loud_room_empty:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is the loud room. The echoing sound continues relentlessly.
+      The platinum bar is gone.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_west_loud2
+          text: "Go west to the round room"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: round_room
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: round_room
+        - id: listen_loud
+          text: "Listen to the echo"
+          cell: unknown
+          narrative: |
+            The sound seems to come from everywhere and nowhere.
+            Ancient Zorkers must have used this room for announcements.
+          next_node: loud_room_empty
+
+  # ---------------------------------------------------------------------------
+  # THE MAZE - ATMOSPHERIC NAVIGATION
+  # ---------------------------------------------------------------------------
+
+  maze_entrance:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      You are in a maze of twisty little passages, all alike.
+
+      The walls are rough stone, and your lamp barely penetrates the gloom.
+      Passages lead in several directions, but they all look identical.
+    choice:
+      prompt: "Which way do you go?"
+      options:
+        - id: maze_north
+          text: "Go north"
+          cell: unknown
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_twist_1
+        - id: maze_south
+          text: "Go south"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: round_room
+        - id: maze_east
+          text: "Go east"
+          cell: unknown
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_twist_2
+        - id: maze_west
+          text: "Go west"
+          cell: unknown
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_dead_end
+
+  maze_twist_1:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is part of a maze of twisty little passages, all alike.
+
+      You feel turned around. Was that the way you came?
+    choice:
+      prompt: "Which way do you go?"
+      options:
+        - id: twist1_north
+          text: "Go north"
+          cell: unknown
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_twist_2
+        - id: twist1_south
+          text: "Go south"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_entrance
+        - id: twist1_east
+          text: "Go east"
+          cell: unknown
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_exit
+
+  maze_twist_2:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is part of a maze of twisty little passages, all alike.
+
+      A skeleton, probably the remains of a luckless adventurer, lies here.
+      Near the skeleton is a rusty lantern and a bag of coins.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_coins
+          text: "Take the bag of coins"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: bag_of_coins
+          consequence:
+            - type: gain_item
+              item: bag_of_coins
+            - type: modify_trait
+              trait: score
+              delta: 5
+          narrative: |
+            Taken. The bag is old leather, bulging with zorkmids.
+          next_node: maze_twist_2
+        - id: twist2_south
+          text: "Go south"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_twist_1
+        - id: twist2_west
+          text: "Go west"
+          cell: unknown
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_entrance
+        - id: twist2_up
+          text: "Go up"
+          cell: unknown
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_exit
+
+  maze_dead_end:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      You have come to a dead end in the maze.
+
+      The passage behind you is the only exit.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: dead_end_back
+          text: "Go back the way you came"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_entrance
+        - id: search_dead_end
+          text: "Search the dead end"
+          cell: unknown
+          narrative: |
+            The walls are solid stone. Nothing of interest here except
+            your own growing sense of claustrophobia.
+          next_node: maze_dead_end
+
+  maze_exit:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is part of a maze of twisty little passages, all alike.
+
+      However, you notice a draft of fresh air coming from the southeast
+      passage. That way seems different from the others.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: exit_southeast
+          text: "Go southeast toward the fresh air"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: cyclops_room
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: cyclops_room
+        - id: exit_back
+          text: "Go back into the maze"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_twist_1
+
+  # ---------------------------------------------------------------------------
+  # CYCLOPS AREA
+  # ---------------------------------------------------------------------------
+
+  cyclops_room:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This room has an exit on the northwest, and a staircase leading up.
+
+      A cyclops, who looks prepared to eat horses (much less mere
+      adventurers), blocks the staircase. From his state of health, and
+      the bloodstains on the walls, you gather that he is not very
+      friendly, though he likes people.
+    choice:
+      prompt: "The cyclops eyes you hungrily. What do you do?"
+      options:
+        - id: attack_cyclops
+          text: "Attack the cyclops"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: elvish_sword
+          next_node: cyclops_death
+        - id: give_food_cyclops
+          text: "Offer the cyclops your lunch"
+          cell: unknown
+          precondition:
+            type: has_item
+            item: brown_sack
+          consequence:
+            - type: lose_item
+              item: brown_sack
+            - type: set_flag
+              flag: cyclops_fed
+              value: true
+          narrative: |
+            The cyclops grabs your lunch and devours it in one bite.
+            He seems slightly less hostile now, though still blocking
+            the stairs. Perhaps he needs something to drink?
+          next_node: cyclops_room_fed
+        - id: say_odysseus
+          text: "Say 'ODYSSEUS'"
+          cell: unknown
+          narrative: |
+            The cyclops, hearing the name of his ancient nemesis, becomes
+            enraged! Then, as if remembering the terror of that encounter,
+            he turns and flees through the east wall!
+
+            Where the cyclops stood, there is now a cyclops-sized opening
+            in the solid rock.
+          consequence:
+            - type: set_flag
+              flag: cyclops_asleep
+              value: true
+            - type: set_flag
+              flag: magic_wall_opened
+              value: true
+            - type: modify_trait
+              trait: score
+              delta: 10
+          next_node: cyclops_room_clear
+        - id: flee_cyclops
+          text: "Flee back into the maze"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_exit
+
+  cyclops_room_fed:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      The cyclops has eaten your lunch and seems less hostile, but
+      still blocks the staircase. He looks thirsty.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: give_water
+          text: "Give the cyclops your water"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: water_bottle
+          consequence:
+            - type: lose_item
+              item: water_bottle
+            - type: set_flag
+              flag: cyclops_asleep
+              value: true
+            - type: modify_trait
+              trait: score
+              delta: 10
+          narrative: |
+            The cyclops drinks deeply from your bottle. A moment later,
+            the hot peppers from the lunch take effect, combined with
+            the water... the cyclops becomes drowsy and falls into a
+            deep sleep at the foot of the stairs!
+
+            The way up is now clear.
+          next_node: cyclops_room_clear
+        - id: say_odysseus_fed
+          text: "Say 'ODYSSEUS'"
+          cell: unknown
+          consequence:
+            - type: set_flag
+              flag: cyclops_asleep
+              value: true
+            - type: set_flag
+              flag: magic_wall_opened
+              value: true
+            - type: modify_trait
+              trait: score
+              delta: 10
+          narrative: |
+            The cyclops, hearing that dread name, flees in terror,
+            smashing through the east wall!
+          next_node: cyclops_room_clear
+        - id: flee_fed
+          text: "Flee back into the maze"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_exit
+
+  cyclops_room_clear:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This room has an exit on the northwest, and a staircase leading up.
+
+      The cyclops is no longer a threat. The stairs are now accessible.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_up_cyclops
+          text: "Go up the stairs to the treasure room"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: treasure_room
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: treasure_room
+        - id: go_east_passage
+          text: "Go through the opening in the east wall"
+          cell: unknown
+          precondition:
+            type: flag_set
+            flag: magic_wall_opened
+          consequence:
+            - type: move_to
+              location: strange_passage
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: strange_passage
+        - id: go_nw_maze
+          text: "Go northwest back to the maze"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: maze_exit
+
+  strange_passage:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is a long passage. To the west is one entrance. On the east
+      there is an old wooden door, with a large opening in it (about
+      cyclops sized).
+
+      Beyond the door, you can see... the living room of the white house!
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: enter_living_room_back
+          text: "Enter the living room"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: living_room
+          next_node: living_room_open
+        - id: go_west_strange
+          text: "Go west back to the cyclops room"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: cyclops_room_clear
+
+  # ---------------------------------------------------------------------------
+  # TREASURE ROOM AND THIEF
+  # ---------------------------------------------------------------------------
+
+  treasure_room:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is a large room, whose east wall is solid granite. A number
+      of discarded bags, which crumble at your touch, are scattered about
+      on the floor. There is an exit down a staircase.
+
+      A seedy-looking individual with a large bag is here. He appears
+      to be examining a silver chalice.
+
+      This must be the notorious thief!
+    choice:
+      prompt: "The thief looks up at you with a dangerous gleam in his eye. What do you do?"
+      options:
+        - id: attack_thief
+          text: "Attack the thief"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: elvish_sword
+          consequence:
+            - type: set_flag
+              flag: thief_encountered
+              value: true
+          next_node: thief_combat
+        - id: negotiate_thief
+          text: "Try to negotiate with the thief"
+          cell: unknown
+          consequence:
+            - type: set_flag
+              flag: thief_encountered
+              value: true
+          narrative: |
+            The thief laughs at your attempt at diplomacy. "Tell you what,"
+            he says, "Leave me your valuables and I'll let you live.
+            Otherwise..." He draws a wicked stiletto.
+          next_node: thief_standoff
+        - id: flee_thief
+          text: "Flee down the stairs"
+          cell: avoids
+          consequence:
+            - type: set_flag
+              flag: thief_encountered
+              value: true
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          narrative: |
+            You turn and run! As you flee, you feel the thief's fingers
+            graze your pack, but you escape with your treasures intact.
+          next_node: cyclops_room_clear
+
+  thief_standoff:
+    narrative: |
+      The thief watches you with cold eyes, stiletto ready. The chalice
+      gleams on the floor beside his bag of stolen goods.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: attack_standoff
+          text: "Attack the thief"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: elvish_sword
+          next_node: thief_combat
+        - id: drop_treasures
+          text: "Drop your treasures and back away"
+          cell: avoids
+          narrative: |
+            You empty your pack of valuables. The thief grins and lets
+            you leave, though you've lost everything you collected.
+          consequence:
+            - type: set_trait
+              trait: treasure_count
+              value: 0
+            - type: set_trait
+              trait: score
+              value: 0
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: cyclops_room_clear
+        - id: flee_standoff
+          text: "Make a run for it"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          narrative: |
+            You dash for the stairs! The thief throws his stiletto but
+            it clatters harmlessly against the wall behind you.
+          next_node: cyclops_room_clear
+
+  thief_combat:
+    narrative: |
+      You engage the thief in combat! He's quick and skilled, but your
+      elvish blade glows with righteous anger against this villain.
+
+      After a fierce exchange, you land a decisive blow. The thief
+      staggers and drops his bag.
+
+      "You win this time, adventurer," he gasps, then vanishes into
+      the shadows with supernatural speed.
+    consequence:
+      - type: set_flag
+        flag: thief_defeated
+        value: true
+      - type: modify_trait
+        trait: score
+        delta: 15
+    choice:
+      prompt: "The thief is gone. His bag remains. What do you do?"
+      options:
+        - id: take_chalice
+          text: "Take the silver chalice"
+          cell: chooses
+          precondition:
+            type: flag_not_set
+            flag: has_chalice
+          consequence:
+            - type: gain_item
+              item: silver_chalice
+            - type: set_flag
+              flag: has_chalice
+              value: true
+            - type: modify_trait
+              trait: score
+              delta: 10
+            - type: modify_trait
+              trait: treasure_count
+              delta: 1
+          narrative: |
+            Taken. The chalice is intricately engraved with ancient runes.
+          next_node: treasure_room_clear
+        - id: search_bag
+          text: "Search the thief's bag"
+          cell: unknown
+          narrative: |
+            The bag contains various stolen trinkets, but nothing of
+            great value. The chalice is the real prize here.
+          next_node: treasure_room_clear
+        - id: go_down_thief
+          text: "Go down the stairs"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: cyclops_room_clear
+
+  treasure_room_clear:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is the treasure room. The thief has been dealt with.
+      Discarded bags litter the floor. A staircase leads down.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_chalice2
+          text: "Take the silver chalice"
+          cell: chooses
+          precondition:
+            type: flag_not_set
+            flag: has_chalice
+          consequence:
+            - type: gain_item
+              item: silver_chalice
+            - type: set_flag
+              flag: has_chalice
+              value: true
+            - type: modify_trait
+              trait: score
+              delta: 10
+            - type: modify_trait
+              trait: treasure_count
+              delta: 1
+          narrative: |
+            Taken.
+          next_node: treasure_room_clear
+        - id: go_down_clear
+          text: "Go down the stairs"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: cyclops_room_clear
+
+  # ---------------------------------------------------------------------------
+  # TEMPLE AND EGYPTIAN AREAS (for additional treasures)
+  # ---------------------------------------------------------------------------
+
+  temple_entrance:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is the north end of a large temple. Passages lead west
+      and up a staircase. On the north wall is a prayer inscribed
+      in an ancient script. An altar is at the south end of the room.
+
+      A brass bell sits on the altar. Burning candles flicker at
+      either end.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: read_prayer
+          text: "Read the prayer"
+          cell: unknown
+          narrative: |
+            The prayer seems to be a philippic against small insects,
+            absent-mindedness, and the picking up and dropping of
+            small objects. The final verse consigns trespassers to
+            the land of the dead.
+          next_node: temple_entrance
+        - id: take_bell
+          text: "Take the brass bell"
+          cell: chooses
+          precondition:
+            type: missing_item
+            item: brass_bell
+          consequence:
+            - type: gain_item
+              item: brass_bell
+          narrative: |
+            Taken.
+          next_node: temple_entrance
+        - id: go_south_temple
+          text: "Go south to the altar"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: south_temple
+        - id: go_west_temple
+          text: "Go west to the Egyptian room"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: egyptian_room
+
+  south_temple:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is the south end of the temple. The altar dominates this area.
+      On the altar is a large black book, open to page 569.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: read_book
+          text: "Read the black book"
+          cell: unknown
+          narrative: |
+            "Commandment #12592
+
+            Oh ye who go about saying unto each: 'Hello sailor':
+            Dost thou know the magnitude of thy sin before the gods?
+            Yea, verily, thou shalt be ground between two stones."
+
+            The text continues with dire warnings about trespassers.
+          next_node: south_temple
+        - id: go_north_temple
+          text: "Go north"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: temple_entrance
+
+  egyptian_room:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is a room which looks like an Egyptian tomb. There is an
+      ascending staircase to the west.
+
+      The solid-gold coffin used for the burial of Ramses II is here.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_coffin
+          text: "Take the gold coffin"
+          cell: chooses
+          precondition:
+            type: flag_not_set
+            flag: has_coffin
+          consequence:
+            - type: gain_item
+              item: gold_coffin
+            - type: set_flag
+              flag: has_coffin
+              value: true
+            - type: modify_trait
+              trait: score
+              delta: 15
+            - type: modify_trait
+              trait: treasure_count
+              delta: 1
+          narrative: |
+            Taken. The coffin is incredibly heavy but tremendously valuable.
+          next_node: egyptian_room_empty
+        - id: go_east_egypt
+          text: "Go east to the temple"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: temple_entrance
+
+  egyptian_room_empty:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      This is the Egyptian room. The coffin has been taken.
+      A staircase leads west.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: go_east_egypt2
+          text: "Go east to the temple"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: temple_entrance
+
+  # ---------------------------------------------------------------------------
+  # LAND OF THE DEAD (Crystal Skull)
+  # ---------------------------------------------------------------------------
+
+  entrance_to_hades:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      You are outside a large gateway. All around you is darkness.
+      The gate is formed of black marble and leads south into a
+      realm of the dead.
+
+      Spirits wail in the darkness. An invisible force prevents
+      passage through the gate.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: ring_bell_hades
+          text: "Ring the brass bell"
+          cell: unknown
+          precondition:
+            type: has_item
+            item: brass_bell
+          consequence:
+            - type: set_flag
+              flag: lld_flag
+              value: true
+          narrative: |
+            The bell emits a clear tone that seems to resonate with
+            the very fabric of death itself. The spirits quiet, and
+            the invisible barrier dissipates!
+
+            The way to the Land of the Dead is now open.
+          next_node: entrance_to_hades_open
+        - id: go_back_hades
+          text: "Go back up"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          narrative: |
+            Wisdom prevails. The Land of the Dead can wait.
+          next_node: temple_entrance
+
+  entrance_to_hades_open:
+    narrative: |
+      The gateway to the Land of the Dead stands open before you.
+      The spirits have quieted.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: enter_lld
+          text: "Enter the Land of the Dead"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: land_of_dead
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: land_of_dead
+        - id: go_back_open
+          text: "Go back"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: temple_entrance
+
+  land_of_dead:
+    precondition:
+      type: has_item
+      item: brass_lantern
+    narrative: |
+      You have entered the Land of the Living Dead. Thousands of lost
+      souls can be heard weeping and moaning. In the corner are stacked
+      the remains of dozens of previous adventurers less fortunate than
+      yourself.
+
+      Lying in one corner is a beautifully carved crystal skull.
+      It appears to be grinning at you rather nastily.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: take_skull
+          text: "Take the crystal skull"
+          cell: chooses
+          precondition:
+            type: flag_not_set
+            flag: has_skull
+          consequence:
+            - type: gain_item
+              item: crystal_skull
+            - type: set_flag
+              flag: has_skull
+              value: true
+            - type: modify_trait
+              trait: score
+              delta: 20
+            - type: modify_trait
+              trait: treasure_count
+              delta: 1
+          narrative: |
+            Taken. The skull seems to vibrate slightly in your hands.
+          next_node: land_of_dead_empty
+        - id: leave_lld
+          text: "Leave this terrible place"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: entrance_to_hades_open
+
+  land_of_dead_empty:
+    narrative: |
+      You are in the Land of the Living Dead. The crystal skull
+      has been claimed. The spirits continue their eternal mourning.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: leave_lld2
+          text: "Leave this place"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: lamp_turns
+              delta: -1
+          next_node: entrance_to_hades_open
+
+  # ---------------------------------------------------------------------------
+  # VICTORY PATH - TROPHY CASE
+  # ---------------------------------------------------------------------------
+
+  trophy_room_return:
+    narrative: |
+      You return to the living room of the white house. The trophy case
+      stands prominently, ready to receive your treasures.
+
+      Your collection includes:
+      - Jeweled egg
+      - Beautiful painting
+      - Platinum bar
+      - Gold coffin
+      - Crystal skull
+      - Silver chalice
+
+      Six magnificent treasures!
+    precondition:
+      type: trait_minimum
+      trait: treasure_count
+      minimum: 6
+    choice:
+      prompt: "Do you place your treasures in the trophy case?"
+      options:
+        - id: place_treasures
+          text: "Place all treasures in the trophy case"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: score
+              delta: 50
+          narrative: |
+            You carefully arrange each treasure in the case. As the last
+            item is placed, the case begins to glow with an ethereal light!
+
+            A map materializes before you, showing the way to a stone
+            barrow to the southwest...
+          next_node: stone_barrow_discovery
+        - id: keep_exploring
+          text: "Keep exploring first"
+          cell: avoids
+          next_node: living_room_open
+
+  stone_barrow_discovery:
+    scene_break: true
+    narrative: |
+      Following the mysterious map, you make your way southwest through
+      the forest to a stone barrow - an ancient tomb mound covered in
+      moss and ivy.
+
+      A massive stone door stands slightly ajar, revealing darkness beyond.
+
+      This is the entrance to the Great Underground Empire proper - the
+      realm that extends far beyond the ruins you've explored. Whatever
+      lies beyond that door will be the adventure of a lifetime.
+
+      But that is a story for another day...
+    choice:
+      prompt: "You have completed your quest. What do you do?"
+      options:
+        - id: enter_barrow
+          text: "Enter the stone barrow"
+          cell: chooses
+          narrative: |
+            You push open the heavy stone door and step into darkness.
+            The door closes behind you with a resonant boom.
+
+            The Great Underground Empire awaits...
+
+            ZORK II: The Wizard of Frobozz continues your adventure!
+          next_node: victory
+        - id: savor_victory
+          text: "Savor your victory"
+          cell: chooses
+          next_node: victory
+
+  # ---------------------------------------------------------------------------
+  # ADDITIONAL NODES FOR NAVIGATION
+  # ---------------------------------------------------------------------------
+
+  returning_home:
+    narrative: |
+      You make your way back through the dungeon, through the strange
+      passage, and into the living room of the white house.
+
+      The trophy case awaits your treasures.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: check_treasures
+          text: "Inventory your treasures"
+          cell: unknown
+          narrative: |
+            You have collected several treasures on your adventure.
+            Perhaps it's time to place them in the trophy case?
+          next_node: returning_home
+        - id: use_trophy_case
+          text: "Use the trophy case"
+          cell: chooses
+          precondition:
+            type: trait_minimum
+            trait: treasure_count
+            minimum: 6
+          next_node: trophy_room_return
+        - id: explore_more
+          text: "Continue exploring"
+          cell: chooses
+          next_node: living_room_open
+
+# =============================================================================
+# ENDINGS
+# =============================================================================
+
+endings:
+
+  victory:
+    narrative: |
+      *** CONGRATULATIONS ***
+
+      You have achieved the rank of Master Adventurer!
+
+      You have explored the ruins above and below the white house,
+      defeated the troll and cyclops, outwitted the thief, and collected
+      the treasures of the Great Underground Empire.
+
+      Your final score is [SCORE] points out of a possible 350.
+      (In this abridged adventure, you've found the essential treasures.)
+
+      The stone barrow beckons... but that is an adventure for Zork II.
+
+      Thank you for playing!
+    type: victory
+
+  grue_death:
+    narrative: |
+      It is pitch black. You are likely to be eaten by a grue.
+
+      ...
+
+      You have been eaten by a grue.
+
+      *** YOU HAVE DIED ***
+
+      Grues are sinister, lurking presences in the dark places of the
+      earth. Their favorite diet is adventurers, but their insatiable
+      appetites are tempered by their fear of light.
+    type: death
+
+  troll_death:
+    narrative: |
+      You attack the troll with your bare hands. This proves to be
+      a fatal mistake.
+
+      The troll's axe connects with devastating force.
+
+      *** YOU HAVE DIED ***
+
+      The troll has added another victim to his collection.
+    type: death
+
+  cyclops_death:
+    narrative: |
+      You attack the cyclops! Your sword strikes him, but the wound
+      only enrages the monster.
+
+      With terrifying speed, the cyclops grabs you.
+
+      "Mmm," he says, "Just like Mom used to make 'em."
+
+      *** YOU HAVE DIED ***
+
+      It's nice to be appreciated.
+    type: death
+
+  lamp_death:
+    narrative: |
+      Your lamp flickers... dims... and goes out.
+
+      It is pitch black. You are likely to be eaten by a grue.
+
+      ...
+
+      You have been eaten by a grue.
+
+      *** YOU HAVE DIED ***
+
+      Perhaps you should have been more careful with your light source.
+    type: death
