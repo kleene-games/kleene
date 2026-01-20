@@ -75,12 +75,12 @@ The Kleene Decision Grid emerges from the intersection of two theoretical framew
    - **Unknown** — hesitation, exploration, or improvised action
    - **Avoids** — retreat, refusal, or evasion
 
-Every choice exists at the intersection of player intent and world response, forming a 3×3 grid:
+Every choice exists at the intersection of player intent and world response, forming a 3×3 grid — **9 cells in total**.
 
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
-| **Player Chooses** | Triumph       | Commitment          | Barrier      |
-| **Player Unknown** | Discovery     | Limbo               | Revelation   |
+| **Player Chooses** | Triumph       | Commitment          | Rebuff       |
+| **Player Unknown** | Discovery     | Limbo               | Constraint   |
 | **Player Avoids**  | Escape        | Deferral            | Fate         |
 
 ### The Axes
@@ -109,7 +109,7 @@ Action initiated, consequences pending. The hero drinks the potion, sends the me
 hero.and_then(drink_potion) → Unknown(effects pending)
 ```
 
-**Barrier (Chooses + Blocks)**
+**Rebuff (Chooses + Blocks)**
 The hero tries but cannot proceed. Missing key, insufficient courage, locked door.
 The precondition returns `Some(false)` with a reason.
 
@@ -117,7 +117,7 @@ The precondition returns `Some(false)` with a reason.
 
 The Unknown row captures player hesitation and improvisation. These cells can be achieved two ways:
 
-**Scripted Unknown**: Options with `cell: unknown` and `next: improvise` that explicitly invite open-ended player input. The scenario author defines patterns for Discovery/Revelation outcomes and a fallback for Limbo.
+**Scripted Unknown**: Options with `cell: unknown` and `next: improvise` that explicitly invite open-ended player input. The scenario author defines patterns for Discovery/Constraint outcomes and a fallback for Limbo.
 
 **Emergent Unknown**: Free-text "Other" input at any choice point. The play skill classifies intent and feasibility to determine which cell applies.
 
@@ -138,7 +138,7 @@ hero.filter(???) → Unknown(anything possible)
 ```
 Triggered by: No pattern match (uses `limbo_fallback`), or feasibility = Ambiguous for emergent improvisation.
 
-**Revelation (Unknown + Blocks)**
+**Constraint (Unknown + Blocks)**
 Hesitation reveals constraint. Failure teaches what's needed.
 ```
 hero.map(approach_carefully) → Some(false, "You realize you cannot proceed without...")
@@ -188,32 +188,32 @@ None propagated from an earlier state (character was already gone).
 
 ## Completeness Tiers
 
-Narrative completeness is measured by grid coverage:
+Narrative completeness is measured by coverage of the **9 Decision Grid cells**:
 
-### Bronze (Original Model)
-Cover the four corners - the binary foundation:
+### Bronze (4/9 cells)
+Cover the four corners — the binary foundation:
 - **Triumph** (Player Chooses + World Permits)
-- **Barrier** (Player Chooses + World Blocks)
+- **Rebuff** (Player Chooses + World Blocks)
 - **Escape** (Player Avoids + World Permits)
 - **Fate** (Player Avoids + World Blocks)
 
 Plus: At least one NONE_DEATH path and one SOME_TRANSFORMED path.
 
-### Silver (Extended Model)
+### Silver (6+/9 cells)
 Bronze requirements plus 2+ middle cells from:
 - **Commitment** - consequences pending
 - **Discovery** - exploration rewarded
-- **Revelation** - failure teaches
+- **Constraint** - failure teaches
 - **Deferral** - problem postponed
 - **Limbo** - pure potential (typically via improvisation)
 
-### Gold (Full Model)
+### Gold (9/9 cells)
 All 9 grid intersections represented. The scenario natively supports hesitation, improvisation, and indeterminate outcomes.
 
 ## A Complete Narrative
 
 At minimum (Bronze), a narratively complete scenario must include:
-1. At least one path to each corner cell (Triumph, Barrier, Escape, Fate)
+1. At least one path to each corner cell (Triumph, Rebuff, Escape, Fate)
 2. At least one NONE_DEATH path (mortality)
 3. At least one SOME_TRANSFORMED path (growth possible)
 4. Ideally: NONE_REMOVED (transcendence) and SOME_UNCHANGED (irony)
@@ -337,7 +337,7 @@ When the player ventures beyond known paths, the LLM generates new narrative nod
 Improvised actions naturally map to the "Player Unknown" row:
 - **Discovery** - when exploration succeeds
 - **Limbo** - when intent is ambiguous
-- **Revelation** - when improvisation reveals constraints
+- **Constraint** - when improvisation reveals constraints
 
 The meta-game ensures generated content maintains narrative completeness across the Decision Grid, with particular attention to the chaos center (Limbo) where side quests and improvised adventures thrive.
 
@@ -356,11 +356,11 @@ options:
     improvise_context:
       theme: "observing the dragon"
       permits: ["patience", "learn", "watch", "study"]  # Patterns → Discovery
-      blocks: ["attack", "steal", "trick", "provoke"]   # Patterns → Revelation
+      blocks: ["attack", "steal", "trick", "provoke"]   # Patterns → Constraint
       limbo_fallback: "Time stretches in the dragon's presence..."
     outcome_nodes:
       discovery: dragon_notices_patience  # Player input matches permits
-      revelation: dragon_dismisses        # Player input matches blocks
+      constraint: dragon_dismisses        # Player input matches blocks
       # limbo: (omitted) - stays at current node (default Limbo)
 ```
 
@@ -369,7 +369,7 @@ options:
 1. Player selects improvise option → freeform text input requested
 2. System evaluates input against `permits[]` and `blocks[]` patterns
 3. **Discovery**: Input matches permits → navigate to `outcome_nodes.discovery`
-4. **Revelation**: Input matches blocks → navigate to `outcome_nodes.revelation`
+4. **Constraint**: Input matches blocks → navigate to `outcome_nodes.constraint`
 5. **Limbo**: No pattern match → stay at current node (use `limbo_fallback` narrative)
 
 ### Pattern Matching

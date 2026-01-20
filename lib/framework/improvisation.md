@@ -11,13 +11,13 @@ Improvised actions map to the **Player Unknown** row of the Decision Grid:
 | Feasibility | Grid Cell   | Response Pattern |
 |-------------|-------------|------------------|
 | Possible    | **Discovery**   | Reward curiosity, add insight |
-| Blocked     | **Revelation**  | Explain constraint, teach player |
+| Blocked     | **Constraint**  | Explain constraint, teach player |
 | Ambiguous   | **Limbo**       | Acknowledge without resolving |
 
 ### Discovery Responses
 When improvisation succeeds (feasibility: possible), the world has *permitted* the unknown action. Generate enriching detail that rewards exploration. The character gains insight, flavor, or soft advantages.
 
-### Revelation Responses
+### Constraint Responses
 When improvisation is blocked, use the moment to *reveal* what's needed. Turn failure into information. The player learns why the path is blocked, which helps them find the correct approach.
 
 ### Limbo Responses
@@ -78,7 +78,10 @@ but deliberate inscriptions. Writing, perhaps, in a language older
 than human speech.
 
 [+1 wisdom - Attention to detail]
+[15 minutes pass]
 ```
+
+*Note: Time cost shown only when `travel_config.improvisation_time` exists.*
 
 ### Interact (Possible)
 Brief exchange or observation about the interaction attempt.
@@ -88,6 +91,7 @@ no words. A cold presence brushes past your mind - not hostile,
 but distinctly *other*. It seems to be waiting for something.
 
 [+1 intuition]
+[10 minutes pass]
 ```
 
 ### Act (Possible)
@@ -99,6 +103,7 @@ a crevice - a coin, ancient and tarnished. You pocket it before
 descending.
 
 [Gained: tarnished_coin (flavor item)]
+[20 minutes pass]
 ```
 
 ### Blocked Action
@@ -143,10 +148,42 @@ Improvised actions may apply ONLY these consequence types:
 | `modify_trait` (delta: -1 to +1) | `gain_item` (scenario items) |
 | `add_history` | `lose_item` |
 | `set_flag` (only `improv_*` prefix) | `move_to` |
-| | `character_dies` |
+| `advance_time` (via config lookup only) | `character_dies` |
 | | `character_departs` |
 
 **Why these limits?** Improvisation enriches the current moment without derailing scenario balance. Major state changes (items, locations, death) are reserved for scripted paths.
+
+### Improvisation Time Costs
+
+When `travel_config.improvisation_time` exists in the scenario, improvised actions automatically consume time based on their classified intent.
+
+**Time Lookup:**
+```
+time_minutes = scenario.travel_config.improvisation_time[intent]
+```
+
+| Intent | Default Minutes | When Applied |
+|--------|-----------------|--------------|
+| `explore` | 15 | Examining, studying, inspecting, searching |
+| `interact` | 10 | Talking, asking, approaching NPCs |
+| `act` | 20 | Attempting physical actions, trying things |
+| `meta` | 0 | Save, help, stats — no in-game time |
+| `limbo` | 5 | Ambiguous or hesitant actions |
+
+**Example with time cost:**
+```
+You study the dragon's scales more closely. In the flickering light,
+you notice patterns etched into each plate - not natural markings,
+but deliberate inscriptions. Writing, perhaps, in a language older
+than human speech.
+
+[+1 wisdom - Attention to detail]
+[15 minutes pass]
+```
+
+**No travel_config:** If the scenario has no `travel_config`, improvised actions do not consume time (backward compatible behavior).
+
+**Zero-time intents:** Meta actions (save, help, inventory) never consume time regardless of configuration.
 
 ### Soft Flags Convention
 
@@ -337,8 +374,11 @@ Display improvised action responses with the same bold box format as regular nod
 
 ══════════════════════════════════════════════════════════════════════
 [trait changes, e.g., +1 wisdom - Attention to detail]
+[time cost, e.g., 15 minutes pass]
 ══════════════════════════════════════════════════════════════════════
 ```
+
+*Time cost line only appears when `travel_config.improvisation_time` exists.*
 
 ### Title Generation
 

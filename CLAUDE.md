@@ -51,8 +51,8 @@ Every choice exists at the intersection of player intent (Chooses/Unknown/Avoids
 
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
-| **Player Chooses** | Triumph       | Commitment          | Barrier      |
-| **Player Unknown** | Discovery     | Limbo               | Revelation   |
+| **Player Chooses** | Triumph       | Commitment          | Rebuff       |
+| **Player Unknown** | Discovery     | Limbo               | Constraint   |
 | **Player Avoids**  | Escape        | Deferral            | Fate         |
 
 **Player Unknown** captures both hesitation and improvised free-text actions.
@@ -61,7 +61,7 @@ Every choice exists at the intersection of player intent (Chooses/Unknown/Avoids
 
 ### Completeness Tiers
 
-- **Bronze**: 4 corner cells (Triumph, Barrier, Escape, Fate) - the original quadrants
+- **Bronze**: 4 corner cells (Triumph, Rebuff, Escape, Fate) - the original quadrants
 - **Silver**: Bronze + 2 middle cells (adds uncertainty/exploration)
 - **Gold**: All 9 intersections - full narrative possibility space
 
@@ -148,3 +148,17 @@ The `agents/game-runner.md` defines a haiku-model subagent that:
 > **Reference:** See `lib/framework/saves.md` for complete details.
 
 The current working directory is the "game folder". Saves are stored at `./saves/[scenario]/[timestamp].yaml`. Each gameplay session creates a new timestamped save file at start.
+
+## Scenario Validation
+
+```bash
+# Full schema validation (requires check-jsonschema)
+pip install check-jsonschema
+check-jsonschema --schemafile lib/schema/scenario-schema.json scenarios/my_scenario.yaml
+
+# Or use the validation script (falls back to yq if check-jsonschema not installed)
+./scripts/validate-scenario.sh scenarios/my_scenario.yaml
+
+# Semantic analysis via skill
+/kleene analyze my_scenario
+```

@@ -28,6 +28,48 @@ Some older scenarios use different field names. The registry sync process handle
 
 New scenarios should always use `name` and `description` at the top level.
 
+## Travel Configuration (Optional)
+
+Control how time passes during travel and improvised actions.
+
+```yaml
+travel_config:
+  default_travel_minutes: 30        # Fallback when connection lacks travel_minutes
+  auto_apply_on_move: true          # Enable travel time system (default: true if travel_config exists)
+  improvisation_time:               # Minutes per action type
+    explore: 15
+    interact: 10
+    act: 20
+    meta: 0                         # Meta actions (save, help) don't consume time
+    limbo: 5                        # Ambiguous actions still take some time
+```
+
+### Configuration Fields
+
+| Field | Type | Default | Purpose |
+|-------|------|---------|---------|
+| `default_travel_minutes` | number | 30 | Fallback time when connection lacks explicit `travel_minutes` |
+| `auto_apply_on_move` | boolean | true | Whether `move_to` consequences auto-add travel time |
+| `improvisation_time` | object | (see below) | Time costs for improvised actions by intent |
+
+### Improvisation Time Defaults
+
+If `improvisation_time` is omitted but `travel_config` exists, these defaults apply:
+
+| Intent | Default Minutes |
+|--------|-----------------|
+| `explore` | 15 |
+| `interact` | 10 |
+| `act` | 20 |
+| `meta` | 0 |
+| `limbo` | 5 |
+
+### Backward Compatibility
+
+- **No `travel_config`**: Existing behavior — no time on move, no time on improvisation
+- **Partial config**: Missing fields use defaults
+- **Gradual adoption**: Add `travel_minutes` to individual connections over time
+
 ### Full Example
 
 ```yaml
@@ -48,8 +90,21 @@ initial_world:
     - id: location_id
       name: "Location Name"
       description: "Location description"
-      connections: [other_location_id]
+      connections: [other_location_id]        # Simple syntax (backward compatible)
       items: []
+
+# OR with travel times:
+  locations:
+    - id: village
+      name: "Quiet Village"
+      connections:                             # Enhanced connection syntax
+        - target: forest
+          travel_minutes: 60
+          description: "Through the dark woods"  # Optional flavor text
+        - target: blacksmith
+          travel_minutes: 5
+        - target: mountain_path
+          travel_minutes: 180
 
 # The scenario graph
 start_node: node_id
@@ -93,6 +148,52 @@ world:
       properties: {population: 150}
 ```
 
+### Initial State Definition
+
+Locations can specify `initial_state` to pre-populate their state when the game begins:
+
+```yaml
+initial_world:
+  locations:
+    - id: shrine
+      name: "Ancient Shrine"
+      initial_state:
+        flags:
+          sealed: false
+          discovered: false
+        properties:
+          blessing_power: 100
+        environment:
+          lighting: dim
+          ambiance: sacred
+
+    - id: dragon_lair
+      name: "Dragon's Lair"
+      initial_state:
+        flags:
+          treasure_found: false
+        environment:
+          lighting: fire_glow
+          temperature: hot
+```
+
+#### Initial State Fields
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `flags` | object | Boolean states (key: true/false) |
+| `properties` | object | Numeric values (key: number) |
+| `environment` | object | Atmospheric conditions (key: string or number) |
+
+**When the game starts:**
+1. Each location's `initial_state` is copied to `world.location_state[id]`
+2. Locations without `initial_state` start with empty state
+3. All components are optional—define only what you need
+
+**Difference from lazy initialization:**
+- `initial_state`: Values exist from game start, visible to preconditions immediately
+- Lazy initialization: State created when first modified by a consequence
+
 ### Lazy Initialization
 
 Location state is created on first modification. You don't need to pre-define state for every location—it initializes automatically when a consequence modifies it.
@@ -106,6 +207,65 @@ Location state is created on first modification. You don't need to pre-define st
 | `environment` | Atmospheric conditions | `lighting`, `temperature`, `weather` |
 
 See [Location Flag Preconditions](#location_flag_set) and [Location Consequences](#set_location_flag) for usage.
+
+## Enhanced Connection Syntax
+
+Location connections support two formats:
+
+### Simple Array (Backward Compatible)
+
+```yaml
+connections: [forest, blacksmith, mountain_path]
+```
+
+Simple arrays list destination IDs only. Travel time uses `travel_config.default_travel_minutes` or zero if no `travel_config` exists.
+
+### Connection Objects (With Travel Data)
+
+```yaml
+connections:
+  - target: forest
+    travel_minutes: 60
+    description: "Through the dark woods"
+  - target: blacksmith
+    travel_minutes: 5
+  - target: mountain_path
+    travel_minutes: 180
+    description: "A winding climb"
+```
+
+### Connection Object Fields
+
+| Field | Required | Type | Purpose |
+|-------|----------|------|---------|
+| `target` | Yes | string | Destination location ID |
+| `travel_minutes` | No* | number | Base travel time in minutes |
+| `description` | No | string | Flavor text for travel narrative |
+
+*Required if `travel_config` exists and you want explicit times. Falls back to `default_travel_minutes` if omitted.
+
+### Mixed Syntax
+
+You can mix simple and object connections within the same location:
+
+```yaml
+connections:
+  - forest                    # Uses default_travel_minutes
+  - target: blacksmith
+    travel_minutes: 5         # Explicit time
+  - mountain_path             # Uses default_travel_minutes
+```
+
+### Instant Travel
+
+For teleportation, dreams, or other instant transitions, use the `instant` flag in the `move_to` consequence:
+
+```yaml
+consequence:
+  - type: move_to
+    location: dream_realm
+    instant: true             # Bypasses travel time
+```
 
 ## Node Structure
 
@@ -135,6 +295,64 @@ forest_entrance:
         narrative: "Some secrets are best left undisturbed."
         next_node: village
 ```
+
+### Entry Consequences (`on_enter`)
+
+Nodes can trigger consequences automatically when the player enters them, before the choice is presented. Use this for world state changes that should happen as soon as the player reaches a location.
+
+```yaml
+intro:
+  on_enter:
+    - type: schedule_event
+      event_id: dragon_descends
+      delay:
+        amount: 12
+        unit: hours
+      consequences:
+        - type: set_location_flag
+          location: village
+          flag: under_attack
+          value: true
+        - type: move_npc
+          npc: dragon
+          location: village
+  narrative: |
+    The elder grips your arm...
+  choice:
+    prompt: "What do you do?"
+    options: [...]
+
+dragon_fight:
+  on_enter:
+    - type: modify_location_property
+      location: dragon_lair
+      property: heat_level
+      delta: 200
+    - type: set_environment
+      location: dragon_lair
+      property: lighting
+      value: blazing
+  narrative: |
+    The dragon awakens...
+  choice:
+    prompt: "How do you face the beast?"
+    options: [...]
+```
+
+**Execution order:**
+1. Player navigates to node
+2. Node precondition evaluated (if any)
+3. If precondition passes → `on_enter` consequences applied
+4. Narrative displayed
+5. Choice presented
+
+**Use cases:**
+- Scheduling timed events when story begins
+- Modifying environment as player enters dangerous areas
+- Triggering world state changes at key story moments
+- Moving NPCs in response to player arrival
+
+**Note:** `on_enter` consequences use the same types as option consequences. All standard consequence types are valid.
 
 ### Scene Control
 
@@ -207,6 +425,46 @@ dragon_lair:
 - `trait_minimum`: "Your **[trait]** ([current]) is insufficient. Requires at least [minimum]."
 - `all_of`: Message for first failing sub-condition
 - And so on for other precondition types.
+
+### Redirect on Precondition Failure (`blocked_next_node`)
+
+When a node's precondition fails, you can redirect the player to a different node instead of returning to the previous choices. This enables dynamic redirects based on world state changes.
+
+```yaml
+forest_entrance:
+  precondition:
+    type: event_not_triggered
+    event_id: dragon_descends
+  blocked_narrative: |
+    The path is cut off by fire! The dragon has descended
+    upon the land while you tarried.
+  blocked_next_node: dragon_attacks_forest  # Redirect on failure
+
+  narrative: |
+    The forest path stretches before you...
+  choice:
+    prompt: "Which way?"
+    options:
+      - id: go_deeper
+        text: "Venture deeper into the woods"
+        next_node: deep_forest
+```
+
+**Behavior with `blocked_next_node`:**
+- Player attempts to enter the node
+- Precondition fails (e.g., event has been triggered)
+- `blocked_narrative` is shown
+- Player is automatically redirected to `blocked_next_node`
+- Turn counter advances (unlike standard precondition failure)
+
+**Without `blocked_next_node`:**
+- Standard behavior: player returns to previous node's choices
+- Turn counter does NOT advance
+
+**Use cases:**
+- Time-sensitive events that change the world (dragon attacks)
+- Point-of-no-return moments
+- Branching based on player delay or inaction
 
 ### Temporal Metadata (Phase 2: Parsing Only)
 
@@ -364,7 +622,7 @@ Valid `cell` values: `chooses`, `unknown`, `avoids`
 
 ### Improvise Options (Unknown Row)
 
-For the "Player Unknown" row of the Decision Grid (Discovery, Limbo, Revelation), options can trigger improvisation instead of advancing to a fixed node:
+For the "Player Unknown" row of the Decision Grid (Discovery, Limbo, Constraint), options can trigger improvisation instead of advancing to a fixed node:
 
 ```yaml
 options:
@@ -379,7 +637,7 @@ options:
       limbo_fallback: "Time stretches in the dragon's presence..."
     outcome_nodes:
       discovery: dragon_notices_patience
-      revelation: dragon_dismisses_hesitation
+      constraint: dragon_dismisses_hesitation
       # limbo: omitted = stay at current node
 ```
 
@@ -395,7 +653,7 @@ Guides AI interpretation of the player's free-text response:
 |-------|---------|
 | `theme` | Thematic context for generating narrative responses |
 | `permits` | Regex patterns that indicate Discovery (world permits action) |
-| `blocks` | Regex patterns that indicate Revelation (world blocks action) |
+| `blocks` | Regex patterns that indicate Constraint (world blocks action) |
 | `limbo_fallback` | Narrative shown when response is ambiguous (Limbo cell) |
 
 #### `outcome_nodes`
@@ -405,7 +663,7 @@ Maps grid cells to destination nodes. Cell-dependent advancement:
 | Cell | Behavior |
 |------|----------|
 | `discovery` | If matched and node specified, advance to that node |
-| `revelation` | If matched and node specified, advance to that node |
+| `constraint` | If matched and node specified, advance to that node |
 | `limbo` | If matched and node specified, advance; otherwise stay at current node |
 
 If an outcome has no node specified, player stays at the current decision point.
@@ -435,7 +693,7 @@ intro:
           limbo_fallback: "The elder watches you, waiting for a real question..."
         outcome_nodes:
           discovery: elder_lore
-          revelation: elder_silence
+          constraint: elder_silence
 
       - id: flee_village
         text: "Leave the village to its fate"
@@ -625,6 +883,15 @@ precondition:
 - type: move_to
   location: mountain_path
 ```
+
+**With instant flag (bypasses travel time):**
+```yaml
+- type: move_to
+  location: dream_realm
+  instant: true
+```
+
+When `travel_config` exists and `instant` is not `true`, travel time is automatically added to `world.time`. See `lib/framework/evaluation-reference.md` for calculation details.
 
 ### advance_time
 ```yaml

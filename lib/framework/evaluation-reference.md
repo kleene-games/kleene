@@ -51,7 +51,7 @@ Apply consequences to modify state in memory:
 | `set_trait` | `character.traits[trait] = value` |
 | `set_flag` | `character.flags[flag] = value` |
 | `clear_flag` | `character.flags[flag] = false` |
-| `move_to` | `world.current_location = location` |
+| `move_to` | `world.current_location = location` (+ travel time, see below) |
 | `advance_time` | `world.time += amount * TIME_UNITS[unit]` (default unit: hours) |
 | `modify_relationship` | `character.relationships[npc] += delta` |
 | `character_dies` | `character.exists = false`, add reason to history |
@@ -71,6 +71,87 @@ Apply consequences to modify state in memory:
 **Lazy initialization:** Location consequences create `location_state[location]` with empty `flags: {}` and `properties: {}` if missing.
 
 **Location omission:** When `location` is omitted in environment consequences, use `world.current_location`.
+
+## Travel Time Calculation
+
+When `move_to` is applied and `scenario.travel_config` exists:
+
+```
+IF scenario.travel_config exists AND consequence.instant != true:
+  from_location = world.current_location
+  to_location = consequence.location
+
+  # Find connection from current location
+  connection = find_connection(from_location, to_location)
+
+  IF connection is object with travel_minutes:
+    travel_minutes = connection.travel_minutes
+  ELSE:
+    travel_minutes = scenario.travel_config.default_travel_minutes
+
+  # Apply travel time
+  world.time += travel_minutes * 60
+
+  # Then set new location
+  world.current_location = to_location
+```
+
+**Finding Connections:**
+
+```
+find_connection(from_id, to_id):
+  from_location = scenario.initial_world.locations.find(l => l.id == from_id)
+
+  FOR connection IN from_location.connections:
+    IF connection is string AND connection == to_id:
+      RETURN {target: to_id, travel_minutes: null}  # Use default
+    IF connection is object AND connection.target == to_id:
+      RETURN connection
+
+  RETURN null  # No direct connection (may be teleport)
+```
+
+**Instant Travel:**
+
+When `move_to` has `instant: true`, skip travel time calculation entirely:
+
+```yaml
+- type: move_to
+  location: dream_realm
+  instant: true  # No travel time applied
+```
+
+Use `instant: true` for:
+- Teleportation
+- Dream sequences
+- Flashbacks
+- Fast travel mechanics
+
+## Improvisation Time Calculation
+
+When processing improvised actions and `scenario.travel_config.improvisation_time` exists:
+
+```
+IF scenario.travel_config.improvisation_time exists:
+  intent = classify_intent(player_action)  # explore/interact/act/meta/limbo
+
+  IF intent == 'meta':
+    time_minutes = 0  # Meta actions never consume time
+  ELSE:
+    time_minutes = scenario.travel_config.improvisation_time[intent]
+
+  world.time += time_minutes * 60
+```
+
+**Intent Classification Defaults:**
+
+| Intent | Default Minutes | When Used |
+|--------|-----------------|-----------|
+| `explore` | 15 | Examining, studying, inspecting |
+| `interact` | 10 | Talking, asking, approaching |
+| `act` | 20 | Attempting physical actions |
+| `meta` | 0 | Save, help, inventory (always 0) |
+| `limbo` | 5 | Ambiguous or hesitant actions |
 
 ## Time Unit Constants
 

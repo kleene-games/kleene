@@ -106,7 +106,7 @@ When an option has `next: improvise`, prefetch outcome nodes in a single query:
 yq '.nodes as $all | .nodes.NODE_ID.choice.options[] | select(.next == "improvise") | .outcome_nodes | to_entries | .[] | {"cell": .key, "node": $all[.value]}' scenario.yaml
 ```
 
-This fetches both discovery and revelation nodes in one query, avoiding multiple round-trips.
+This fetches both discovery and constraint nodes in one query, avoiding multiple round-trips.
 
 
 **Step 5: Adaptive Node Discovery (for improvised choices)**
@@ -167,6 +167,38 @@ If yq fails during extraction, silently fall back to grep. Never interrupt gamep
 
 All temporal values in `world.time` are stored in seconds.
 
+## Travel Time Configuration
+
+> **Reference:** See `lib/framework/scenario-format.md` → "Travel Configuration" for full schema.
+
+When a scenario includes `travel_config`, time passes automatically during:
+- **Travel**: `move_to` consequences add travel time based on connection data
+- **Improvisation**: Free-text actions consume time based on intent classification
+
+### Travel Time Calculation
+
+```
+IF scenario.travel_config exists AND move_to.instant != true:
+  1. Find connection from current_location to destination
+  2. Get travel_minutes:
+     - From connection.travel_minutes if specified
+     - Else from travel_config.default_travel_minutes
+     - Else 0 (no travel_config)
+  3. Apply: world.time += travel_minutes * 60
+```
+
+### Improvisation Time Calculation
+
+```
+IF scenario.travel_config.improvisation_time exists:
+  1. Classify intent (explore/interact/act/meta/limbo)
+  2. Get time_minutes from travel_config.improvisation_time[intent]
+  3. Apply: world.time += time_minutes * 60
+  4. Display "[X minutes pass]" in consequence block
+```
+
+**Note:** Meta intents (save, help, inventory) never consume time.
+
 ## Game State Model
 
 Track these values in your working memory across turns:
@@ -224,6 +256,19 @@ GAME_STATE:
     classic_mode: boolean              # Hide scripted options (parser mode)
 
   recent_history: [string]    # Last 3-5 turns for context
+
+  # Checkpoints for replay (not persisted to disk)
+  checkpoints: [              # Saved on each Turn++
+    {
+      turn: number,
+      scene: number,
+      beat: number,
+      node_id: string,
+      description: string,    # Human-readable moment description
+      character: {...},       # Full character snapshot
+      world: {...}            # Full world snapshot
+    }
+  ]
 ```
 
 ### Counter Increment Rules
@@ -281,6 +326,7 @@ Scene++ occurs automatically when:
      foresight: 5                  # Default (Suggestive)
      classic_mode: false           # Default: show choices
    recent_history: []
+   checkpoints: []                 # For end-game replay feature
    ```
 
 3. **Do NOT create a save file yet.** Only save when:
@@ -323,8 +369,8 @@ TURN:
       - Max cascade depth: 10 (prevent infinite loops from event chains)
 
   2. Check for ending:
-     - If current_node is in scenario.endings → display ending, save state, EXIT
-     - If character.exists == false → display death ending, save state, EXIT
+     - If current_node is in scenario.endings → display ending, save state, GOTO End-Game Menu
+     - If character.exists == false → display death ending, save state, GOTO End-Game Menu
 
   2a. Check node precondition (if present):
      - If current node has `precondition`:
@@ -396,6 +442,12 @@ TURN:
       - Check feasibility against current state
       - Generate narrative response matching scenario tone
       - Apply soft consequences only (trait ±1, add_history, improv_* flags)
+      - Apply improvisation time cost:
+        - IF scenario.travel_config.improvisation_time exists AND intent != meta:
+          - time_minutes = travel_config.improvisation_time[intent]
+          - world.time += time_minutes * 60
+          - Include "[X minutes pass]" in consequence display
+        - After time advance: re-check scheduled events (step 1b)
       - Beat++ (log to beat_log with type: "improv", action: summary)
       - Check scene triggers: location change, time skip, beat >= 5
         - If triggered: Scene++, beat→1, update scene_title
@@ -412,6 +464,12 @@ TURN:
       - Treat like emergent improvisation (same as 6a)
       - Generate narrative response matching scenario tone
       - Apply soft consequences only (trait ±1, add_history, improv_* flags)
+      - Apply improvisation time cost (classify as 'act' intent):
+        - IF scenario.travel_config.improvisation_time exists:
+          - time_minutes = travel_config.improvisation_time.act
+          - world.time += time_minutes * 60
+          - Include "[X minutes pass]" in consequence display
+        - After time advance: re-check scheduled events (step 1b)
       - Beat++ (log to beat_log with type: "bonus", action: option label)
       - Check scene triggers (same as 6a)
       - Display response with consequence indicators
@@ -495,9 +553,14 @@ TURN:
 
   8. Apply consequences of chosen option:
      - Execute each consequence type (see Consequence Application table)
+     - For `move_to` consequences with travel time:
+       - IF scenario.travel_config exists AND consequence.instant != true:
+         - Find connection from world.current_location to destination
+         - Get travel_minutes from connection or default_travel_minutes
+         - Apply: world.time += travel_minutes * 60
      - Update character/world state in memory
      - After all consequences: re-check scheduled events (step 1b)
-       - This handles advance_time or schedule_event consequences
+       - This handles advance_time, move_to travel time, or schedule_event consequences
 
   9. Advance state:
      - Log current beat: beat_log.append({turn, scene, beat, type: "scripted_choice", action: option.text})
@@ -507,6 +570,16 @@ TURN:
      - Update scene_location = world.current_location
      - Generate scene_title from new node context
      - Add choice to recent_history (keep last 5)
+     - Save checkpoint for replay:
+       checkpoints.append({
+         turn: [new turn number],
+         scene: 1,
+         beat: 1,
+         node_id: current_node,
+         description: [summarize the choice just made],
+         character: [deep copy of character state],
+         world: [deep copy of world state]
+       })
 
   10. GOTO step 1 (next turn)
 ```
@@ -712,7 +785,7 @@ IF response matches any pattern in `permits`:
   cell = Discovery (Unknown + World Permits)
 
 ELSE IF response matches any pattern in `blocks`:
-  cell = Revelation (Unknown + World Blocks)
+  cell = Constraint (Unknown + World Blocks)
 
 ELSE:
   cell = Limbo (Unknown + World Indeterminate)
@@ -731,7 +804,7 @@ Based on the determined cell, generate an appropriate response:
 - Positive tone, rewarding curiosity
 - May add soft trait bonus (+1 wisdom typical)
 
-**Revelation (blocks matched):**
+**Constraint (blocks matched):**
 - World prevents or warns against action
 - Explanatory tone, teaches constraint
 - May add soft trait adjustment (-1 luck typical)
@@ -748,6 +821,10 @@ Same rules as emergent improvisation:
 - `modify_trait` with delta -1 to +1 only
 - `add_history` to record the exploration
 - `set_flag` with `improv_*` prefix only
+- `advance_time` via config lookup (if `travel_config.improvisation_time` exists):
+  - Discovery/Constraint: use `explore` intent time
+  - Limbo: use `limbo` intent time
+  - After time advance: re-check scheduled events
 
 ### Step 6: Determine next state
 
@@ -756,7 +833,7 @@ Check `outcome_nodes` for the determined cell:
 ```yaml
 outcome_nodes:
   discovery: dragon_notices_patience
-  revelation: dragon_dismisses_hesitation
+  constraint: dragon_dismisses_hesitation
   # limbo: omitted
 ```
 
@@ -883,6 +960,204 @@ Display ending with appropriate tone:
 ╚═══════════════════════════════════════════════════════════╝
 
 [Ending narrative - ironic, reflective]
+```
+
+## End-Game Menu
+
+After displaying the ending narrative and type box, present an interactive menu instead of dumping stats as text.
+
+### Menu Presentation
+
+```json
+{
+  "questions": [{
+    "question": "What would you like to do?",
+    "header": "Game Over",
+    "multiSelect": false,
+    "options": [
+      {"label": "View stats", "description": "See final traits, relationships, and inventory"},
+      {"label": "Game analysis", "description": "Timeline, key decisions, paths not taken"},
+      {"label": "Play again", "description": "Start fresh from the beginning"},
+      {"label": "Replay from moment", "description": "Return to a key decision point"}
+    ]
+  }]
+}
+```
+
+### Option: View Stats
+
+Display formatted stats block showing final state:
+
+```
+══════════════════════════════════════════════════════════════════════
+FINAL STATS
+══════════════════════════════════════════════════════════════════════
+
+TRAITS
+  Courage:  7  (+2 from start)
+  Wisdom:   8  (+3 from start)
+  Luck:     3  (-2 from start)
+
+RELATIONSHIPS
+  Elder:    6  (Trusted)
+  Dragon:   4  (Respected)
+
+INVENTORY
+  • Ancient sword
+  • Dragon scale pendant
+  • Map of forgotten paths
+
+TIME
+  Elapsed: 3 days, 4 hours
+══════════════════════════════════════════════════════════════════════
+```
+
+**Format rules:**
+- Show trait values with net change from initial_character values
+- Only show relationships section if any relationships exist
+- Show inventory as bulleted list, or "Empty" if none
+- Show time if scenario tracks it (world.time > 0)
+
+After displaying stats, **re-present the end-game menu**.
+
+### Option: Game Analysis
+
+Display deeper playthrough analysis:
+
+```
+══════════════════════════════════════════════════════════════════════
+GAME ANALYSIS
+══════════════════════════════════════════════════════════════════════
+
+JOURNEY TIMELINE
+  T1.1.1  Started at Village Entrance
+  T2.1.1  Met the Elder, learned of the dragon
+  T3.2.1  Explored the Shrine, took Dragon Tongue scroll
+  T4.3.1  [Improv] Asked about the sword's history
+  T5.4.1  Climbed the mountain path
+  T6.5.1  Confronted the dragon
+
+KEY DECISIONS
+  • T2.1.2 Asked about the key → led to shrine access
+  • T3.2.1 Took the scroll → enabled dragon negotiation
+  • T6.5.1 Chose to negotiate → Victory ending
+
+PATHS NOT TAKEN
+  • Could have attacked the dragon (Rebuff → Death likely)
+  • Could have fled the mountain (Escape → Unchanged ending)
+  • Never explored the cave system
+
+DECISION GRID COVERAGE
+  ┌─────────────┬─────────────┬─────────────┐
+  │  Triumph ✓  │ Commitment  │   Rebuff    │
+  ├─────────────┼─────────────┼─────────────┤
+  │ Discovery ✓ │   Limbo ✓   │ Constraint  │
+  ├─────────────┼─────────────┼─────────────┤
+  │   Escape    │  Deferral   │    Fate     │
+  └─────────────┴─────────────┴─────────────┘
+  Coverage: 3/9 cells (Bronze tier)
+══════════════════════════════════════════════════════════════════════
+```
+
+**Analysis generation:**
+- Build timeline from `beat_log` entries
+- Key decisions are beats where `next_node` was selected (scripted choices)
+- Paths not taken: examine options in visited nodes that weren't selected
+- Grid coverage: track which cells were touched during play
+
+After displaying analysis, **re-present the end-game menu**.
+
+### Option: Play Again
+
+Reset all state and restart from Turn 1:
+
+1. Re-initialize from scenario's `initial_character` and `initial_world`
+2. Reset counters: `turn: 1, scene: 1, beat: 1`
+3. Clear `beat_log` and `recent_history`
+4. Set `current_node` to `start_node`
+5. Begin Phase 2 (Game Turn) from step 1
+
+### Option: Replay from Moment
+
+Present a sub-menu of key decision points from the playthrough:
+
+```json
+{
+  "questions": [{
+    "question": "Which moment would you like to return to?",
+    "header": "Rewind",
+    "multiSelect": false,
+    "options": [
+      {"label": "T2.1.2", "description": "When you asked about the elder's key"},
+      {"label": "T3.2.1", "description": "Taking the Dragon Tongue scroll at the Shrine"},
+      {"label": "T6.5.1", "description": "Facing the dragon on the mountain"}
+    ]
+  }]
+}
+```
+
+**Key moment identification:**
+
+Key moments are identified from `beat_log` entries matching these criteria:
+- `type: "scripted_choice"` - Node transitions via option selection
+- `type: "improv"` - Free-text improvised actions
+- Beats where major flags changed
+- Beats where location changed
+
+**Replay state restoration:**
+
+When a moment is selected:
+1. Find the beat_log entry for that moment
+2. Replay consequences from game start up to (but not including) that beat
+3. Set `current_node` to the node where that choice was made
+4. Present the choices from that node (player can make different choice)
+
+**Implementation approach:**
+- Store snapshots: On each Turn++, save a checkpoint of full state
+- Checkpoints stored in memory during play, not persisted to disk
+- Rewind = restore checkpoint, clear subsequent beat_log entries
+
+If no key moments exist (very short game), show:
+```json
+{
+  "questions": [{
+    "question": "No key decision points recorded. What would you like to do?",
+    "header": "Rewind",
+    "multiSelect": false,
+    "options": [
+      {"label": "Play again", "description": "Start fresh from the beginning"},
+      {"label": "Back to menu", "description": "Return to end-game options"}
+    ]
+  }]
+}
+```
+
+### End-Game Menu Loop
+
+The menu should loop until the player selects "Play again" or "Replay from moment":
+
+```
+END_GAME_LOOP:
+  1. Present end-game menu
+  2. Wait for selection
+  3. IF "View stats":
+       - Display stats block
+       - GOTO step 1
+  4. IF "Game analysis":
+       - Display analysis block
+       - GOTO step 1
+  5. IF "Play again":
+       - Reset state
+       - Begin new game (Phase 1)
+       - EXIT loop
+  6. IF "Replay from moment":
+       - Present key moments sub-menu
+       - IF moment selected:
+           - Restore checkpoint
+           - Resume from that node (Phase 2)
+           - EXIT loop
+       - IF "Back to menu":
+           - GOTO step 1
 ```
 
 ## Additional Resources

@@ -50,6 +50,21 @@ Identify false choices, railroads, branching factor, and chokepoints.
 ### 13. Ending Reachability Analysis (yq-enabled)
 Verify all defined endings are actually reachable from start.
 
+### 14. Travel Consistency Validation (yq-enabled)
+Verify travel time configuration is complete and consistent:
+- Connection travel time coverage
+- Bidirectional consistency
+- Event reachability under time constraints
+- Improvisation config status
+
+### 15. Schema Validation (yq-enabled)
+Validate scenario structure, types, and field requirements:
+- Required top-level fields present (name, start_node, nodes, endings)
+- All next_node and blocked_next_node references valid
+- All precondition/consequence types are valid enum values
+- All options have required fields (id, text)
+- on_enter consequences validated
+
 ## Workflow
 
 > **Tool Detection:** See `lib/patterns/tool-detection.md` for yq availability check.
@@ -143,20 +158,20 @@ For each path, determine cell in the 3x3 grid based on two axes:
 **The Decision Grid** (see `lib/framework/core.md` for detailed definitions):
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
-| **Player Chooses** | Triumph       | Commitment          | Barrier      |
-| **Player Unknown** | Discovery     | Limbo               | Revelation   |
+| **Player Chooses** | Triumph       | Commitment          | Rebuff       |
+| **Player Unknown** | Discovery     | Limbo               | Constraint   |
 | **Player Avoids**  | Escape        | Deferral            | Fate         |
 
 **Classification Signals**:
 - Triumph: Active option + success ending
 - Commitment: Active option + pending state/no ending
-- Barrier: Active option + precondition failure
+- Rebuff: Active option + precondition failure
 - Discovery: (scripted) option with `cell: unknown` + `outcome_nodes.discovery`
 - Discovery: (emergent) improv_* flag + positive outcome
 - Limbo: (scripted) option with `cell: unknown` + no outcome_nodes.limbo
 - Limbo: (emergent) improv_* flag + no state change
-- Revelation: (scripted) option with `cell: unknown` + `outcome_nodes.revelation`
-- Revelation: (emergent) improv_* flag + blocked by precondition
+- Constraint: (scripted) option with `cell: unknown` + `outcome_nodes.constraint`
+- Constraint: (emergent) improv_* flag + blocked by precondition
 - Escape: Retreat option + survival ending
 - Deferral: Retreat option + pending state
 - Fate: Retreat option + forced negative outcome
@@ -173,13 +188,13 @@ options:
     next: improvise         # ← Triggers scripted improvisation
     outcome_nodes:
       discovery: node_id    # ← Scripted Discovery path
-      revelation: node_id   # ← Scripted Revelation path
+      constraint: node_id   # ← Scripted Constraint path
       # limbo: omitted      # ← Stays at node (default Limbo)
 ```
 
 For each such option:
 - If `outcome_nodes.discovery` exists → count as scripted Discovery
-- If `outcome_nodes.revelation` exists → count as scripted Revelation
+- If `outcome_nodes.constraint` exists → count as scripted Constraint
 - `outcome_nodes.limbo` is optional; Limbo is always possible as fallback
 
 ### Step 6: Classify Endings
@@ -198,6 +213,20 @@ Map each ending to outcome type:
 
 **Railroads**: Sequences of 3+ nodes with only one path through
 
+**Single-Option Nodes**: Choice nodes with only one available option
+
+Scan all nodes with `choice` field and count options:
+
+```bash
+# yq-enabled detection
+yq '.nodes | to_entries | .[] | select(.value.choice.options | length == 1) | {"node": .key, "option": .value.choice.options[0].text, "next": (.value.choice.options[0].next_node // .value.choice.options[0].next)}' scenario.yaml
+```
+
+Classify severity:
+- **Error**: 1 option + not an ending + no improvise next
+- **Warning**: 1 option + has `next: improvise` (improvable via "Other")
+- **OK**: Ending node or special context
+
 **Illusory Choices**: Multiple options at a node leading to same destination
 
 ## Report Format
@@ -208,14 +237,35 @@ KLEENE SCENARIO ANALYSIS
 Scenario: The Dragon's Choice
 ═══════════════════════════════════════════════════════════
 
-GRID COVERAGE
-─────────────
+SCHEMA VALIDATION
+─────────────────
+Structure:
+  ✓ Required fields present (name, start_node, nodes, endings)
+  ✓ start_node 'intro' exists in nodes
+  ✓ 47/47 next_node references valid
+  ✓ 4/4 blocked_next_node references valid
+
+Types:
+  ✓ All precondition types valid (12 unique types used)
+  ✓ All consequence types valid (15 unique types used)
+  ✓ All options have id and text
+
+on_enter Consequences:
+  ✓ 2 nodes use on_enter
+  ✓ All on_enter consequence types valid
+
+blocked_next_node Redirects:
+  ✓ 4 nodes use blocked_next_node
+  ✓ All have associated preconditions
+
+DECISION GRID (9 Cells)
+───────────────────────
              │ Permits     │ Indeterminate │ Blocks      │
 ─────────────┼─────────────┼───────────────┼─────────────┤
-Chooses      │ ✓ Triumph   │ ✗ Commitment  │ ✓ Barrier   │
+Chooses      │ ✓ Triumph   │ ✗ Commitment  │ ✓ Rebuff    │
              │   3 paths   │   0 paths     │   2 paths   │
 ─────────────┼─────────────┼───────────────┼─────────────┤
-Unknown      │ ✓ Discovery │ ○ Limbo       │ ✓ Revelation│
+Unknown      │ ✓ Discovery │ ○ Limbo       │ ✓ Constraint│
              │   1 scripted│   (fallback)  │   1 scripted│
 ─────────────┼─────────────┼───────────────┼─────────────┤
 Avoids       │ ✓ Escape    │ ✗ Deferral    │ ✓ Fate      │
@@ -224,18 +274,23 @@ Avoids       │ ✓ Escape    │ ✗ Deferral    │ ✓ Fate      │
 
 Legend: ✓ = scripted paths, ○ = via improvisation/fallback, ✗ = missing
 
+Grid coverage: 7/9 cells (78%)
+  Scripted: 6 cells | Via improvisation: 1 cell | Missing: 2 cells
+
 UNKNOWN ROW DETAILS
 ───────────────────
 Scripted Unknown options found: 2
-  - intro/ask_elder → Discovery: elder_lore, Revelation: elder_silence
-  - mountain_approach/observe_dragon → Discovery: dragon_notices_patience, Revelation: dragon_dismisses_coward
+  - intro/ask_elder → Discovery: elder_lore, Constraint: elder_silence
+  - mountain_approach/observe_dragon → Discovery: dragon_notices_patience, Constraint: dragon_dismisses_coward
 Limbo: Always available as fallback when no pattern matches
 
 COMPLETENESS TIER
 ─────────────────
-Bronze corners: 3/4 (Triumph ✓, Barrier ✓, Escape ✓, Fate ✗)
-Silver middle:  0/5 (no middle cells scripted)
-Tier achieved:  BRONZE (INCOMPLETE - missing Fate)
+Bronze (4 corners):   4/4 ✓  Triumph, Rebuff, Escape, Fate
+Silver (+5 middle):   2/5    Commitment ✗, Discovery ✓, Limbo ○, Constraint ✓, Deferral ✗
+Gold (all 9 cells):   6/9    Missing: Commitment, Deferral
+
+Tier achieved: SILVER
 
 PATH DETAILS
 ────────────
@@ -244,7 +299,7 @@ PATH DETAILS
   - intro → forest_entrance → shrine → dragon_dialogue → ending_transcendence
   - ...
 
-✓ Barrier (2 paths):
+✓ Rebuff (2 paths):
   - mountain_approach → dragon_fight (blocked: missing sword)
   - mountain_approach → dragon_dialogue (blocked: missing dragon_tongue)
 
@@ -272,13 +327,18 @@ STRUCTURAL ISSUES
 ✓ No unreachable nodes
 ✓ No dead ends
 ! Railroad detected: intro → sword_taken → mountain_approach (3 nodes, 1 path)
+! Single-option choices: 2 nodes
+  - scroll_taken: 1 option → mountain_approach
+    Recommendation: Add "Return to forest" or "Meditate on knowledge" option
+  - forced_march: 1 option → battlefield
+    Recommendation: Add "Rest briefly" or "Scout ahead" option
 ✓ No illusory choices
 
 DYNAMIC EDGES (Improvisation)
 ─────────────────────────────
 2 scripted Unknown options found:
-  - temple_gates/observe → Discovery: guardian_respect, Revelation: guardian_dismissal
-  - intro/ask_elder → Discovery: elder_lore, Revelation: elder_silence
+  - temple_gates/observe → Discovery: guardian_respect, Constraint: guardian_dismissal
+  - intro/ask_elder → Discovery: elder_lore, Constraint: elder_silence
 
 Pattern coverage:
   permits: ritual, pattern, ceremony, weakness, history, legend
@@ -350,6 +410,15 @@ Events checked: quest_deadline ✓, dragon_attack ✗ (never scheduled)
 Time preconditions: 2 (time_elapsed_minimum at inner_sanctum)
 ⚠ midnight_ritual: scheduled but never checked
 
+TRAVEL CONSISTENCY (v5)
+───────────────────────
+Travel config: enabled (default: 30 min)
+✓ 12/12 connections have travel_time (or use default)
+✓ Bidirectional times consistent
+⚠ dragon_descends (12h): Minimum path to dragon_lair is 7.5h
+  (village→forest→shrine→village→mountain = 450 min)
+✓ Improvisation time configured for all intents
+
 RECOMMENDATIONS
 ───────────────
 1. Add "Fate" path (required for Bronze):
@@ -371,7 +440,7 @@ RECOMMENDATIONS
 Extract all preconditions in a single query (impossible with grep):
 
 ```bash
-yq '.nodes | to_entries | .[] | .value.choice.options[] | select(.precondition) | {"node": (parent | parent | parent | .key), "option": .id, "requires": .precondition}' scenario.yaml
+yq '.nodes | to_entries | .[] as $entry | $entry.value.choice.options[] | select(.precondition) | {"node": $entry.key, "option": .id, "requires": .precondition}' scenario.yaml
 ```
 
 Find all nodes requiring a specific item:
@@ -437,10 +506,10 @@ Find self-loops and multi-node cycles:
 
 ```bash
 # Self-loops (node points to itself)
-yq '.nodes | to_entries | .[] | {node: .key, dests: [.value.choice.options[] | (.next_node // .next)]} | select(.dests[] == .node)' scenario.yaml
+yq '.nodes | to_entries | .[] | {"node": .key, "dests": [.value.choice.options[] | (.next_node // .next)]} | select(.dests[] == .node)' scenario.yaml
 
 # Build adjacency for multi-node cycle detection
-yq '.nodes | to_entries | .[] | {node: .key, destinations: [.value.choice.options[] | (.next_node // .next)] | unique}' scenario.yaml
+yq '.nodes | to_entries | .[] | {"node": .key, "destinations": [.value.choice.options[] | (.next_node // .next)] | unique}' scenario.yaml
 ```
 
 **Report:**
@@ -464,7 +533,7 @@ yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | se
 yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .precondition? | select(.type == "has_item") | .item] | unique | .[]' scenario.yaml
 
 # Where each item is obtained
-yq '.nodes | to_entries | .[] | .value.choice.options[]? | select(.consequence[]?.type == "gain_item") | {node: (parent | parent | parent | .key), option: .id, gains: [.consequence[] | select(.type == "gain_item") | .item]}' scenario.yaml
+yq '.nodes | to_entries | .[] as $entry | $entry.value.choice.options[]? | select(.consequence[]?.type == "gain_item") | {"node": $entry.key, "option": .id, "gains": [.consequence[] | select(.type == "gain_item") | .item]}' scenario.yaml
 ```
 
 **Report:**
@@ -489,7 +558,7 @@ Analyze trait modifications and requirements:
 yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | select(.type == "modify_trait")] | group_by(.trait) | .[] | {trait: .[0].trait, deltas: [.[].delta], total_positive: ([.[].delta | select(. > 0)] | add // 0), total_negative: ([.[].delta | select(. < 0)] | add // 0)}' scenario.yaml
 
 # Trait requirements
-yq '.nodes | to_entries | .[] | .value.choice.options[]? | select(.precondition?.type == "trait_minimum") | {node: (parent | parent | parent | .key), option: .id, trait: .precondition.trait, minimum: .precondition.minimum}' scenario.yaml
+yq '.nodes | to_entries | .[] as $entry | $entry.value.choice.options[]? | select(.precondition?.type == "trait_minimum") | {"node": $entry.key, "option": .id, "trait": .precondition.trait, "minimum": .precondition.minimum}' scenario.yaml
 
 # Starting traits
 yq '.initial_character.traits' scenario.yaml
@@ -522,7 +591,7 @@ yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | se
 yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .precondition? | select(.type == "flag_set" or .type == "flag_not_set") | .flag] | unique | .[]' scenario.yaml
 
 # Where flags are set
-yq '.nodes | to_entries | .[] | .value.choice.options[]? | select(.consequence[]?.type == "set_flag") | {node: (parent | parent | parent | .key), option: .id, sets: [.consequence[] | select(.type == "set_flag") | .flag]}' scenario.yaml
+yq '.nodes | to_entries | .[] as $entry | $entry.value.choice.options[]? | select(.consequence[]?.type == "set_flag") | {"node": $entry.key, "option": .id, "sets": [.consequence[] | select(.type == "set_flag") | .flag]}' scenario.yaml
 ```
 
 **Report:**
@@ -568,7 +637,7 @@ Check consequence scaling follows guidelines:
 
 ```bash
 # All trait/relationship modifications with context
-yq '.nodes | to_entries | .[] as $node | $node.value.choice.options[]? | select(.consequence) | {node: $node.key, option: .id, changes: [.consequence[] | select(.type == "modify_trait" or .type == "modify_relationship") | {type, target: (.trait // .npc), delta}]}' scenario.yaml
+yq '.nodes | to_entries | .[] as $node | $node.value.choice.options[]? | select(.consequence) | {"node": $node.key, "option": .id, "changes": [.consequence[] | select(.type == "modify_trait" or .type == "modify_relationship") | {"type": .type, "target": (.trait // .npc), "delta": .delta}]}' scenario.yaml
 ```
 
 **Guidelines reference:**
@@ -618,10 +687,10 @@ Analyze branching quality:
 
 ```bash
 # Options per node and unique destinations
-yq '.nodes | to_entries | .[] | {node: .key, options: (.value.choice.options | length), unique_dests: ([.value.choice.options[] | (.next_node // .next)] | unique | length)}' scenario.yaml
+yq '.nodes | to_entries | .[] | {"node": .key, "options": (.value.choice.options | length), "unique_dests": ([.value.choice.options[] | (.next_node // .next)] | unique | length)}' scenario.yaml
 
 # False choices (multiple options → same destination)
-yq '.nodes | to_entries | .[] | {node: .key, options: [.value.choice.options[] | {id: .id, dest: (.next_node // .next)}]} | select((.options | map(.dest) | unique | length) < (.options | length))' scenario.yaml
+yq '.nodes | to_entries | .[] | {"node": .key, "options": [.value.choice.options[] | {"id": .id, "dest": (.next_node // .next)}]} | select((.options | map(.dest) | unique | length) < (.options | length))' scenario.yaml
 ```
 
 **Report:**
@@ -815,21 +884,247 @@ IMPROVISATION COVERAGE
   temple_gates / observe:
     Theme: "observing the temple guardian"
     → Discovery: guardian_respect (permits: ritual, pattern, ceremony)
-    → Revelation: guardian_dismissal (blocks: attack, force, break)
+    → Constraint: guardian_dismissal (blocks: attack, force, break)
     → Limbo: stays at node (fallback)
 
   intro / ask_elder:
     Theme: "seeking wisdom before action"
     → Discovery: elder_lore (permits: history, weakness, legend)
-    → Revelation: elder_silence (blocks: demand, threaten, force)
+    → Constraint: elder_silence (blocks: demand, threaten, force)
     → Limbo: stays at node (fallback)
 
 Pattern keywords:
   Permits (Discovery): ritual, pattern, ceremony, history, weakness, legend, why, story
-  Blocks (Revelation): attack, force, break, demand, threaten, lie
+  Blocks (Constraint): attack, force, break, demand, threaten, lie
 ```
 
+### Travel Consistency Validation (v5)
+
+Verify travel time configuration is complete and consistent:
+
+```bash
+# Check if travel_config exists
+yq '.travel_config // "none"' scenario.yaml
+
+# Get all connections with travel times
+yq '[.initial_world.locations[] | {location: .id, connections: .connections}]' scenario.yaml
+
+# Find connections missing travel_minutes (object syntax only)
+yq '.initial_world.locations[] | {"location": .id, "missing": [.connections[]? | select(type == "object" and .travel_minutes == null) | .target]}' scenario.yaml
+
+# Get improvisation time config
+yq '.travel_config.improvisation_time // "not configured"' scenario.yaml
+
+# Check bidirectional consistency
+yq '.initial_world.locations as $locs | $locs[] | . as $from | .connections[]? | select(type == "object") | {"from": $from.id, "to": .target, "minutes": .travel_minutes}' scenario.yaml
+```
+
+**Report:**
+```
+TRAVEL CONSISTENCY
+──────────────────
+Travel config: enabled
+  Default travel minutes: 30
+  Auto-apply on move: true
+
+CONNECTION COVERAGE
+  ✓ 12/12 connections have travel_minutes (or use default)
+  Format breakdown: 8 object connections, 4 simple (use default)
+
+BIDIRECTIONAL CONSISTENCY
+  ✓ village→forest: 60 min | forest→village: 60 min
+  ⚠ village→mountain_path: 180 min | mountain_path→village: 120 min
+    (asymmetric - may be intentional for uphill/downhill)
+
+EVENT REACHABILITY UNDER TIME CONSTRAINTS
+  dragon_descends triggers at: 12h (720 min)
+  Minimum travel paths to dragon_lair:
+    - village→mountain_path→dragon_lair: 210 min (3.5h) ✓
+    - village→forest→shrine→village→mountain_path→dragon_lair: 420 min (7h) ✓
+  ✓ All time-sensitive events are reachable
+
+IMPROVISATION TIME CONFIG
+  ✓ explore: 15 min
+  ✓ interact: 10 min
+  ✓ act: 20 min
+  ✓ meta: 0 min
+  ✓ limbo: 5 min
+```
+
+**Validation Checks:**
+
+| Check | Severity | Condition |
+|-------|----------|-----------|
+| Config exists | Info | `travel_config` present in scenario |
+| Coverage | Warning | Connections without `travel_minutes` use default |
+| Bidirectional | Warning | A→B time differs from B→A by >50% |
+| Event reachability | Error | Time-gated event unreachable in time |
+| Improvisation | Info | All 5 intent types have time configured |
+
+**Bidirectional Analysis:**
+
+For each pair of connected locations:
+1. Find travel time A→B
+2. Find travel time B→A (if connection exists)
+3. Flag if times differ by >50% (may be intentional for terrain)
+
+```bash
+# Build bidirectional comparison
+yq '
+  .initial_world.locations as $locs |
+  [
+    $locs[] | . as $from |
+    .connections[]? |
+    (if type == "object" then {"target": .target, "minutes": .travel_minutes} else {"target": ., "minutes": null} end) |
+    {from: $from.id, to: .target, minutes}
+  ] |
+  group_by([.from, .to] | sort) |
+  .[] | select(length == 2) |
+  {
+    pair: "\(.[0].from)↔\(.[0].to)",
+    forward: .[0].minutes,
+    backward: .[1].minutes,
+    symmetric: (.[0].minutes == .[1].minutes)
+  }
+' scenario.yaml
+```
+
+**Event Reachability Under Time:**
+
+For events with time triggers (`schedule_event` with `delay`):
+1. Find minimum travel time from start to relevant location
+2. Compare against trigger time
+3. Flag if min_travel > trigger_time (impossible to reach in time)
+
+### Schema Validation (yq-enabled)
+
+Validates scenario YAML against the schema specification. Runs automatically as part of full analysis.
+
+#### Level 1 - Required Structure
+
+```bash
+# Required top-level fields present
+yq 'has("name") and has("start_node") and has("nodes") and has("endings")' scenario.yaml
+
+# start_node exists in nodes
+yq '.start_node as $start | .nodes | has($start)' scenario.yaml
+
+# All next_node references exist in nodes or endings
+yq '
+  (.nodes | keys) as $nodes |
+  (.endings | keys | map("ending_" + .)) as $endings |
+  ($nodes + $endings) as $valid |
+  [.nodes | to_entries | .[] | .value.choice.options[]? | (.next_node // .next) | select(. != null and . != "improvise")] |
+  map(select(. as $ref | $valid | index($ref) | not)) |
+  if length == 0 then "all valid" else . end
+' scenario.yaml
+
+# All blocked_next_node references exist
+yq '
+  (.nodes | keys) as $nodes |
+  (.endings | keys | map("ending_" + .)) as $endings |
+  ($nodes + $endings) as $valid |
+  [.nodes | to_entries | .[] | select(.value.blocked_next_node) | .value.blocked_next_node] |
+  map(select(. as $ref | $valid | index($ref) | not)) |
+  if length == 0 then "all valid" else . end
+' scenario.yaml
+```
+
+#### Level 2 - Type Validation
+
+```bash
+# Valid precondition types
+VALID_PRECONDITIONS="has_item|missing_item|trait_minimum|trait_maximum|flag_set|flag_not_set|at_location|relationship_minimum|all_of|any_of|none_of|location_flag_set|location_flag_not_set|location_property_minimum|location_property_maximum|npc_at_location|npc_not_at_location|event_triggered|event_not_triggered|time_elapsed_minimum|time_elapsed_maximum|environment_is|environment_minimum|environment_maximum"
+
+# Find invalid precondition types
+yq '[.. | select(has("precondition")) | .precondition | .. | .type? | select(.)] | unique | .[]' scenario.yaml
+
+# Valid consequence types
+VALID_CONSEQUENCES="gain_item|lose_item|modify_trait|set_trait|set_flag|clear_flag|modify_relationship|move_to|advance_time|character_dies|character_departs|add_history|set_location_flag|clear_location_flag|modify_location_property|set_location_property|move_npc|schedule_event|trigger_event|cancel_event|set_environment|modify_environment"
+
+# Find all consequence types used
+yq '[.nodes | to_entries | .[] | .value.choice.options[]? | .consequence[]? | .type] | unique | .[]' scenario.yaml
+
+# Options missing required fields (id, text)
+yq '.nodes | to_entries | .[] | {"node": .key, "missing": [.value.choice.options[] | select(.id == null or .text == null) | {"id": .id, "text": .text}]} | select(.missing | length > 0)' scenario.yaml
+```
+
+#### Level 3 - on_enter Validation
+
+```bash
+# Find all on_enter consequences
+yq '.nodes | to_entries | .[] | select(.value.on_enter) | {"node": .key, "on_enter_count": (.value.on_enter | length), "types": [.value.on_enter[]?.type]}' scenario.yaml
+
+# Validate on_enter consequence types
+yq '[.nodes | to_entries | .[] | .value.on_enter[]? | .type] | unique | .[]' scenario.yaml
+
+# Check on_enter item references are valid
+yq '[.nodes | to_entries | .[] | .value.on_enter[]? | select(.type == "gain_item" or .type == "lose_item") | .item] | unique | .[]' scenario.yaml
+```
+
+#### Level 4 - blocked_next_node Validation
+
+```bash
+# Find all blocked_next_node usage
+yq '[.nodes | to_entries | .[] | select(.value.blocked_next_node) | {"node": .key, "blocked_next": .value.blocked_next_node, "has_precondition": (.value.precondition != null)}]' scenario.yaml
+
+# Verify blocked_next_node always has precondition
+yq '.nodes | to_entries | .[] | select(.value.blocked_next_node and (.value.precondition | not)) | .key' scenario.yaml
+```
+
+**Schema Validation Report Format:**
+
+```
+SCHEMA VALIDATION
+─────────────────
+Structure:
+  ✓ Required fields present (name, start_node, nodes, endings)
+  ✓ start_node 'intro' exists in nodes
+  ✓ 47/47 next_node references valid
+  ✓ 4/4 blocked_next_node references valid
+
+Types:
+  ✓ All precondition types valid (12 unique types used)
+  ✓ All consequence types valid (15 unique types used)
+  ✓ All options have id and text
+
+on_enter Consequences:
+  ✓ 2 nodes use on_enter
+  ✓ All on_enter consequence types valid
+  Nodes: intro (1 consequence), dragon_fight (2 consequences)
+
+blocked_next_node Redirects:
+  ✓ 4 nodes use blocked_next_node
+  ✓ All have associated preconditions
+  Nodes: forest_entrance, shrine_discovery, mountain_approach, blacksmith_shop
+```
+
+**Validation Severity:**
+
+| Check | Severity | Condition |
+|-------|----------|-----------|
+| Required fields | Error | Missing name, start_node, nodes, or endings |
+| start_node exists | Error | start_node not found in nodes |
+| next_node references | Error | Reference to non-existent node |
+| blocked_next_node references | Error | Reference to non-existent node |
+| Precondition type | Warning | Unknown precondition type |
+| Consequence type | Warning | Unknown consequence type |
+| Option id/text | Error | Missing required fields |
+| blocked_next_node without precondition | Warning | Redirect without trigger condition |
+
 ## Validation Checks
+
+### Schema Validation (NEW)
+
+- [ ] Required top-level fields present (name, start_node, nodes, endings)
+- [ ] start_node exists in nodes
+- [ ] All next_node references exist in nodes or endings
+- [ ] All blocked_next_node references exist
+- [ ] All precondition types are valid
+- [ ] All consequence types are valid
+- [ ] All options have id and text fields
+- [ ] All on_enter consequences have valid types
+- [ ] All blocked_next_node have associated preconditions
 
 ### Structural Validation
 
@@ -854,13 +1149,17 @@ Pattern keywords:
 - [ ] Scheduled events are checked somewhere (not dead events)
 - [ ] Event preconditions reference scheduled events
 - [ ] Improvisation outcome_nodes reference valid nodes
+- [ ] Travel config connections have travel_minutes or use default
+- [ ] Bidirectional travel times are consistent (or intentionally asymmetric)
+- [ ] Time-sensitive events are reachable within their trigger time
+- [ ] Improvisation time is configured for all intent types
 
 ### Narrative Validation
 
 - [ ] At least one death path
 - [ ] At least one victory/success path
 - [ ] Multiple meaningful choices
-- [ ] No single-option "choices"
+- [x] No single-option "choices" (or explicit design choice)
 
 ## Analysis Type Selection
 
@@ -949,6 +1248,60 @@ These keywords trigger specific analysis types without the menu:
 
 **Cycle detection**:
 "Find loops and self-referential choices"
+
+**Travel consistency**:
+"Check travel time configuration"
+"Verify event reachability under time constraints"
+
+**Schema validation**:
+"Validate scenario schema"
+"Check for missing or invalid fields"
+"Verify blocked_next_node and on_enter"
+
+## Direct JSON Schema Validation (Optional)
+
+If `check-jsonschema` is installed, you can run formal JSON Schema 2020-12 validation directly:
+
+```bash
+check-jsonschema --schemafile ${CLAUDE_PLUGIN_ROOT}/lib/schema/scenario-schema.json <scenario.yaml>
+```
+
+This validates:
+- All required fields present
+- Field types correct (string, array, object, number)
+- Enum values valid (precondition types, consequence types, ending types)
+- Nested structures match schema ($ref definitions)
+
+**Installation:**
+```bash
+pip install check-jsonschema
+```
+
+**Wrapper Script:**
+
+A convenience script is provided at `${CLAUDE_PLUGIN_ROOT}/scripts/validate-scenario.sh`:
+
+```bash
+# Validate a scenario
+./scripts/validate-scenario.sh scenarios/dragon_quest.yaml
+
+# If check-jsonschema not installed, falls back to basic yq validation
+```
+
+**Expected Output:**
+
+Success:
+```
+ok -- validation done
+```
+
+Failure (example):
+```
+Schema validation errors were encountered.
+  scenarios/broken.yaml::$.nodes.intro.choice.options[0]: 'id' is a required property
+```
+
+**Note:** If `check-jsonschema` is not installed, the yq-based validation (sections above) provides equivalent coverage for structural and semantic validation. The JSON Schema validation is an optional enhancement that provides faster, more formal type checking.
 
 ## Additional Resources
 

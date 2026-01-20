@@ -1,6 +1,17 @@
 name: "The Dragon's Choice"
 description: "A hero must decide how to face the dragon threatening their village. Features time pressure, NPC tracking, and environmental dynamics."
-version: "2.0.0"
+version: "2.1.0"
+
+# Travel time configuration (NEW in v2.1.0)
+travel_config:
+  default_travel_minutes: 30
+  auto_apply_on_move: true
+  improvisation_time:
+    explore: 15
+    interact: 10
+    act: 20
+    meta: 0
+    limbo: 5
 
 # Initial character state
 initial_character:
@@ -61,7 +72,16 @@ initial_world:
     - id: village
       name: "Quiet Village"
       description: "A peaceful village threatened by the dragon."
-      connections: [forest, mountain_path, blacksmith]
+      connections:
+        - target: forest
+          travel_minutes: 60
+          description: "Through the dark woods at the village edge"
+        - target: mountain_path
+          travel_minutes: 180
+          description: "A long, winding climb up the mountainside"
+        - target: blacksmith
+          travel_minutes: 5
+          description: "Just across the village square"
       items: []
       initial_state:
         environment: { lighting: daylight, ambiance: tense }
@@ -69,7 +89,9 @@ initial_world:
     - id: blacksmith
       name: "Blacksmith's Forge"
       description: "The village smithy, filled with weapons and the smell of iron."
-      connections: [village]
+      connections:
+        - target: village
+          travel_minutes: 5
       items: [rusty_sword, steel_sword]
       precondition:
         type: has_item
@@ -84,7 +106,13 @@ initial_world:
     - id: forest
       name: "Dark Forest"
       description: "A mysterious forest with ancient secrets."
-      connections: [village, shrine]
+      connections:
+        - target: village
+          travel_minutes: 60
+          description: "Back through the shadowed trees"
+        - target: shrine
+          travel_minutes: 45
+          description: "Deeper into the ancient woods"
       items: []
       initial_state:
         environment: { lighting: filtered, ambiance: mysterious }
@@ -92,7 +120,10 @@ initial_world:
     - id: shrine
       name: "Ancient Shrine"
       description: "A shrine to the old gods, holding forbidden knowledge."
-      connections: [forest]
+      connections:
+        - target: forest
+          travel_minutes: 45
+          description: "Back through the sacred grove"
       items: [dragon_tongue_scroll]
       # Location access control (NEW in v0.4.0)
       precondition:
@@ -109,7 +140,13 @@ initial_world:
     - id: mountain_path
       name: "Mountain Path"
       description: "The winding path up to the dragon's lair."
-      connections: [village, dragon_lair]
+      connections:
+        - target: village
+          travel_minutes: 120
+          description: "Descending back to the village"
+        - target: dragon_lair
+          travel_minutes: 90
+          description: "The final climb to the dragon's domain"
       items: []
       initial_state:
         environment: { lighting: exposed, temperature: cold }
@@ -117,7 +154,10 @@ initial_world:
     - id: dragon_lair
       name: "Dragon's Lair"
       description: "The cavern where the great wyrm dwells."
-      connections: [mountain_path]
+      connections:
+        - target: mountain_path
+          travel_minutes: 60
+          description: "Back down the treacherous path"
       items: []
       initial_state:
         flags: { treasure_found: false }
@@ -215,7 +255,7 @@ nodes:
             limbo_fallback: "The elder's hand moves to cover the key, waiting..."
           outcome_nodes:
             discovery: key_given_direct
-            revelation: elder_refuses_key
+            constraint: elder_refuses_key
 
         - id: seek_knowledge
           text: "Enter the dark forest to seek another way"
@@ -249,7 +289,7 @@ nodes:
             limbo_fallback: "The elder watches you, waiting for a real question..."
           outcome_nodes:
             discovery: elder_lore
-            revelation: elder_silence
+            constraint: elder_silence
 
         - id: rush_mountain
           text: "Head directly to the mountain"
@@ -372,6 +412,7 @@ nodes:
       options:
         - id: to_mountain_wise
           text: "Climb the mountain with newfound wisdom"
+          cell: chooses
           consequence:
             - type: move_to
               location: mountain_path
@@ -389,6 +430,169 @@ nodes:
                   location: mountain_path
           narrative: "You know now what you must do."
           next_node: mountain_approach
+
+        - id: practice_tongue
+          text: "Practice speaking the ancient words"
+          cell: unknown
+          consequence:
+            - type: advance_time
+              amount: 30
+              unit: minutes
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+          narrative: |
+            You sit among the roots of an ancient tree, letting the
+            words roll through your mind. They feel strange on your
+            tongue - old, powerful, alive.
+          next: improvise
+          improvise_context:
+            theme: "practicing the dragon tongue in solitude"
+            permits:
+              - "speak"
+              - "practice"
+              - "meditate"
+              - "remember"
+              - "understand"
+              - "words"
+            blocks:
+              - "attack"
+              - "destroy"
+              - "forget"
+              - "abandon"
+            limbo_fallback: "The words swirl in your mind, not quite settling..."
+          outcome_nodes:
+            discovery: scroll_mastery
+            constraint: scroll_doubt
+
+        - id: return_to_elder
+          text: "Return to share this knowledge with the elder"
+          cell: avoids
+          consequence:
+            - type: move_to
+              location: village
+            - type: advance_time
+              amount: 2
+              unit: hours
+            - type: modify_relationship
+              npc: elder
+              delta: 10
+            - type: set_flag
+              flag: shared_scroll_knowledge
+              value: true
+          narrative: |
+            Perhaps wisdom is best shared. The elder may know more
+            about what these words mean - and what risks they carry.
+          next_node: elder_lore
+
+  scroll_mastery:
+    narrative: |
+      The words settle into your bones like an old friend's greeting.
+      You speak them aloud, and the forest itself seems to listen.
+
+      Something has changed. The language is no longer foreign -
+      it is yours now, as natural as breath.
+
+      When you face the dragon, you will speak as an equal.
+    choice:
+      prompt: "You have mastered the words."
+      options:
+        - id: mastery_to_mountain
+          text: "Now you are truly ready - climb the mountain"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 2
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+            - type: set_flag
+              flag: scroll_mastered
+              value: true
+            - type: move_to
+              location: mountain_path
+            - type: advance_time
+              amount: 3
+              unit: hours
+          narrative: "With words of power and a heart of understanding, you ascend."
+          next_node: mountain_approach
+
+        - id: mastery_seek_elder
+          text: "Share your mastery with the elder before leaving"
+          cell: chooses
+          consequence:
+            - type: set_flag
+              flag: scroll_mastered
+              value: true
+            - type: move_to
+              location: village
+            - type: advance_time
+              amount: 2
+              unit: hours
+          narrative: "True wisdom includes knowing when to seek counsel."
+          next_node: elder_lore
+
+  scroll_doubt:
+    narrative: |
+      The words twist in your mind, refusing to settle. Each time
+      you try to speak them, they slip away like water through fingers.
+
+      Perhaps some knowledge is not meant for mortals. Or perhaps
+      you simply need more time to understand.
+
+      The scroll's power is real, but mastery eludes you.
+    choice:
+      prompt: "The language resists you."
+      options:
+        - id: doubt_persist
+          text: "Press on anyway - you have the scroll, that must be enough"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 1
+            - type: move_to
+              location: mountain_path
+            - type: advance_time
+              amount: 3
+              unit: hours
+          narrative: "Doubt or not, the dragon awaits. You will speak, and hope."
+          next_node: mountain_approach
+
+        - id: doubt_seek_help
+          text: "Seek the elder's guidance - perhaps she knows these words"
+          cell: avoids
+          consequence:
+            - type: modify_relationship
+              npc: elder
+              delta: 5
+            - type: move_to
+              location: village
+            - type: advance_time
+              amount: 2
+              unit: hours
+          narrative: "Pride yields to wisdom. The elder may know the way."
+          next_node: elder_lore
+
+        - id: doubt_abandon
+          text: "Abandon the scroll - this path is not for you"
+          cell: avoids
+          consequence:
+            - type: lose_item
+              item: dragon_tongue_scroll
+            - type: clear_flag
+              flag: knows_dragon_tongue
+            - type: modify_trait
+              trait: wisdom
+              delta: -1
+            - type: move_to
+              location: shrine
+          narrative: |
+            You place the scroll back on the altar. Some burdens
+            are not meant to be carried. Some paths are not meant
+            to be walked.
+          next_node: shrine_discovery
 
   mountain_approach:
     # Gate based on whether the dragon has already descended (NEW in v0.4.0)
@@ -473,7 +677,7 @@ nodes:
             limbo_fallback: "The dragon's presence holds you in place, time stretching in the mountain silence..."
           outcome_nodes:
             discovery: dragon_notices_patience
-            revelation: dragon_dismisses_coward
+            constraint: dragon_dismisses_coward
 
         - id: elder_arrives
           text: "You hear someone climbing behind you"
@@ -1279,7 +1483,7 @@ nodes:
           precondition:
             type: trait_minimum
             trait: wisdom
-            minimum: 5
+            minimum: 7
           consequence:
             - type: gain_item
               item: forged_blade
@@ -1290,7 +1494,7 @@ nodes:
               trait: courage
               delta: 3
             - type: advance_time
-              amount: 2
+              amount: 4
               unit: hours
           narrative: |
             Hours pass at the forge. You are no master smith, but

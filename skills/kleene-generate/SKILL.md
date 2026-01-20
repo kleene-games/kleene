@@ -56,9 +56,9 @@ Use `AskUserQuestion` to gather key decisions. Group related choices in a single
       "header": "Tier",
       "multiSelect": false,
       "options": [
-        {"label": "Bronze (Recommended)", "description": "4 corner cells - focused, clear narrative"},
-        {"label": "Silver", "description": "6+ cells - adds uncertainty and exploration"},
-        {"label": "Gold", "description": "Full grid - chaos and improv-friendly"}
+        {"label": "Bronze (Recommended)", "description": "4 of 9 cells (corners) - focused, clear narrative"},
+        {"label": "Silver", "description": "6+ of 9 cells - adds uncertainty and exploration"},
+        {"label": "Gold", "description": "All 9 cells - complete Decision Grid coverage"}
       ]
     }
   ]
@@ -91,24 +91,24 @@ For protagonist archetype, use a separate call (progressive disclosure):
 
 Create the core structure based on target tier:
 
-**Bronze (4 corners):**
+**Bronze (4 of 9 cells):**
 ```
 START
   ├── Path A (decisive action)
   │   ├── A1: Triumph (Chooses + Permits) → Victory
-  │   └── A2: Barrier (Chooses + Blocks) → Blocked/Death
+  │   └── A2: Rebuff (Chooses + Blocks) → Blocked/Death
   └── Path B (avoidance)
       ├── B1: Escape (Avoids + Permits) → Unchanged
       └── B2: Fate (Avoids + Blocks) → Forced consequence
 ```
 
-**Silver (Bronze + middle cells):**
+**Silver (6+ of 9 cells):**
 ```
 START
   ├── Path A (decisive action)
   │   ├── A1: Triumph → Victory
   │   ├── A2: Commitment (Chooses + Indeterminate) → Pending outcome
-  │   └── A3: Barrier → Blocked
+  │   └── A3: Rebuff → Blocked
   ├── Path B (exploration/hesitation)
   │   └── B1: Discovery (Unknown + Permits) → Insight gained
   └── Path C (avoidance)
@@ -116,8 +116,8 @@ START
       └── C2: Deferral (Avoids + Indeterminate) → Tension building
 ```
 
-**Gold (full grid coverage):**
-Include explicit nodes for all cells. The "Unknown" row (Discovery, Limbo, Revelation) can be reached through exploration options or improvised play.
+**Gold (all 9 cells):**
+Include explicit nodes for all 9 grid intersections. The "Unknown" row (Discovery, Limbo, Constraint) can be reached through exploration options or improvised play.
 
 ### Step 3: Define Key Elements
 
@@ -157,26 +157,27 @@ For each node, ensure:
 4. **Consequences**: State changes that matter
 5. **Connections**: Clear paths to other nodes
 
-### Step 5: Ensure Grid Coverage
+### Step 5: Ensure Grid Coverage (9 Cells Total)
 
-Verify scenario coverage based on target tier:
+The Decision Grid has 9 cells (3 Player × 3 World). Target tier determines minimum coverage:
 
-**Bronze (Required):**
+**Bronze (4/9 required):**
 - [ ] Triumph (Chooses + Permits) - victory/transformation
-- [ ] Barrier (Chooses + Blocks) - blocked path
+- [ ] Rebuff (Chooses + Blocks) - blocked path
 - [ ] Escape (Avoids + Permits) - unchanged/survival
 - [ ] Fate (Avoids + Blocks) - forced consequence
 - [ ] At least one NONE_DEATH path (mortality)
 - [ ] At least one SOME_TRANSFORMED path (growth)
 
-**Silver (Bronze + 2 of these):**
+**Silver (6/9 required — Bronze + 2 middle cells):**
 - [ ] Commitment (Chooses + Indeterminate) - action with pending outcome
 - [ ] Discovery (Unknown + Permits) - exploration rewarded
-- [ ] Revelation (Unknown + Blocks) - hesitation reveals constraint
+- [ ] Constraint (Unknown + Blocks) - hesitation reveals constraint
 - [ ] Deferral (Avoids + Indeterminate) - avoidance postpones consequence
 - [ ] Limbo (Unknown + Indeterminate) - typically via improvisation
 
-**Gold:** All 9 grid intersections represented
+**Gold (9/9 required):**
+All 9 cells must have scripted paths or improvisation routes.
 
 ### Step 6: Write YAML
 
@@ -257,7 +258,7 @@ Improvised responses must:
 
 - Creating permanent new scenario nodes
 - Gaining/losing scenario items
-- Changing location
+- Changing location / Teleportation
 - Killing or transcending the character
 - Bypassing major story gates
 
@@ -397,7 +398,7 @@ Generated narrative and dialogue must:
 - Keep characters in-character (no meta-narrative terms like "redemption arc")
 - Reserve analytical observations for Gallery Mode, not in-world text
 
-**Characters speak as characters, not as literary critics.**
+**Characters speak as characters, not as literary critics or game machanics exposition.**
 
 ## Additional Resources
 
