@@ -8,7 +8,7 @@
   },
   "repository": "https://github.com/kleene-games/kleene",
   "homepage": "https://github.com/kleene-games/kleene#readme",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "keywords": [
     "game",
     "text-adventure",

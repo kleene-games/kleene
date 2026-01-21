@@ -35,7 +35,7 @@ QUICK START:
 
 Perfect for players who want agency and creators who want to share stories.
 
-Made specifically for Claude Code. Open source (MIT License).
+Made specifically for Claude Code. Open source (AGPL-3.0).
 ```
 
 ---
@@ -174,7 +174,7 @@ Start with Dragon Quest at temp 0, then experiment!
 - [Documentation](link)
 - [Getting Started](link)
 
-Open source (MIT). Free to play, free to create.
+Open source (AGPL-3.0). Free to play, free to create.
 
 Would love to hear what scenarios you create! 🎭✨
 ```
@@ -230,7 +230,7 @@ What you get:
 ✅ True improvisation (type anything)
 ✅ Easy creation (YAML, no code)
 ✅ Built-in tools (generator, validator)
-✅ Open source (MIT)
+✅ Open source (AGPL-3.0)
 
 Try it: /kleene play
 ```
@@ -275,7 +275,7 @@ Key features:
 - Temperature system (0-10 controls adaptation)
 - Simple YAML authoring (no coding)
 - 4 bundled scenarios
-- Open source (MIT)
+- Open source (AGPL-3.0)
 
 Example: You type "I examine the dragon's scales for weak points" and the AI generates a contextual response. At higher temps, this discovery gets woven into the narrative.
 
@@ -334,7 +334,7 @@ Templates and guides included.
 
 IT'S FREE AND OPEN SOURCE:
 
-MIT License. Use it, share it, create with it.
+AGPL-3.0. Use it, share it, create with it - all derivatives stay open.
 
 [Get Started] [Read Docs] [See Examples]
 
@@ -409,7 +409,7 @@ Key innovations include:
 
 The plugin launches with four diverse scenarios ranging from fantasy adventures to psychological thrillers, with playtimes from 15 to 60 minutes. Creators can author new scenarios using simple YAML format with built-in generation and validation tools.
 
-Kleene is open source (MIT License) and available now in the Claude Code plugin marketplace.
+Kleene is open source (AGPL-3.0) and available now in the Claude Code plugin marketplace.
 
 For more information, visit: [GitHub URL]
 

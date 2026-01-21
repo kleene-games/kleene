@@ -334,7 +334,7 @@ The ZIL source was relicensed under MIT in November 2025 by Microsoft's OSPO, Te
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+GNU Affero General Public License v3.0 - see [LICENSE](LICENSE) file for details.
 
 ## Changelog
 

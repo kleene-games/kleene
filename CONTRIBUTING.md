@@ -171,7 +171,7 @@ Have an idea? Great! Please include:
 
 ## License
 
-By contributing, you agree your contributions will be licensed under the MIT License (same as the project).
+By contributing, you agree your contributions will be licensed under the GNU Affero General Public License v3.0 (same as the project).
 
 ---
 
