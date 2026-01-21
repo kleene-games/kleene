@@ -22,25 +22,42 @@ Kleene is a Claude Code plugin implementing a three-valued narrative engine for 
 
 ```
 kleene/
+├── .claude/                          # Project settings
+│   └── settings.json
 ├── .claude-plugin/
-│   └── plugin.json           # Plugin manifest
+│   └── plugin.json                   # Plugin manifest (v0.2.0)
 ├── commands/
-│   └── kleene.md             # Gateway command (routes to skills)
+│   └── kleene.md                     # Gateway command (routes to skills)
 ├── skills/
-│   ├── kleene-play/          # Game loop (inline, no sub-agent)
-│   ├── kleene-generate/      # Scenario generation
-│   └── kleene-analyze/       # Structural analysis
-├── lib/framework/
-│   ├── core.md               # Option type semantics & Decision Grid
-│   ├── scenario-format.md    # YAML specification
-│   ├── presentation.md       # Header, trait, and choice formatting
-│   ├── improvisation.md      # Free-text action handling
-│   └── saves.md              # Game folder, save format, persistence
-├── scenarios/                # Bundled scenarios
-│   └── dragon_quest.yaml     # Example scenario
-├── hooks/                    # Auto-approve for seamless gameplay
-└── _archive/                 # Archived components
-    └── game-runner.md        # Legacy sub-agent (replaced by inline skill)
+│   ├── kleene-play/                  # Game loop (inline, no sub-agent)
+│   ├── kleene-generate/              # Scenario generation
+│   └── kleene-analyze/               # Structural analysis
+├── lib/
+│   ├── framework/
+│   │   ├── core/                     # Core semantics
+│   │   │   ├── core.md               # Option types & Decision Grid
+│   │   │   └── endings.md            # Null case definitions
+│   │   ├── formats/                  # File specifications
+│   │   │   ├── scenario-format.md    # YAML scenario spec
+│   │   │   ├── saves.md              # Save file format
+│   │   │   └── registry-format.md    # Scenario registry spec
+│   │   └── gameplay/                 # Runtime behavior
+│   │       ├── presentation.md       # Display formatting
+│   │       ├── improvisation.md      # Free-text handling
+│   │       ├── gallery-mode.md       # Meta-commentary system
+│   │       └── export.md             # Export modes
+│   ├── guides/                       # Authoring guides
+│   ├── patterns/                     # Reusable patterns
+│   └── schema/                       # JSON schema for validation
+├── scenarios/
+│   ├── dragon_quest.yaml             # Example scenario
+│   ├── registry.yaml                 # Scenario metadata
+│   └── TEMPLATES/                    # Authoring templates
+├── docs/                             # User documentation
+├── scripts/                          # Validation scripts
+├── hooks/                            # Auto-approve for seamless gameplay
+└── _archive/                         # Archived components
+    └── core_original.md              # Legacy core.md
 ```
 
 ## Core Concepts
@@ -125,9 +142,11 @@ endings:
 
 ### Adding New Scenarios
 
-1. Create `scenarios/your_scenario.yaml` following the format in `lib/framework/formats/scenario-format.md`
-2. Validate with `/kleene analyze your_scenario`
-3. Test with `/kleene play your_scenario`
+1. Start from a template in `scenarios/TEMPLATES/` (basic, intermediate, or advanced)
+2. Create `scenarios/your_scenario.yaml` following `lib/framework/formats/scenario-format.md`
+3. Add metadata entry to `scenarios/registry.yaml`
+4. Validate with `/kleene analyze your_scenario`
+5. Test with `/kleene play your_scenario`
 
 ### Modifying Skills
 
@@ -135,13 +154,6 @@ Skills in `skills/*/SKILL.md` define behavior through markdown prompts. Key patt
 - Use `AskUserQuestion` for player choices (max 12 char headers, 1-5 word labels)
 - Reference `${CLAUDE_PLUGIN_ROOT}` for plugin-relative paths
 - Keep menus to 2-4 options
-
-### Game Runner Agent
-
-The `agents/game-runner.md` defines a haiku-model subagent that:
-- Receives scenario path (first turn) or scenario name + state (subsequent turns)
-- Evaluates preconditions and applies consequences
-- Returns structured output with required markers
 
 ## Game Folder Convention
 

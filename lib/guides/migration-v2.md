@@ -418,12 +418,12 @@ options:
     improvise_context:
       theme: "observing the dragon"
       permits: ["patience", "learn", "watch", "study"]  # → Discovery
-      blocks: ["attack", "steal", "trick", "provoke"]   # → Revelation
+      blocks: ["attack", "steal", "trick", "provoke"]   # → Constraint
       limbo_fallback: "Time stretches in the dragon's presence..."
 
     outcome_nodes:
       discovery: dragon_notices_patience
-      revelation: dragon_dismisses
+      constraint: dragon_dismisses
       # limbo: omitted = stay at current node
 ```
 
@@ -435,7 +435,7 @@ options:
 4. System checks input against `blocks` patterns
 5. Route to appropriate outcome:
    - Matches `permits` → `outcome_nodes.discovery`
-   - Matches `blocks` → `outcome_nodes.revelation`
+   - Matches `blocks` → `outcome_nodes.constraint`
    - No match → stay at current node (Limbo)
 
 ---

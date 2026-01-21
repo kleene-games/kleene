@@ -497,7 +497,7 @@ permits:
   - bow            # Reverence
 ```
 
-**Revelation (blocks) - aggressive, disrespectful, hasty:**
+**Constraint (blocks) - aggressive, disrespectful, hasty:**
 ```yaml
 blocks:
   - attack         # Violence
