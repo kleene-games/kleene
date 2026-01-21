@@ -231,17 +231,9 @@ Exports are saved to: `./exports/[scenario]_[timestamp].md`
 Classic fantasy adventure. Perfect for learning Kleene basics.
 **Playtime:** 15-20 minutes | **Difficulty:** Beginner
 
-### The Yabba (Advanced)
-Psychological thriller inspired by *Wake in Fright* (1971). Dark themes, moral ambiguity.
-**Playtime:** 30-60 minutes | **Difficulty:** Advanced | **Content Warnings:** Psychological themes, substance use
-
-### Altered State Nightclub (Experimental)
-Surreal mystery in a nightclub that defies reality.
-**Playtime:** 20-40 minutes | **Difficulty:** Intermediate
-
-### Corporate Banking (Intermediate)
-Navigate career challenges and ethical dilemmas in the corporate world.
-**Playtime:** 25-35 minutes | **Difficulty:** Intermediate
+### Zork I: The Great Underground Empire - Mini (Intermediate)
+The legendary 1980 Infocom text adventure, adapted for Kleene. Explore the white house, descend into the Great Underground Empire, and collect treasures.
+**Playtime:** 20-30 minutes | **Difficulty:** Intermediate | **Classic Mode Recommended**
 
 
 ---
@@ -268,11 +260,9 @@ Try playing Dragon Quest at temp 0, then replay at temp 10. Mind = blown.
 - Smart lazy loading for massive scenarios
 - No external dependencies
 
-### Four Awesome Scenarios Included
-- **Dragon Quest** (beginner) - Classic fantasy adventure
-- **The Yabba** (advanced) - Psychological thriller with dark themes
-- **Altered State Nightclub** (experimental) - Surreal mystery
-- **Corporate Banking** (intermediate) - Career drama and tough choices
+### Two Scenarios Included
+- **Dragon Quest** (beginner) - Classic fantasy adventure to learn Kleene basics
+- **Zork I: Mini** (intermediate) - The legendary text adventure, reimagined
 
 ### Create Your Own Adventures
 - Simple YAML format (no coding required)
@@ -296,6 +286,7 @@ Try playing Dragon Quest at temp 0, then replay at temp 10. Mind = blown.
 ## Documentation
 
 - **[Getting Started](GETTING_STARTED.md)** - 5-minute quick start
+- **[Settings Reference](docs/SETTINGS.md)** - Temperature, foresight, classic mode, gallery mode
 - **[Scenario Authoring Guide](docs/SCENARIO_AUTHORING.md)** - Create your own adventures
 - **[Scenario Format Reference](lib/framework/scenario-format.md)** - Complete YAML specification
 - **[Presentation Conventions](lib/framework/presentation.md)** - Headers, traits, choice formatting
@@ -315,14 +306,29 @@ Every choice exists at the intersection of player intent and world response:
 
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
-| **Player Chooses** | Triumph       | Commitment          | Barrier      |
-| **Player Unknown** | Discovery     | Limbo               | Revelation   |
+| **Player Chooses** | Triumph       | Commitment          | Rebuff       |
+| **Player Unknown** | Discovery     | Limbo               | Constraint   |
 | **Player Avoids**  | Escape        | Deferral            | Fate         |
 
 **Player Unknown** captures both hesitation and improvised free-text actions.
 **Limbo** (center cell) is where side quests and improvisation thrive.
 
 A narratively complete scenario ensures coverage across the grid. See [Core Framework](lib/framework/core.md) for deep technical details.
+
+---
+
+## Third-Party Attribution
+
+### Zork I: The Great Underground Empire
+
+The `zork1-mini.yaml` scenario is adapted from the original ZIL source code.
+
+- **Original Creators:** Tim Anderson, Marc Blank, Bruce Daniels, and Dave Lebling
+- **Original Publisher:** Infocom, Inc. (1980)
+- **Source Repository:** [historicalsource/zork1](https://github.com/historicalsource/zork1)
+- **License:** MIT License (c) 2025 Microsoft Corporation
+
+The ZIL source was relicensed under MIT in November 2025 by Microsoft's OSPO, Team Xbox, and Activision. Per Microsoft: *"The goal is not to modernize Zork but to preserve it as a space for exploration and education."*
 
 ---
 

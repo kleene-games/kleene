@@ -38,31 +38,20 @@ The AI adapts the story to your creativity. ✨
 
 ---
 
-## Four Scenarios Included
+## Two Scenarios Included
 
-### Dragon Quest (Beginner) ⚔️
+### Dragon Quest (Beginner)
 Classic fantasy adventure. Perfect for learning Kleene basics.
 - **Playtime:** 15-20 minutes
 - **Difficulty:** Beginner
 - **Best for:** First-time players
 
-### The Yabba (Advanced) 🌵
-Psychological thriller inspired by *Wake in Fright* (1971). Dark themes, moral ambiguity.
-- **Playtime:** 30-60 minutes
-- **Difficulty:** Advanced
-- **Content Warnings:** Psychological themes, substance use, moral ambiguity
-
-### Altered State Nightclub (Experimental) 🎭
-Surreal mystery in a nightclub that defies reality.
-- **Playtime:** 20-40 minutes
+### Zork I: The Great Underground Empire - Mini (Intermediate)
+The legendary 1980 Infocom text adventure, adapted for Kleene. Explore the white house, descend into the Great Underground Empire, and collect treasures.
+- **Playtime:** 20-30 minutes
 - **Difficulty:** Intermediate
-- **Best for:** Players who like weird, experimental narratives
-
-### Corporate Banking (Intermediate) 💼
-Navigate career challenges and ethical dilemmas in the corporate world.
-- **Playtime:** 25-35 minutes
-- **Difficulty:** Intermediate
-- **Best for:** Decision-making practice, ethical dilemmas
+- **Best for:** Text adventure fans, Classic Mode enthusiasts
+- **Tip:** Try `/kleene classic on` for authentic parser-style play!
 
 ---
 
@@ -141,6 +130,8 @@ Save as `scenarios/my_adventure.yaml` and run `/kleene play my_adventure`
 | `/kleene generate [theme]` | Create new scenario |
 | `/kleene analyze [scenario]` | Check for issues |
 
+For detailed settings documentation, see the [Settings Reference](SETTINGS.md).
+
 ---
 
 ## Tips for Great Gameplay
@@ -191,6 +182,8 @@ This is what makes Kleene unique - the same scenario plays completely differentl
 | **10** | Wild experimentation | Fully emergent - anything can happen |
 
 **Pro tip:** Start at 0 to learn a scenario, then crank it up to 10 for emergent magic.
+
+For complete settings documentation including foresight, classic mode, and gallery mode, see the [Settings Reference](SETTINGS.md).
 
 ---
 
