@@ -575,13 +575,28 @@ endings:
       The dragon yields. Victory is yours.
       You have been transformed by the trial.
     type: victory
+    method: force          # Optional: how outcome was achieved
+    tone: triumphant       # Optional: emotional resonance
 
   death:
     narrative: |
       The dragon's fire consumes you.
       Your story ends here.
     type: death
+    method: avoidance      # Optional
+    tone: tragic           # Optional
 ```
+
+### Ending Fields
+
+| Field | Required | Values | Purpose |
+|-------|----------|--------|---------|
+| `narrative` | Yes | string | Ending text shown to player |
+| `type` | Yes | `victory`, `death`, `transcendence`, `unchanged` | Character's final existence state |
+| `method` | No | `force`, `wisdom`, `cunning`, `luck`, `sacrifice`, `relationship`, `time`, `avoidance` | How the outcome was achieved |
+| `tone` | No | `triumphant`, `bittersweet`, `tragic`, `ironic`, `enlightened`, `hollow`, `haunting`, `shameful` | Emotional resonance of the ending |
+
+See [endings.md](endings.md) for the full Ending Flavor System documentation.
 
 ## Option Properties
 
