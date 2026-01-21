@@ -296,28 +296,15 @@ When `settings.improvisation_temperature > 0` and relevant `improv_*` flags exis
 
 ### Gallery Mode (Meta-Commentary)
 
-If `settings.gallery_mode: true`, include analytical commentary alongside
-the narrative — like the "analysis cards" at art galleries that explain
-what's happening beneath the surface.
+> **Full specification:** See [gallery-mode.md](gallery-mode.md)
 
-**Gallery mode ON:** Include meta-headers like `[Temperature 10: Theme]`,
-explain psychological dynamics, comment on narrative structure, show why
-certain consequences are triggered. Educational and fascinating.
+When `settings.gallery_mode: true`, analytical commentary appears after
+the narrative block—like explanatory cards at art galleries. Gallery mode
+provides multi-dimensional literary commentary (examples: Recognition,
+Literary Resonance, Genre Awareness, Thematic Threads) and integrates
+with foresight settings for forward-looking hints.
 
-**Gallery mode OFF (default):** Pure in-world narrative only. No
-meta-commentary, no mechanics explanations, no breaking the fourth wall.
-The player experiences the story without seeing behind the curtain.
-
-**Example (gallery mode ON):**
-```
-[Temperature 10: Meta-Interrogation]
-
-Doc is asking the player's question through the character. With
-self-knowledge at 20 (maximum awareness), John Grant understands his
-own self-destruction was irrational. This is the psychological core
-of the story — why do people destroy themselves even when they see
-the trap clearly?
-```
+**Gallery mode OFF (default):** Pure in-world narrative only.
 
 ### Formatting Rules
 

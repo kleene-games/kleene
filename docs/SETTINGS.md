@@ -128,25 +128,53 @@ What do you do?
 
 ## Gallery Mode (Meta-Commentary)
 
-Adds educational analysis explaining narrative techniques as you play.
+Adds literary commentary explaining narrative techniques as you play—like
+the explanatory cards at art galleries.
 
 | Mode | What You See |
 |------|--------------|
 | **OFF** (default) | Pure immersive narrative |
-| **ON** | Analysis cards after key moments |
+| **ON** | Commentary cards after key moments |
+
+### Commentary Dimensions
+
+Gallery mode can offer many types of commentary. Common examples include:
+
+| Dimension | What It Illuminates |
+|-----------|---------------------|
+| **Recognition** | IF tropes and specific work references |
+| **Literary Resonance** | Connections to novels, myths, films |
+| **Genre Awareness** | Pattern identification (noir, heroic quest) |
+| **Character Archetypes** | What archetype you're embodying |
+| **Thematic Threads** | Patterns developing across the narrative |
 
 ### Example Commentary
 
-After making a choice, gallery mode might add:
+> **Gallery Note:** Like Frodo at Mount Doom—when the choice finally comes,
+> will matters more than strength.
 
-> **Narrative Analysis:** This creates a classic *Commitment* cell from the Decision Grid - you've chosen but the outcome remains uncertain. Notice how delaying the consequence builds tension while maintaining player agency.
+> **Gallery Note:** Third time through the spiral. Each drink costs more
+> than the last.
+
+### Foresight Integration
+
+Gallery mode works hand-in-hand with your foresight setting:
+
+| Commentary Type | Foresight Gating |
+|-----------------|------------------|
+| **Backward-looking** | Always available—retrospective isn't spoilers |
+| **Forward-looking** | Gated by foresight level (0 = none, 10 = full) |
+
+At foresight 0, gallery commentary explains how you got here but won't hint
+at what's ahead. At foresight 10, it might say: "Past the troll lies the
+treasure. Think Bilbo, not Beowulf."
 
 ### Best For
 
 - Writers studying narrative structure
 - Educators teaching interactive fiction
 - Curious players who want to understand the craft
-- Understanding the Decision Grid framework
+- Understanding how your choices shape the story
 
 ### Command
 ```bash
