@@ -332,6 +332,12 @@ The ZIL source was relicensed under MIT in November 2025 by Microsoft's OSPO, Te
 
 ---
 
+## Copyright
+
+Copyright (c) 2025 Mountain Ash Holdings Pty Ltd. All rights reserved.
+
+For commercial licensing inquiries: nathaniel.ramm@discretedatascience.com
+
 ## License
 
 GNU Affero General Public License v3.0 - see [LICENSE](LICENSE) file for details.
