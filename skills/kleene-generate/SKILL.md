@@ -85,7 +85,7 @@ For protagonist archetype, use a separate call (progressive disclosure):
 }
 ```
 
-**Menu Guidelines:** See `lib/framework/presentation.md` → "Menu Conventions".
+**Menu Guidelines:** See `lib/framework/gameplay/presentation.md` → "Menu Conventions".
 
 ### Step 2: Design the Narrative Skeleton
 
@@ -390,7 +390,7 @@ Add paths that transform rather than defeat:
 
 ### Writing Style
 
-> **Reference:** See `lib/framework/improvisation.md` → "Tone Matching"
+> **Reference:** See `lib/framework/gameplay/improvisation.md` → "Tone Matching"
 > and "Narrative Purity" for dialogue quality standards.
 
 Generated narrative and dialogue must:
@@ -402,10 +402,15 @@ Generated narrative and dialogue must:
 
 ## Additional Resources
 
-### Reference Files
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics, Decision Grid, and Improvisation Routing
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/improvisation.md`** - Tone Matching & Narrative Purity
+### Core
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md`** - Option type semantics, Decision Grid, and Improvisation Routing
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/endings.md`** - Ending classification and flavor system
+
+### Formats
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/scenario-format.md`** - YAML specification
+
+### Gameplay
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md`** - Tone Matching & Narrative Purity
 
 ### Example Scenarios
 - **`${CLAUDE_PLUGIN_ROOT}/scenarios/dragon_quest.yaml`** - Complete example

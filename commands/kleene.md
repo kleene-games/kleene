@@ -485,7 +485,7 @@ Use: /kleene rewind 6.2.1
 ### Export Actions
 Keywords: "export", "transcript", "save story", "save journey", "summary", "stats"
 
-> **Reference:** See `lib/framework/export.md` for complete format specifications.
+> **Reference:** See `lib/framework/gameplay/export.md` for complete format specifications.
 
 **Export Modes:**
 
@@ -603,7 +603,7 @@ Saves: ./saves/[scenario]/[timestamp].yaml
 
 ## Persistence
 
-> **Reference:** See `lib/framework/saves.md` for game folder conventions, save format, and persistence rules.
+> **Reference:** See `lib/framework/formats/saves.md` for game folder conventions, save format, and persistence rules.
 
 Saves are stored at `./saves/[scenario]/[timestamp].yaml` in the game folder.
 Bundled scenarios loaded from: `${CLAUDE_PLUGIN_ROOT}/scenarios/`

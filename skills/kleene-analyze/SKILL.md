@@ -155,7 +155,7 @@ For each path, determine cell in the 3x3 grid based on two axes:
 - **Indeterminate**: Outcome pending, no ending reached, multiple continuations
 - **Blocks**: Precondition prevents progress, action fails
 
-**The Decision Grid** (see `lib/framework/core.md` for detailed definitions):
+**The Decision Grid** (see `lib/framework/core/core.md` for detailed definitions):
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
 | **Player Chooses** | Triumph       | Commitment          | Rebuff       |
@@ -1195,7 +1195,7 @@ When no specific analysis is requested, use `AskUserQuestion` to let the user ch
 }
 ```
 
-**Menu Guidelines:** See `lib/framework/presentation.md` → "Menu Conventions".
+**Menu Guidelines:** See `lib/framework/gameplay/presentation.md` → "Menu Conventions".
 
 ## Quick Commands
 
@@ -1305,6 +1305,13 @@ Schema validation errors were encountered.
 
 ## Additional Resources
 
-### Reference Files
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Decision Grid and tier definitions
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML format
+### Core
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md`** - Decision Grid and tier definitions
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/endings.md`** - Ending classification and completeness analysis
+
+### Formats
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/scenario-format.md`** - YAML format
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/registry-format.md`** - Scenario registry format
+
+### Gameplay
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md`** - Menu conventions

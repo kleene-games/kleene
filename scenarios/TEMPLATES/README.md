@@ -219,7 +219,7 @@ initial_world:
 **After using templates:**
 1. Read the [Scenario Authoring Guide](../../docs/SCENARIO_AUTHORING.md)
 2. Study the bundled scenarios in `scenarios/`
-3. Check the [format specification](../../lib/framework/scenario-format.md)
+3. Check the [format specification](../../lib/framework/formats/scenario-format.md)
 4. Share your creation - see [CONTRIBUTING.md](../../CONTRIBUTING.md)
 
 **Need help?**

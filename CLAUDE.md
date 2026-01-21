@@ -125,7 +125,7 @@ endings:
 
 ### Adding New Scenarios
 
-1. Create `scenarios/your_scenario.yaml` following the format in `lib/framework/scenario-format.md`
+1. Create `scenarios/your_scenario.yaml` following the format in `lib/framework/formats/scenario-format.md`
 2. Validate with `/kleene analyze your_scenario`
 3. Test with `/kleene play your_scenario`
 
@@ -145,7 +145,7 @@ The `agents/game-runner.md` defines a haiku-model subagent that:
 
 ## Game Folder Convention
 
-> **Reference:** See `lib/framework/saves.md` for complete details.
+> **Reference:** See `lib/framework/formats/saves.md` for complete details.
 
 The current working directory is the "game folder". Saves are stored at `./saves/[scenario]/[timestamp].yaml`. Each gameplay session creates a new timestamped save file at start.
 

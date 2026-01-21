@@ -243,7 +243,7 @@ line uncluttered and makes NPC appearances feel significant.
 
 ## 3-Level Counter Discipline
 
-> **Reference:** See `lib/framework/presentation.md` for display format.
+> **Reference:** See `lib/framework/gameplay/presentation.md` for display format.
 
 ### Turn Increment
 
@@ -360,7 +360,7 @@ rich analytical content for those who want it.
 
 ## Presentation
 
-> **Reference:** See `lib/framework/presentation.md` for complete formatting rules.
+> **Reference:** See `lib/framework/gameplay/presentation.md` for complete formatting rules.
 
 Display improvised action responses with the same bold box format as regular nodes. Generate a creative title based on the player's action:
 
@@ -457,7 +457,7 @@ The temperature setting (0-10) controls how much improvised context influences t
 > **Gallery Mode:** For educational/analytical play, enable `gallery_mode`
 > in settings. This adds meta-commentary explaining psychological dynamics,
 > narrative structure, and why consequences trigger — like art gallery
-> analysis cards. See `lib/framework/presentation.md` → "Gallery Mode".
+> analysis cards. See `lib/framework/gameplay/presentation.md` → "Gallery Mode".
 
 ### Core Principle
 

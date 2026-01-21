@@ -163,13 +163,13 @@ If yq fails during extraction, silently fall back to grep. Never interrupt gamep
 
 ## Time Unit Constants
 
-> **Reference:** See `lib/framework/scenario-format.md` → "Time Units" for conversion table.
+> **Reference:** See `lib/framework/formats/scenario-format.md` → "Time Units" for conversion table.
 
 All temporal values in `world.time` are stored in seconds.
 
 ## Travel Time Configuration
 
-> **Reference:** See `lib/framework/scenario-format.md` → "Travel Configuration" for full schema.
+> **Reference:** See `lib/framework/formats/scenario-format.md` → "Travel Configuration" for full schema.
 
 When a scenario includes `travel_config`, time passes automatically during:
 - **Travel**: `move_to` consequences add travel time based on connection data
@@ -209,7 +209,7 @@ GAME_STATE:
   current_node: string        # Current node ID
   previous_node: string       # Previous node ID (for blocked restoration)
 
-  # 3-Level Counter (see lib/framework/presentation.md)
+  # 3-Level Counter (see lib/framework/gameplay/presentation.md)
   turn: number                # Major node transitions
   scene: number               # Groupings within turn (resets on turn++)
   beat: number                # Individual moments (resets on scene++)
@@ -321,7 +321,7 @@ Scene++ occurs automatically when:
    character: [scenario.initial_character]
    world: [scenario.initial_world]
    settings:
-     improvisation_temperature: 5  # Default (Balanced). See lib/framework/improvisation.md
+     improvisation_temperature: 5  # Default (Balanced). See lib/framework/gameplay/improvisation.md
      gallery_mode: false
      foresight: 5                  # Default (Suggestive)
      classic_mode: false           # Default: show choices
@@ -388,7 +388,7 @@ TURN:
      - IF temperature > 0 AND improv_* flags exist:
        - Generate contextual framing based on temperature level
        - Weave into or prepend to narrative text
-       - See lib/framework/improvisation.md → "Improvisation Temperature"
+       - See lib/framework/gameplay/improvisation.md → "Improvisation Temperature"
      - Output the (possibly adapted) narrative with formatting
      - Show character stats line
 
@@ -403,7 +403,7 @@ TURN:
      - IF temperature >= 7 AND improv_* flags suggest bonus action:
        - Generate at most 1 bonus option based on improv flags
        - Bonus options use soft consequences only (like free-text improv)
-       - See lib/framework/improvisation.md → "Bonus Options"
+       - See lib/framework/gameplay/improvisation.md → "Bonus Options"
 
   5. Present choices via AskUserQuestion:
 
@@ -586,7 +586,7 @@ TURN:
 
 ### Phase 3: Persistence
 
-> **Reference:** See `lib/framework/saves.md` for save format, file creation, and operations.
+> **Reference:** See `lib/framework/formats/saves.md` for save format, file creation, and operations.
 
 Save to disk when:
 - Game ends (victory, death, transcendence)
@@ -616,8 +616,8 @@ The PreToolUse hook auto-approves saves/ writes for seamless gameplay.
 
 ## Precondition & Consequence Evaluation
 
-> **Reference:** See `lib/framework/evaluation-reference.md` for precondition evaluation and consequence application tables.
-> **Schema Reference:** See `lib/framework/scenario-format.md` for all types and YAML syntax.
+> **Reference:** See `lib/framework/gameplay/evaluation-reference.md` for precondition evaluation and consequence application tables.
+> **Schema Reference:** See `lib/framework/formats/scenario-format.md` for all types and YAML syntax.
 
 ### Location Access Validation
 
@@ -700,7 +700,7 @@ Refuse to start the game.
 
 ## Improvised Action Handling
 
-> **Reference:** See `lib/framework/improvisation.md` for complete handling rules.
+> **Reference:** See `lib/framework/gameplay/improvisation.md` for complete handling rules.
 
 When a player selects "Other" and provides free-text input:
 
@@ -749,7 +749,7 @@ After delivering the hint, present the same choices again (no node advance).
 
 When a player selects an option with `next: improvise`, execute this special flow for the Unknown row of the Decision Grid.
 
-> **CRITICAL:** See `lib/framework/presentation.md` → "Improvise Option Flow" for seamless presentation rules. Never output internal processing notes.
+> **CRITICAL:** See `lib/framework/gameplay/presentation.md` → "Improvise Option Flow" for seamless presentation rules. Never output internal processing notes.
 
 ### Step 1: Display option narrative
 
@@ -873,7 +873,7 @@ Outcome nodes:
 
 ## Narrative Presentation
 
-> **⚠️ MANDATORY: Follow `lib/framework/presentation.md` EXACTLY**
+> **⚠️ MANDATORY: Follow `lib/framework/gameplay/presentation.md` EXACTLY**
 >
 > **ALL OUTPUT MUST BE 70 CHARACTERS WIDE — NO EXCEPTIONS.**
 >
@@ -889,13 +889,13 @@ Outcome nodes:
 - **Cinematic header**: Game start, location changes, major story beats
 - **Normal Header**: Same location, no major narrative changes 
 
-> **MANDATORY:**  See `lib/framework/presentation.md` → "Header Block" for templates and examples of each header
+> **MANDATORY:**  See `lib/framework/gameplay/presentation.md` → "Header Block" for templates and examples of each header
 
 
 
 ## Choice Presentation
 
-Use AskUserQuestion per conventions in `lib/framework/presentation.md`.
+Use AskUserQuestion per conventions in `lib/framework/gameplay/presentation.md`.
 
 **Silent Precondition Filtering**: Options failing preconditions are
 removed BEFORE presenting choices. Never show "locked" or "requires X"
@@ -1162,9 +1162,20 @@ END_GAME_LOOP:
 
 ## Additional Resources
 
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics, quadrant theory
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification, preconditions, consequences
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/presentation.md`** - Header, trait, and choice formatting
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/improvisation.md`** - Free-text action handling
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/saves.md`** - Game folder, save format, persistence rules
+### Core
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md`** - Option type semantics, Decision Grid theory
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/endings.md`** - Ending classification, flavor system
+
+### Formats
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/scenario-format.md`** - YAML specification, preconditions, consequences
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/saves.md`** - Game folder, save format, persistence rules
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/registry-format.md`** - Scenario registry format
+
+### Gameplay
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md`** - Header, trait, and choice formatting
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md`** - Free-text action handling
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/evaluation-reference.md`** - Precondition/consequence tables
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/export.md`** - End-game transcript/summary generation
+
+### Scenarios
 - **`${CLAUDE_PLUGIN_ROOT}/scenarios/`** - Bundled scenarios

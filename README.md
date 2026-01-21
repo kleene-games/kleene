@@ -177,7 +177,7 @@ endings:
     type: unchanged
 ```
 
-See the [complete format specification](lib/framework/scenario-format.md) for all features.
+See the [complete format specification](lib/framework/formats/scenario-format.md) for all features.
 
 ---
 
@@ -288,9 +288,9 @@ Try playing Dragon Quest at temp 0, then replay at temp 10. Mind = blown.
 - **[Getting Started](GETTING_STARTED.md)** - 5-minute quick start
 - **[Settings Reference](docs/SETTINGS.md)** - Temperature, foresight, classic mode, gallery mode
 - **[Scenario Authoring Guide](docs/SCENARIO_AUTHORING.md)** - Create your own adventures
-- **[Scenario Format Reference](lib/framework/scenario-format.md)** - Complete YAML specification
-- **[Presentation Conventions](lib/framework/presentation.md)** - Headers, traits, choice formatting
-- **[Improvisation Guide](lib/framework/improvisation.md)** - Free-text action handling
+- **[Scenario Format Reference](lib/framework/formats/scenario-format.md)** - Complete YAML specification
+- **[Presentation Conventions](lib/framework/gameplay/presentation.md)** - Headers, traits, choice formatting
+- **[Improvisation Guide](lib/framework/gameplay/improvisation.md)** - Free-text action handling
 - **[FAQ](docs/FAQ.md)** - Common questions answered
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Fix common issues
 
@@ -313,7 +313,7 @@ Every choice exists at the intersection of player intent and world response:
 **Player Unknown** captures both hesitation and improvised free-text actions.
 **Limbo** (center cell) is where side quests and improvisation thrive.
 
-A narratively complete scenario ensures coverage across the grid. See [Core Framework](lib/framework/core.md) for deep technical details.
+A narratively complete scenario ensures coverage across the grid. See [Core Framework](lib/framework/core/core.md) for deep technical details.
 
 ---
 

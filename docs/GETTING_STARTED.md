@@ -79,7 +79,7 @@ The AI creates a complete scenario with:
 
 1. Study `scenarios/dragon_quest.yaml` for inspiration
 2. Follow the [Scenario Authoring Guide](docs/SCENARIO_AUTHORING.md)
-3. Use the [format specification](lib/framework/scenario-format.md) as reference
+3. Use the [format specification](lib/framework/formats/scenario-format.md) as reference
 
 **Minimal working scenario:**
 

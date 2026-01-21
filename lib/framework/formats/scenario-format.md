@@ -906,7 +906,7 @@ precondition:
   instant: true
 ```
 
-When `travel_config` exists and `instant` is not `true`, travel time is automatically added to `world.time`. See `lib/framework/evaluation-reference.md` for calculation details.
+When `travel_config` exists and `instant` is not `true`, travel time is automatically added to `world.time`. See `lib/framework/gameplay/evaluation-reference.md` for calculation details.
 
 ### advance_time
 ```yaml
