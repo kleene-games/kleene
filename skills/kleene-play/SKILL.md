@@ -713,6 +713,76 @@ When a player selects "Other" and provides free-text input:
 
 Soft consequences preserve scenario balance while rewarding exploration.
 
+### Compound Command Resolution
+
+When a player provides multi-step natural language input via "Other", Kleene can resolve compound commands that span multiple nodes in a single interaction.
+
+**Example input:**
+> "go to the tree, climb it, get the egg, then go to the window, open it and climb in"
+
+**Resolution process:**
+
+1. **Parse compound intent**: Break the input into discrete actions:
+   - `go to the tree`
+   - `climb it`
+   - `get the egg`
+   - `go to the window`
+   - `open it`
+   - `climb in`
+
+2. **Match against scenario graph**: For each action, search for matching options in the current node (and subsequent nodes as we traverse):
+   - Find option text that matches the action semantically
+   - Verify preconditions pass for each step
+   - Chain: action₁ → next_node₁ → find action₂ → next_node₂ → ...
+
+3. **Batch validation**: Before executing, verify the entire chain is valid:
+   - All intermediate preconditions pass
+   - No NONE_* endings in the middle of the chain
+   - Final destination node exists
+
+4. **Execute and narrate**: If the full chain validates:
+   - Apply consequences for each step in sequence
+   - Accumulate narrative from each traversed node
+   - Present a cohesive summary of the journey
+   - Land at the final destination node
+   - Increment turn counter once (not per step)
+
+**Example output:**
+```
+You make your way to the old oak tree and scale its gnarled trunk.
+In a hollow near the top, you find the speckled egg and pocket it
+carefully. Climbing down, you cross the garden to the cottage
+window, ease it open, and slip inside to the warmth of the kitchen.
+
+[+1 agility] [Gained: speckled egg]
+```
+
+**When compound resolution fails:**
+
+If any step in the chain fails (precondition not met, no matching option, invalid destination):
+- Execute valid steps up to the failure point
+- Stop and explain what blocked progress
+- Present choices at the node where progress stopped
+
+**Example partial resolution:**
+```
+You reach the tree and climb up, finding the egg. But as you
+approach the cottage, you notice the window is latched from inside.
+
+You're at: Garden Path
+```
+
+**Comparison with other systems:**
+
+| System | Multi-step handling |
+|--------|---------------------|
+| AI Dungeon | One action at a time |
+| Intra | One action at a time |
+| Traditional IF | Parser handles one command |
+| **Kleene** | Batch-resolves valid multi-node traversals |
+
+This enables fluid, natural play where experienced players can express complex intentions without tedious step-by-step confirmation, while the scenario structure ensures consistency.
+
 ### Hint Generation (Foresight-Gated)
 
 When player asks for help/hints during improvisation (e.g., "where is the

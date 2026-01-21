@@ -89,35 +89,26 @@ For protagonist archetype, use a separate call (progressive disclosure):
 
 ### Step 2: Design the Narrative Skeleton
 
+> **Reference:** See `lib/framework/core/core.md` → "Completeness Tiers" for full definitions.
+
 Create the core structure based on target tier:
 
-**Bronze (4 of 9 cells):**
+**Bronze (4 corners):** Triumph, Rebuff, Escape, Fate
 ```
 START
-  ├── Path A (decisive action)
-  │   ├── A1: Triumph (Chooses + Permits) → Victory
-  │   └── A2: Rebuff (Chooses + Blocks) → Blocked/Death
-  └── Path B (avoidance)
-      ├── B1: Escape (Avoids + Permits) → Unchanged
-      └── B2: Fate (Avoids + Blocks) → Forced consequence
+  ├── Path A (action) → Triumph/Rebuff
+  └── Path B (avoidance) → Escape/Fate
 ```
 
-**Silver (6+ of 9 cells):**
+**Silver (Bronze + 2 middle):** Add Commitment, Discovery, or Deferral
 ```
 START
-  ├── Path A (decisive action)
-  │   ├── A1: Triumph → Victory
-  │   ├── A2: Commitment (Chooses + Indeterminate) → Pending outcome
-  │   └── A3: Rebuff → Blocked
-  ├── Path B (exploration/hesitation)
-  │   └── B1: Discovery (Unknown + Permits) → Insight gained
-  └── Path C (avoidance)
-      ├── C1: Escape → Unchanged
-      └── C2: Deferral (Avoids + Indeterminate) → Tension building
+  ├── Path A → Triumph/Commitment/Rebuff
+  ├── Path B (explore) → Discovery
+  └── Path C (avoid) → Escape/Deferral
 ```
 
-**Gold (all 9 cells):**
-Include explicit nodes for all 9 grid intersections. The "Unknown" row (Discovery, Limbo, Constraint) can be reached through exploration options or improvised play.
+**Gold (all 9 cells):** All cells scripted or via improvisation
 
 ### Step 3: Define Key Elements
 
@@ -157,27 +148,18 @@ For each node, ensure:
 4. **Consequences**: State changes that matter
 5. **Connections**: Clear paths to other nodes
 
-### Step 5: Ensure Grid Coverage (9 Cells Total)
+### Step 5: Ensure Grid Coverage
 
-The Decision Grid has 9 cells (3 Player × 3 World). Target tier determines minimum coverage:
+> **Reference:** See `lib/framework/core/core.md` → "Completeness Tiers" for cell definitions.
+> **Validation:** Use `lib/guides/analysis-validation-guide.md` → "Narrative Validation" to verify.
 
-**Bronze (4/9 required):**
-- [ ] Triumph (Chooses + Permits) - victory/transformation
-- [ ] Rebuff (Chooses + Blocks) - blocked path
-- [ ] Escape (Avoids + Permits) - unchanged/survival
-- [ ] Fate (Avoids + Blocks) - forced consequence
-- [ ] At least one NONE_DEATH path (mortality)
-- [ ] At least one SOME_TRANSFORMED path (growth)
+**Minimum Requirements by Tier:**
 
-**Silver (6/9 required — Bronze + 2 middle cells):**
-- [ ] Commitment (Chooses + Indeterminate) - action with pending outcome
-- [ ] Discovery (Unknown + Permits) - exploration rewarded
-- [ ] Constraint (Unknown + Blocks) - hesitation reveals constraint
-- [ ] Deferral (Avoids + Indeterminate) - avoidance postpones consequence
-- [ ] Limbo (Unknown + Indeterminate) - typically via improvisation
-
-**Gold (9/9 required):**
-All 9 cells must have scripted paths or improvisation routes.
+| Tier | Cells | Required | Plus |
+|------|-------|----------|------|
+| Bronze | 4/9 | Triumph, Rebuff, Escape, Fate | NONE_DEATH + SOME_TRANSFORMED paths |
+| Silver | 6/9 | Bronze + 2 middle cells | Commitment, Discovery, Constraint, Deferral, or Limbo |
+| Gold | 9/9 | All cells | Scripted or via improvisation |
 
 ### Step 6: Write YAML
 
@@ -403,11 +385,14 @@ Generated narrative and dialogue must:
 ## Additional Resources
 
 ### Core
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md`** - Option type semantics, Decision Grid, and Improvisation Routing
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md`** - Option type semantics, Decision Grid, Completeness Tiers
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/endings.md`** - Ending classification and flavor system
 
 ### Formats
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/scenario-format.md`** - YAML specification
+
+### Guides
+- **`${CLAUDE_PLUGIN_ROOT}/lib/guides/analysis-validation-guide.md`** - Validation checklists for generated scenarios
 
 ### Gameplay
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md`** - Tone Matching & Narrative Purity
