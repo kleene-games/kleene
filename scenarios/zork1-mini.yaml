@@ -1,8 +1,27 @@
-# Zork I: The Great Underground Empire
-# A Kleene narrative scenario adaptation of the classic Infocom adventure
-# Based on the original ZIL source code (c) 1983 Infocom, Inc.
+# =============================================================================
+# Zork I: The Great Underground Empire (Mini Edition)
+# A Kleene narrative scenario adaptation
+# =============================================================================
+#
+# ATTRIBUTION
+# -----------
+# Original game created by Tim Anderson, Marc Blank, Bruce Daniels, and
+# Dave Lebling at MIT (1977-1979), published by Infocom (1980).
+#
+# "You are standing in an open field west of a white house..."
+#
+# Source: ZIL (Zork Implementation Language) source code
+# License: MIT License (c) 2025 Microsoft Corporation
+# Repository: https://github.com/historicalsource/zork1
+#
+# Relicensed under MIT in November 2025 by Microsoft's OSPO, Team Xbox,
+# and Activision for preservation and education.
+#
+# This adaptation transforms the parser-based gameplay into Kleene's
+# narrative choice format while preserving the spirit of the original.
+# =============================================================================
 
-name: "Zork I: The Great Underground Empire"
+name: "Zork I: The Great Underground Empire - Mini"
 description: "Explore the ruins of an ancient empire, collect treasures, and survive the perils of the Great Underground Empire."
 version: "1.0.0"
 
@@ -80,7 +99,6 @@ start_node: west_of_house
 # =============================================================================
 
 nodes:
-
   # ---------------------------------------------------------------------------
   # ABOVE GROUND - WHITE HOUSE EXTERIOR
   # ---------------------------------------------------------------------------
@@ -2198,7 +2216,6 @@ nodes:
 # =============================================================================
 
 endings:
-
   victory:
     narrative: |
       *** CONGRATULATIONS ***

@@ -164,7 +164,7 @@ nodes:
               Nothing particularly catches your eye.
           outcome_nodes:
             discovery: notice_tension
-            revelation: attract_attention
+            constraint: attract_attention
 
   notice_tension:
     narrative: |
@@ -374,7 +374,7 @@ nodes:
               Time stretches. Perhaps a different approach is needed.
           outcome_nodes:
             discovery: guardian_notices_patience
-            revelation: guardian_dismisses
+            constraint: guardian_dismisses
 
         - id: sneak
           text: "Try to slip past while distracted"

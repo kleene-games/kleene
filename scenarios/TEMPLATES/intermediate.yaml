@@ -127,7 +127,7 @@ nodes:
               impassive, giving nothing away.
           outcome_nodes:
             discovery: guardian_respect
-            revelation: guardian_dismissal
+            constraint: guardian_dismissal
 
         # NEW in v5: NPC-gated option (only available when guardian is present)
         - id: speak_to_guardian
