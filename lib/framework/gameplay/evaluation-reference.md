@@ -153,6 +153,90 @@ IF scenario.travel_config.improvisation_time exists:
 | `meta` | 0 | Save, help, inventory (always 0) |
 | `limbo` | 5 | Ambiguous or hesitant actions |
 
+## Location Access Validation
+
+When evaluating a `move_to` consequence or presenting location-based options:
+
+1. Find target location in `scenario.initial_world.locations[]`
+2. If location has `precondition`:
+   - Evaluate precondition against current state
+   - If FAILS, apply `access_mode`:
+     - `filter` (default): Hide the option entirely
+     - `show_locked`: Show option with "[Locked]" indicator, disabled
+     - `show_normal`: Show normally, fail with message if selected
+
+### Access Denied Display
+
+For `show_normal` mode when access fails:
+
+```
+╭──────────────────────────────────────────────────────────────────────╮
+│ ACCESS DENIED                                                        │
+╰──────────────────────────────────────────────────────────────────────╯
+
+[access_denied_narrative or generated fallback]
+
+You cannot enter [location name].
+```
+
+### Location Access Fallback Messages
+
+| Precondition Type | Fallback Template |
+|-------------------|-------------------|
+| `has_item` | "You need the **[item]** to enter this place." |
+| `trait_minimum` | "Your **[trait]** is insufficient to access this location." |
+| `flag_set` | "Something must happen before this place opens to you." |
+| `environment_is` | "The **[property]** here must be **[value]**." |
+| `environment_minimum` | "The **[property]** here is too low." |
+| `environment_maximum` | "The **[property]** here is too high." |
+| `all_of` | Generate message for first failing sub-condition |
+
+## Blocked Display Format
+
+When a node precondition fails, display:
+
+```
+╭──────────────────────────────────────────────────────────────────────╮
+│ BLOCKED                                                              │
+╰──────────────────────────────────────────────────────────────────────╯
+
+[blocked_narrative or generated fallback]
+
+You remain where you are.
+```
+
+The header uses the standard 70-character width with rounded corners.
+
+## Fallback Message Generation
+
+If a node has a `precondition` but no `blocked_narrative`, generate a fallback:
+
+| Precondition Type | Fallback Template |
+|-------------------|-------------------|
+| `has_item` | "You need the **[item]** to proceed here." |
+| `missing_item` | "The **[item]** you carry prevents this path." |
+| `trait_minimum` | "Your **[trait]** ([current]) is insufficient. Requires at least [minimum]." |
+| `trait_maximum` | "Your **[trait]** ([current]) is too high. Requires [maximum] or less." |
+| `flag_set` | "Something must happen before you can proceed." |
+| `flag_not_set` | "Your past actions have closed this path." |
+| `relationship_minimum` | "Your relationship with **[npc]** ([current]) is insufficient. Requires at least [minimum]." |
+| `location_flag_set` | "The **[location]** is not yet prepared for this." |
+| `location_flag_not_set` | "Conditions at **[location]** prevent this path." |
+| `location_property_minimum` | "The **[property]** at **[location]** is insufficient." |
+| `location_property_maximum` | "The **[property]** at **[location]** is too high." |
+| `all_of` | Generate message for first failing sub-condition |
+| `any_of` | "You need at least one of several requirements." |
+| `none_of` | "Your current situation prevents this path." |
+
+### Edge Case: Start Node with Precondition
+
+If `start_node` has a `precondition`, this is a scenario design error. Display:
+```
+ERROR: Start node cannot have a precondition.
+The scenario "[name]" has an invalid configuration.
+```
+Refuse to start the game.
+
 ## Time Unit Constants
 
 Convert time units to seconds for all temporal operations:

@@ -54,7 +54,7 @@ Unlike traditional choice-based games, Kleene responds to free-form actions and 
 | `/kleene continue [scenario]` | Resume from save |
 | `/kleene temperature [0-10]` | Set adaptation level |
 | `/kleene foresight [0-10]` | Set hint specificity |
-| `/kleene classic [on\|off]` | Toggle text adventure mode |
+| `/kleene parser [on\|off]` | Toggle text adventure mode |
 | `/kleene save` | Save current game |
 | `/kleene rewind [target]` | Rewind to earlier point (T6.2.3, -1, --1) |
 | `/kleene export [mode]` | Export gameplay (transcript/summary/stats/branches/gallery) |
@@ -92,7 +92,7 @@ The AI evaluates feasibility and generates responses that fit the scenario tone.
 - **Export System**: Save gameplay as clean narrative or analytical summary
 - **Gallery Mode**: Educational meta-commentary on narrative techniques
 - **Foresight Setting**: Control how much the game reveals when you ask for hints
-- **Classic Mode**: Text adventure-style play—type commands like Zork
+- **Parser Mode**: Text adventure-style play—type commands like Zork
 - **Auto-approval Hooks**: Seamless gameplay without permission prompts
 - **Pure Claude Code Integration**: No separate app, plays in your terminal
 
@@ -199,7 +199,7 @@ Saves are stored at: `./saves/[scenario_name]/[timestamp].yaml`
 - **Manual save:** `/kleene save` during gameplay
 - **Resume:** `/kleene continue [scenario]` lists available saves
 - **Rewind:** `/kleene rewind T6.2.3` jumps to Turn 6, Scene 2, Beat 3
-- **Save format v7:** Includes scene/beat counters, location state, NPC tracking, scheduled events, foresight, and classic mode settings
+- **Save format v8:** Includes scene/beat counters, location state, NPC tracking, scheduled events, foresight, and parser mode settings
 
 ---
 
@@ -233,7 +233,7 @@ Classic fantasy adventure. Perfect for learning Kleene basics.
 
 ### Zork I: The Great Underground Empire - Mini (Intermediate)
 The legendary 1980 Infocom text adventure, adapted for Kleene. Explore the white house, descend into the Great Underground Empire, and collect treasures.
-**Playtime:** 20-30 minutes | **Difficulty:** Intermediate | **Classic Mode Recommended**
+**Playtime:** 20-30 minutes | **Difficulty:** Intermediate | **Parser Mode Recommended**
 
 
 ---
@@ -286,7 +286,7 @@ Try playing Dragon Quest at temp 0, then replay at temp 10. Mind = blown.
 ## Documentation
 
 - **[Getting Started](GETTING_STARTED.md)** - 5-minute quick start
-- **[Settings Reference](docs/SETTINGS.md)** - Temperature, foresight, classic mode, gallery mode
+- **[Settings Reference](docs/SETTINGS.md)** - Temperature, foresight, parser mode, gallery mode
 - **[Scenario Authoring Guide](docs/SCENARIO_AUTHORING.md)** - Create your own adventures
 - **[Scenario Format Reference](lib/framework/formats/scenario-format.md)** - Complete YAML specification
 - **[Presentation Conventions](lib/framework/gameplay/presentation.md)** - Headers, traits, choice formatting

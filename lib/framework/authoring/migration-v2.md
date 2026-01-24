@@ -559,4 +559,4 @@ The play skill automatically upgrades v4 saves when loaded:
 
 - [Scenario Format](../framework/scenario-format.md) - Complete YAML reference
 - [Best Practices](./best-practices.md) - Design patterns for v5 features
-- [Templates](../../scenarios/TEMPLATES/) - Example scenarios demonstrating features
+- [Templates](../../lib/framework/authoring/TEMPLATES/) - Example scenarios demonstrating features

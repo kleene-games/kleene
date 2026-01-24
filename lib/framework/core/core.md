@@ -28,43 +28,6 @@ These axes intersect to produce 9 cells - the complete space of narrative outcom
 
 > For the theoretical foundations in Kleene logic and game theory, see [theoretical_background.md](theoretical_background.md).
 
-## The Option Type
-
-The Option type wraps narrative possibility:
-
-```
-Option[Character]
-├── Some(character) → character exists, story continues
-└── None(reason)    → character absent, story may end
-```
-
-Every Option tracks its history—the sequence of transformations that led here:
-
-```
-Some(hero enters) → Some(found sword) → Some(faced dragon) → None(consumed by fire)
-```
-
-This trace IS the story.
-
-### Transformations
-
-**map() - Safe Change**
-Your character changes but survives. Gain a sword, learn a secret, move locations.
-```
-hero.map(gain_sword) → Some(hero with sword)
-```
-
-**and_then() - Risky Action**
-Your character enters danger that might end them. Fight the dragon, cross the chasm.
-```
-hero.and_then(fight_dragon) → Some(victorious) OR None(defeated)
-```
-
-**filter() - Conditional Gate**
-Continue only if a condition is met:
-```
-hero.filter(courage >= 5) → Some(hero) OR None(courage failed)
-```
 
 ## The Decision Grid
 

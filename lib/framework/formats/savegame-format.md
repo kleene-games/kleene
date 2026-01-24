@@ -47,11 +47,11 @@ Save file written when:
 
 Each gameplay session creates a new timestamped save file. The `session_timestamp` in the filename is set once at game start and reused for all saves in that session.
 
-## Save File Format (v7)
+## Save File Format (v8)
 
 ```yaml
 # Save metadata
-save_version: 7
+save_version: 8
 scenario: [scenario_name]
 session_started: "[ISO timestamp from game start]"
 last_saved: "[current ISO timestamp]"
@@ -109,13 +109,15 @@ settings:
   improvisation_temperature: [0-10]
   gallery_mode: [boolean]
   foresight: [0-10]              # Hint specificity level
-  classic_mode: [boolean]        # Hide scripted options (parser mode)
+  parser_mode: [boolean]         # Hide scripted options (parser-style play)
 ```
 
 ### Backward Compatibility
 
-**v6 → v7:** Saves without `classic_mode` field default to:
-- `classic_mode: false`
+**v7 → v8:** Saves with `classic_mode` field are auto-migrated:
+- `classic_mode: true` → `parser_mode: true`
+- `classic_mode: false` → `parser_mode: false`
+- Saves without either field default to `parser_mode: false`
 
 **v5 → v6:** Saves without `foresight` field default to:
 - `foresight: 5`

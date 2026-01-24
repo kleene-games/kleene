@@ -633,5 +633,5 @@ consequence:
 
 - [Migration Guide](./migration-v2.md) - Upgrading from v4
 - [Scenario Format](../framework/scenario-format.md) - Complete YAML reference
-- [Advanced Template](../../scenarios/TEMPLATES/advanced.yaml) - Feature showcase
-- [Temporal Template](../../scenarios/TEMPLATES/temporal_example.yaml) - Time system focus
+- [Advanced Template](../../lib/framework/authoring/TEMPLATES/advanced.yaml) - Feature showcase
+- [Temporal Template](../../lib/framework/authoring/TEMPLATES/temporal_example.yaml) - Time system focus

@@ -54,15 +54,9 @@ travel_config:
 
 ### Improvisation Time Defaults
 
-If `improvisation_time` is omitted but `travel_config` exists, these defaults apply:
+If `improvisation_time` is omitted but `travel_config` exists, defaults apply.
 
-| Intent | Default Minutes |
-|--------|-----------------|
-| `explore` | 15 |
-| `interact` | 10 |
-| `act` | 20 |
-| `meta` | 0 |
-| `limbo` | 5 |
+> **Reference:** See `lib/framework/gameplay/evaluation-reference.md` → "Improvisation Time Calculation" for default values table.
 
 ### Backward Compatibility
 

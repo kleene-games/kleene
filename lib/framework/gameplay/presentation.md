@@ -410,100 +410,20 @@ Bonus option descriptions should:
 
 ---
 
-## Adaptive Help in Classic Mode
+## Parser Mode Presentation
 
-Classic mode hides scripted choices, presenting only "Look around",
-"Inventory", and "Show help". The adaptive help system dynamically
-generates hints by extracting verbs from the hidden options.
+> **Full specification:** See [parser-mode.md](parser-mode.md) for all
+> parser mode behaviors including Look Around, Inventory, Adaptive Help,
+> and free-text input handling.
 
-### User Insight
+Parser mode uses the same presentation conventions (70-char width,
+header/footer blocks) but hides scripted options.
 
-> "Help options can be derived from the game options that are not being
-> shown in classic mode!"
+### Mode Comparison
 
-The hidden options already contain contextually relevant verbs. Instead
-of a static help screen, we extract and present these as hints without
-revealing specific objects.
-
-### Verb Extraction Algorithm
-
-1. **Collect option texts**: Read all `options[].text` from current node
-2. **Parse leading verb**: Extract first word, lowercase it
-   - "Open the mailbox" → "open"
-   - "Go north around the house" → "go"
-   - "Read the leaflet" → "read"
-3. **Deduplicate**: Remove duplicate verbs
-4. **Filter by preconditions**: Only include verbs from options that
-   pass precondition checks (don't hint at impossible actions)
-
-### Verb Categories
-
-```
-MOVEMENT:     go, enter, climb, descend, exit, flee, leave, walk
-EXAMINE:      examine, look, read, search, inspect, study
-INTERACT:     open, close, take, drop, give, use, push, pull, turn
-COMBAT:       attack, fight, defend, strike, parry
-COMMUNICATE:  say, ask, talk, tell, shout, whisper
-```
-
-Verbs not matching any category are grouped under "Other".
-
-### Help Output Format
-
-Width: exactly 70 characters.
-
-```
-═══════════════════════════════════════════════════════════════════════
-COMMANDS THAT MIGHT WORK HERE
-═══════════════════════════════════════════════════════════════════════
-
-Movement:    go [direction], enter
-Examine:     examine [thing], read
-Interact:    open, take
-
-UNIVERSAL COMMANDS
-inventory    - check what you're carrying
-look         - survey surroundings
-save         - save your game
-═══════════════════════════════════════════════════════════════════════
-```
-
-### Display Rules
-
-- **Show verb only**: "open" not "open mailbox"
-- **Add placeholders**: "go [direction]", "examine [thing]"
-- **Show categories with verbs only**: Omit empty categories
-- **Always show universal commands**: inventory, look, save
-- **Respect 70-char width**: Wrap long verb lists
-
-### Example Extraction
-
-**Current node has hidden options:**
-```yaml
-- text: "Open the mailbox"
-- text: "Go north around the house"
-- text: "Go south around the house"
-- text: "Read the leaflet"
-```
-
-**Extracted verbs:** open, go, read
-
-**Generated help:**
-```
-═══════════════════════════════════════════════════════════════════════
-COMMANDS THAT MIGHT WORK HERE
-═══════════════════════════════════════════════════════════════════════
-
-Movement:    go [direction]
-Examine:     read [thing]
-Interact:    open [thing]
-
-UNIVERSAL COMMANDS
-inventory    - check what you're carrying
-look         - survey surroundings
-save         - save your game
-═══════════════════════════════════════════════════════════════════════
-```
-
-The player learns that "go", "read", and "open" are relevant without
-knowing the specific objects or directions.
+| Aspect | Choice Mode (default) | Parser Mode |
+|--------|----------------------|-------------|
+| Options visible | Yes (2-4 scripted) | No (hidden) |
+| Input method | Select from menu | Type commands |
+| Help system | Self-evident options | Adaptive verb hints |
+| Setting | `parser_mode: false` | `parser_mode: true` |

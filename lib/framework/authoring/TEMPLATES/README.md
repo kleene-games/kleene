@@ -24,7 +24,7 @@ The absolute minimum needed for a working scenario. Use this for:
 
 **Try it:**
 ```bash
-/kleene play TEMPLATES/minimal
+/kleene play lib/framework/authoring/TEMPLATES/minimal
 ```
 
 ---
@@ -51,7 +51,7 @@ A complete basic scenario with branching paths and multiple endings. Use this fo
 
 **Try it:**
 ```bash
-/kleene play TEMPLATES/basic
+/kleene play lib/framework/authoring/TEMPLATES/basic
 ```
 
 ---
@@ -80,7 +80,7 @@ A sophisticated scenario showcasing advanced features. Use this for:
 
 **Try it:**
 ```bash
-/kleene play TEMPLATES/intermediate
+/kleene play lib/framework/authoring/TEMPLATES/intermediate
 ```
 
 ---
@@ -91,7 +91,7 @@ A sophisticated scenario showcasing advanced features. Use this for:
 
 1. **Copy a template:**
    ```bash
-   cp scenarios/TEMPLATES/basic.yaml scenarios/my_adventure.yaml
+   cp lib/framework/authoring/TEMPLATES/basic.yaml scenarios/my_adventure.yaml
    ```
 
 2. **Customize it:**

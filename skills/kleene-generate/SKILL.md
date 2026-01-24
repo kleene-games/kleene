@@ -85,30 +85,16 @@ For protagonist archetype, use a separate call (progressive disclosure):
 }
 ```
 
-**Menu Guidelines:** See `lib/framework/gameplay/presentation.md` → "Menu Conventions".
+**Menu Guidelines:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md` → "Menu Conventions".
 
 ### Step 2: Design the Narrative Skeleton
 
-> **Reference:** See `lib/framework/core/core.md` → "Completeness Tiers" for full definitions.
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md` → "Completeness Tiers" for full definitions.
 
-Create the core structure based on target tier:
-
-**Bronze (4 corners):** Triumph, Rebuff, Escape, Fate
-```
-START
-  ├── Path A (action) → Triumph/Rebuff
-  └── Path B (avoidance) → Escape/Fate
-```
-
-**Silver (Bronze + 2 middle):** Add Commitment, Discovery, or Deferral
-```
-START
-  ├── Path A → Triumph/Commitment/Rebuff
-  ├── Path B (explore) → Discovery
-  └── Path C (avoid) → Escape/Deferral
-```
-
-**Gold (all 9 cells):** All cells scripted or via improvisation
+Create structure based on target tier:
+- **Bronze**: 4 corners (Triumph, Rebuff, Escape, Fate)
+- **Silver**: Bronze + 2 middle cells (Commitment, Discovery, Constraint, Deferral, or Limbo)
+- **Gold**: All 9 cells scripted or via improvisation
 
 ### Step 3: Define Key Elements
 
@@ -150,8 +136,8 @@ For each node, ensure:
 
 ### Step 5: Ensure Grid Coverage
 
-> **Reference:** See `lib/framework/core/core.md` → "Completeness Tiers" for cell definitions.
-> **Validation:** Use `lib/guides/analysis-validation-guide.md` → "Narrative Validation" to verify.
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md` → "Completeness Tiers" for cell definitions.
+> **Validation:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/analysis-validation-guide.md` → "Narrative Validation" to verify.
 
 **Minimum Requirements by Tier:**
 
@@ -372,7 +358,7 @@ Add paths that transform rather than defeat:
 
 ### Writing Style
 
-> **Reference:** See `lib/framework/gameplay/improvisation.md` → "Tone Matching"
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md` → "Tone Matching"
 > and "Narrative Purity" for dialogue quality standards.
 
 Generated narrative and dialogue must:
@@ -392,7 +378,12 @@ Generated narrative and dialogue must:
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/scenario-format.md`** - YAML specification
 
 ### Guides
-- **`${CLAUDE_PLUGIN_ROOT}/lib/guides/analysis-validation-guide.md`** - Validation checklists for generated scenarios
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/analysis-validation-guide.md`** - Validation checklists for generated scenarios
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/best-practices.md`** - v5 design patterns and authoring tips
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/migration-v2.md`** - Migration guide for updating older scenarios
+
+### Templates
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/TEMPLATES/README.md`** - Template usage guide and selection
 
 ### Gameplay
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md`** - Tone Matching & Narrative Purity

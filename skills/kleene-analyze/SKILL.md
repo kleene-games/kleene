@@ -31,10 +31,10 @@ Analyze scenario structure for narrative completeness, detecting missing cells i
 
 ## Workflow
 
-> **Tool Detection:** See `lib/patterns/tool-detection.md` for yq availability check.
-> **Query Templates:** See `lib/patterns/yaml-extraction.md` for all extraction patterns.
-> **Report Format:** See `lib/framework/formats/analysis-report-format.md` for output specification.
-> **Validation Checklists:** See `lib/guides/analysis-validation-guide.md` for all checks.
+> **Tool Detection:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-file-loading/tool-detection.md`
+> **Query Templates:** See `${CLAUDE_PLUGIN_ROOT}/lib/patterns/analysis-queries.md`
+> **Report Format:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/analysis-report-format.md` for output specification.
+> **Validation Checklists:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/analysis-validation-guide.md` for all checks.
 
 ### Step 1: Load Scenario
 
@@ -52,7 +52,7 @@ Construct directed graph:
 - Edges: Connections from choice options to next_node
 - Edge metadata: option_id, preconditions, consequences
 
-Use yq graph structure extraction (see `lib/patterns/yaml-extraction.md` → "Analysis Patterns"):
+Use yq graph structure extraction (see `${CLAUDE_PLUGIN_ROOT}/lib/patterns/analysis-queries.md` → "Analysis Patterns"):
 
 ```bash
 yq '.nodes | to_entries | .[] | {"node": .key, "options": [.value.choice.options[] | {"id": .id, "cell": .cell, "next": (.next_node // .next), "precondition": .precondition}]}' scenario.yaml
@@ -74,13 +74,7 @@ Enumerate paths from start_node to each ending. Track path length and required p
 
 ### Step 5: Classify Paths into Cells
 
-**The Decision Grid** (see `lib/framework/core/core.md` for detailed definitions):
-
-|                    | World Permits | World Indeterminate | World Blocks |
-|--------------------|---------------|---------------------|--------------|
-| **Player Chooses** | Triumph       | Commitment          | Rebuff       |
-| **Player Unknown** | Discovery     | Limbo               | Constraint   |
-| **Player Avoids**  | Escape        | Deferral            | Fate         |
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md` → "The Decision Grid" for cell definitions.
 
 **Classification Signals:**
 - Triumph: Active option + success ending
@@ -95,11 +89,9 @@ Enumerate paths from start_node to each ending. Track path length and required p
 
 ### Step 6: Classify Endings
 
-Map each ending to outcome type:
-- `type: victory` → SOME_TRANSFORMED
-- `type: death` → NONE_DEATH
-- `type: transcendence` → NONE_REMOVED
-- `type: unchanged` → SOME_UNCHANGED
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/core/endings.md` for type→Option mappings.
+
+Map each ending to outcome type (victory→SOME_TRANSFORMED, death→NONE_DEATH, etc.).
 
 ### Step 7: Detect Structural Issues
 
@@ -113,7 +105,7 @@ Map each ending to outcome type:
 
 ## Deep Structural Analysis (yq-enabled)
 
-All deep analysis queries are in `lib/patterns/yaml-extraction.md` → "Deep Analysis Queries".
+All deep analysis queries are in `${CLAUDE_PLUGIN_ROOT}/lib/patterns/analysis-queries.md` → "Deep Analysis Queries".
 
 | Analysis | Query Section |
 |----------|---------------|
@@ -129,7 +121,7 @@ All deep analysis queries are in `lib/patterns/yaml-extraction.md` → "Deep Ana
 
 ## v5 Feature Validation
 
-For scenarios using v5 features, queries are in `lib/patterns/yaml-extraction.md` → "v5 Feature Queries".
+For scenarios using v5 features, queries are in `${CLAUDE_PLUGIN_ROOT}/lib/patterns/analysis-queries.md` → "v5 Feature Queries".
 
 | Validation | Query Section |
 |------------|---------------|
@@ -142,7 +134,7 @@ For scenarios using v5 features, queries are in `lib/patterns/yaml-extraction.md
 
 ## Schema Validation
 
-Queries are in `lib/patterns/yaml-extraction.md` → "Schema Validation Queries".
+Queries are in `${CLAUDE_PLUGIN_ROOT}/lib/patterns/analysis-queries.md` → "Schema Validation Queries".
 
 **Levels:**
 1. Required Structure - fields present, references valid
@@ -152,7 +144,7 @@ Queries are in `lib/patterns/yaml-extraction.md` → "Schema Validation Queries"
 
 ## Report Format
 
-> **Reference:** See `lib/framework/formats/analysis-report-format.md` for complete specification.
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/analysis-report-format.md` for complete specification.
 
 Reports use:
 - Double-line box header: `═══`
@@ -161,7 +153,7 @@ Reports use:
 
 ## Validation Checks
 
-> **Reference:** See `lib/guides/analysis-validation-guide.md` for complete checklists.
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/analysis-validation-guide.md` for complete checklists.
 
 **Validation types:** Schema, Structural, Semantic, v5 Features, Narrative
 
@@ -231,14 +223,14 @@ Or use the wrapper script:
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/endings.md`** - Ending classification
 
 ### Patterns
-- **`${CLAUDE_PLUGIN_ROOT}/lib/patterns/yaml-extraction.md`** - All yq query patterns
+- **`${CLAUDE_PLUGIN_ROOT}/lib/patterns/analysis-queries.md`** - All yq query patterns
 
 ### Formats
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/scenario-format.md`** - YAML format
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/analysis-report-format.md`** - Report format
 
 ### Guides
-- **`${CLAUDE_PLUGIN_ROOT}/lib/guides/analysis-validation-guide.md`** - Validation checklists
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/analysis-validation-guide.md`** - Validation checklists
 
 ### Gameplay
 - **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md`** - Menu conventions
