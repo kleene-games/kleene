@@ -54,7 +54,7 @@ Unlike traditional choice-based games, Kleene responds to free-form actions and 
 | `/kleene continue [scenario]` | Resume from save |
 | `/kleene temperature [0-10]` | Set adaptation level |
 | `/kleene foresight [0-10]` | Set hint specificity |
-| `/kleene classic [on\|off]` | Toggle text adventure mode |
+| `/kleene parser [on\|off]` | Toggle text adventure mode |
 | `/kleene save` | Save current game |
 | `/kleene rewind [target]` | Rewind to earlier point (T6.2.3, -1, --1) |
 | `/kleene export [mode]` | Export gameplay (transcript/summary/stats/branches/gallery) |
@@ -92,7 +92,7 @@ The AI evaluates feasibility and generates responses that fit the scenario tone.
 - **Export System**: Save gameplay as clean narrative or analytical summary
 - **Gallery Mode**: Educational meta-commentary on narrative techniques
 - **Foresight Setting**: Control how much the game reveals when you ask for hints
-- **Classic Mode**: Text adventure-style play—type commands like Zork
+- **Parser Mode**: Text adventure-style play—type commands like Zork
 - **Auto-approval Hooks**: Seamless gameplay without permission prompts
 - **Pure Claude Code Integration**: No separate app, plays in your terminal
 
@@ -100,7 +100,7 @@ The AI evaluates feasibility and generates responses that fit the scenario tone.
 - **AI-Powered Generation**: Create complete scenarios from a single theme prompt
 - **YAML-based Format**: Human-readable, version-controllable scenario files
 - **Structural Validation**: Analyze completeness across Bronze/Silver/Gold tiers
-- **Nine Cells Framework**: Built-in guidance for rich, non-binary storytelling
+- **Decision Grid Framework**: Built-in guidance for rich, non-binary storytelling
 - **Preconditions & Consequences**: Full game logic with inventory, traits, flags, relationships
 - **Location State System**: Per-location flags, properties, and environment conditions
 - **Node/Location Preconditions**: Gate story nodes and location access
@@ -177,7 +177,7 @@ endings:
     type: unchanged
 ```
 
-See the [complete format specification](lib/framework/scenario-format.md) for all features.
+See the [complete format specification](lib/framework/formats/scenario-format.md) for all features.
 
 ---
 
@@ -199,7 +199,7 @@ Saves are stored at: `./saves/[scenario_name]/[timestamp].yaml`
 - **Manual save:** `/kleene save` during gameplay
 - **Resume:** `/kleene continue [scenario]` lists available saves
 - **Rewind:** `/kleene rewind T6.2.3` jumps to Turn 6, Scene 2, Beat 3
-- **Save format v7:** Includes scene/beat counters, location state, NPC tracking, scheduled events, foresight, and classic mode settings
+- **Save format v8:** Includes scene/beat counters, location state, NPC tracking, scheduled events, foresight, and parser mode settings
 
 ---
 
@@ -231,17 +231,9 @@ Exports are saved to: `./exports/[scenario]_[timestamp].md`
 Classic fantasy adventure. Perfect for learning Kleene basics.
 **Playtime:** 15-20 minutes | **Difficulty:** Beginner
 
-### The Yabba (Advanced)
-Psychological thriller inspired by *Wake in Fright* (1971). Dark themes, moral ambiguity.
-**Playtime:** 30-60 minutes | **Difficulty:** Advanced | **Content Warnings:** Psychological themes, substance use
-
-### Altered State Nightclub (Experimental)
-Surreal mystery in a nightclub that defies reality.
-**Playtime:** 20-40 minutes | **Difficulty:** Intermediate
-
-### Corporate Banking (Intermediate)
-Navigate career challenges and ethical dilemmas in the corporate world.
-**Playtime:** 25-35 minutes | **Difficulty:** Intermediate
+### Zork I: The Great Underground Empire - Mini (Intermediate)
+The legendary 1980 Infocom text adventure, adapted for Kleene. Explore the white house, descend into the Great Underground Empire, and collect treasures.
+**Playtime:** 20-30 minutes | **Difficulty:** Intermediate | **Parser Mode Recommended**
 
 
 ---
@@ -268,11 +260,9 @@ Try playing Dragon Quest at temp 0, then replay at temp 10. Mind = blown.
 - Smart lazy loading for massive scenarios
 - No external dependencies
 
-### Four Awesome Scenarios Included
-- **Dragon Quest** (beginner) - Classic fantasy adventure
-- **The Yabba** (advanced) - Psychological thriller with dark themes
-- **Altered State Nightclub** (experimental) - Surreal mystery
-- **Corporate Banking** (intermediate) - Career drama and tough choices
+### Two Scenarios Included
+- **Dragon Quest** (beginner) - Classic fantasy adventure to learn Kleene basics
+- **Zork I: Mini** (intermediate) - The legendary text adventure, reimagined
 
 ### Create Your Own Adventures
 - Simple YAML format (no coding required)
@@ -296,10 +286,11 @@ Try playing Dragon Quest at temp 0, then replay at temp 10. Mind = blown.
 ## Documentation
 
 - **[Getting Started](GETTING_STARTED.md)** - 5-minute quick start
+- **[Settings Reference](docs/SETTINGS.md)** - Temperature, foresight, parser mode, gallery mode
 - **[Scenario Authoring Guide](docs/SCENARIO_AUTHORING.md)** - Create your own adventures
-- **[Scenario Format Reference](lib/framework/scenario-format.md)** - Complete YAML specification
-- **[Presentation Conventions](lib/framework/presentation.md)** - Headers, traits, choice formatting
-- **[Improvisation Guide](lib/framework/improvisation.md)** - Free-text action handling
+- **[Scenario Format Reference](lib/framework/formats/scenario-format.md)** - Complete YAML specification
+- **[Presentation Conventions](lib/framework/gameplay/presentation.md)** - Headers, traits, choice formatting
+- **[Improvisation Guide](lib/framework/gameplay/improvisation.md)** - Free-text action handling
 - **[FAQ](docs/FAQ.md)** - Common questions answered
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Fix common issues
 
@@ -309,26 +300,47 @@ Try playing Dragon Quest at temp 0, then replay at temp 10. Mind = blown.
 
 Kleene is built on solid theoretical foundations for those who want to dive deep.
 
-### The Nine Cells Framework
+### The Decision Grid
 
 Every choice exists at the intersection of player intent and world response:
 
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
-| **Player Chooses** | Triumph       | Commitment          | Barrier      |
-| **Player Unknown** | Discovery     | Limbo               | Revelation   |
+| **Player Chooses** | Triumph       | Commitment          | Rebuff       |
+| **Player Unknown** | Discovery     | Limbo               | Constraint   |
 | **Player Avoids**  | Escape        | Deferral            | Fate         |
 
 **Player Unknown** captures both hesitation and improvised free-text actions.
 **Limbo** (center cell) is where side quests and improvisation thrive.
 
-A narratively complete scenario ensures coverage across the grid. See [Core Framework](lib/framework/core.md) for deep technical details.
+A narratively complete scenario ensures coverage across the grid. See [Core Framework](lib/framework/core/core.md) for deep technical details.
 
 ---
 
+## Third-Party Attribution
+
+### Zork I: The Great Underground Empire
+
+The `zork1-mini.yaml` scenario is adapted from the original ZIL source code.
+
+- **Original Creators:** Tim Anderson, Marc Blank, Bruce Daniels, and Dave Lebling
+- **Original Publisher:** Infocom, Inc. (1980)
+- **Source Repository:** [historicalsource/zork1](https://github.com/historicalsource/zork1)
+- **License:** MIT License (c) 2025 Microsoft Corporation
+
+The ZIL source was relicensed under MIT in November 2025 by Microsoft's OSPO, Team Xbox, and Activision. Per Microsoft: *"The goal is not to modernize Zork but to preserve it as a space for exploration and education."*
+
+---
+
+## Copyright
+
+Copyright (c) 2025 Mountain Ash Holdings Pty Ltd. All rights reserved.
+
+For commercial licensing inquiries: nathaniel.ramm@discretedatascience.com
+
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+GNU Affero General Public License v3.0 - see [LICENSE](LICENSE) file for details.
 
 ## Changelog
 

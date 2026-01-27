@@ -188,9 +188,12 @@
         "connections": {
           "type": "array",
           "items": {
-            "type": "string"
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/$defs/connection_object" }
+            ]
           },
-          "description": "IDs of connected locations"
+          "description": "IDs of connected locations (strings) or connection objects with travel details"
         },
         "items": {
           "type": "array",
@@ -219,6 +222,26 @@
         }
       }
     },
+    "connection_object": {
+      "type": "object",
+      "description": "A connection to another location with travel details",
+      "required": ["target"],
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "ID of the connected location"
+        },
+        "travel_minutes": {
+          "type": "number",
+          "description": "Time in minutes to travel to this location"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the path/route to this location"
+        }
+      },
+      "additionalProperties": false
+    },
     "node": {
       "type": "object",
       "description": "A narrative node with choices",
@@ -244,6 +267,17 @@
         "blocked_narrative": {
           "type": "string",
           "description": "Custom message shown when precondition fails"
+        },
+        "blocked_next_node": {
+          "type": "string",
+          "description": "Node to redirect to when precondition fails (instead of returning to previous choices)"
+        },
+        "on_enter": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/consequence"
+          },
+          "description": "Consequences to apply when entering this node, before choice is presented"
         },
         "elapsed_since_previous": {
           "$ref": "#/$defs/time_amount",
@@ -330,8 +364,13 @@
         },
         "cell": {
           "type": "string",
-          "enum": ["chooses", "unknown", "avoids"],
-          "description": "Nine Cells grid classification"
+          "enum": [
+            "chooses", "unknown", "avoids",
+            "triumph", "commitment", "rebuff",
+            "discovery", "limbo", "constraint",
+            "escape", "deferral", "fate"
+          ],
+          "description": "Decision Grid classification - player intent (chooses/unknown/avoids) or full cell name (triumph/discovery/etc.)"
         },
         "precondition": {
           "$ref": "#/$defs/precondition",
@@ -387,7 +426,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Regex patterns indicating Revelation (world blocks)"
+          "description": "Regex patterns indicating Constraint (world blocks)"
         },
         "limbo_fallback": {
           "type": "string",
@@ -403,9 +442,9 @@
           "type": "string",
           "description": "Node for Discovery cell"
         },
-        "revelation": {
+        "constraint": {
           "type": "string",
-          "description": "Node for Revelation cell"
+          "description": "Node for Constraint cell"
         },
         "limbo": {
           "type": "string",

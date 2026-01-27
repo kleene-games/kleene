@@ -1,0 +1,867 @@
+# Advanced Kleene Scenario Template
+# Demonstrates ALL Phase 1-5 features for comprehensive reference
+# ~45-60 minutes of gameplay
+
+name: "Advanced Template"
+description: "Complete demonstration of Kleene v5 features: location state, NPC tracking, scheduled events, time-based gating, node preconditions, and improvisation"
+
+initial_character:
+  name: "Wanderer"
+  traits:
+    courage: 5
+    wisdom: 5
+    influence: 5
+  inventory:
+    - traveler_token
+  relationships:
+    elder: 0
+    guardian: 0
+    merchant: 0
+  flags:
+    first_visit: true
+
+initial_world:
+  current_location: "village_square"
+  time: 28800  # 8 AM in seconds (8 * 3600)
+  flags:
+    day_one: true
+
+  # NPC Location Tracking (Phase 2)
+  npc_locations:
+    elder: village_square
+    guardian: temple_gates
+    merchant: market
+    oracle: hidden_sanctum
+
+  # Scheduled Events (Phase 4) - empty at start
+  scheduled_events: []
+  triggered_events: []
+
+  # Location Definitions with gating (Phase 3)
+  locations:
+    - id: village_square
+      name: "Village Square"
+      connections: [market, temple_gates, elder_home]
+      initial_state:
+        flags: {visited: true}
+        environment:
+          lighting: daylight
+          ambiance: bustling
+
+    - id: market
+      name: "Village Market"
+      connections: [village_square]
+      initial_state:
+        environment:
+          lighting: daylight
+          ambiance: commercial
+
+    - id: temple_gates
+      name: "Temple Gates"
+      connections: [village_square, temple_interior]
+
+    - id: temple_interior
+      name: "Temple Interior"
+      connections: [temple_gates, hidden_sanctum]
+      initial_state:
+        environment:
+          lighting: dim
+          ambiance: sacred
+
+    - id: hidden_sanctum
+      name: "Hidden Sanctum"
+      connections: [temple_interior]
+
+      # Location-level precondition (Phase 3)
+      precondition:
+        type: all_of
+        conditions:
+          - type: flag_set
+            flag: sanctum_revealed
+          - type: has_item
+            item: temple_key
+
+      access_denied_narrative: |
+        Ancient wards shimmer before you, barring passage.
+        Only those who have earned the temple's trust and
+        possess the sacred key may enter.
+
+      access_mode: show_locked
+
+      initial_state:
+        flags: {sealed: true}
+        environment:
+          lighting: mystical
+          ambiance: otherworldly
+
+    - id: elder_home
+      name: "Elder's Home"
+      connections: [village_square]
+
+  # Location State (Phase 1) - mutable per-location state
+  location_state:
+    village_square:
+      flags:
+        visited: true
+      properties:
+        activity_level: 100
+
+start_node: village_arrival
+
+nodes:
+  village_arrival:
+    narrative: |
+      You arrive at the village square as morning light warms the cobblestones.
+
+      An elderly woman tends a small garden near the central fountain. Across
+      the square, the temple gates loom imposingly. The market stalls are
+      already busy with traders.
+
+      Something feels different today. A tension in the air.
+    choice:
+      prompt: "Where do you go first?"
+      options:
+        - id: speak_elder
+          text: "Speak with the elderly woman"
+          cell: chooses
+          # NPC location precondition (Phase 2)
+          precondition:
+            type: npc_at_location
+            npc: elder
+            location: current
+          consequence:
+            - type: modify_relationship
+              npc: elder
+              delta: 3
+          next_node: elder_conversation
+
+        - id: approach_temple
+          text: "Approach the temple gates"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: temple_gates
+          next_node: temple_gates_arrival
+
+        - id: visit_market
+          text: "Browse the market stalls"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: market
+          next_node: market_browse
+
+        - id: observe_square
+          text: "Observe the village square"
+          cell: unknown
+          next: improvise
+          improvise_context:
+            theme: "observing the morning activity in the village"
+            permits: ["watch", "listen", "pattern", "notice", "study"]
+            blocks: ["steal", "attack", "threaten", "hide"]
+            limbo_fallback: |
+              You watch the villagers go about their morning routines.
+              Nothing particularly catches your eye.
+          outcome_nodes:
+            discovery: notice_tension
+            constraint: attract_attention
+
+  notice_tension:
+    narrative: |
+      Your careful observation reveals subtle signs of worry. Merchants
+      glance toward the temple more often than usual. Conversations stop
+      abruptly when certain topics arise.
+
+      Something is troubling this village.
+    choice:
+      prompt: "You've noticed the tension. What now?"
+      options:
+        - id: investigate
+          text: "Investigate the source of worry"
+          consequence:
+            - type: set_flag
+              flag: noticed_tension
+              value: true
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+          next_node: elder_conversation
+
+        - id: ignore
+          text: "It's not your concern"
+          next_node: village_arrival
+
+  attract_attention:
+    narrative: |
+      Your lurking draws suspicious glances. A guard approaches,
+      hand resting on the hilt of his blade.
+
+      "Stranger, state your business or move along."
+    choice:
+      prompt: "How do you respond?"
+      options:
+        - id: explain
+          text: "Explain you're just passing through"
+          consequence:
+            - type: modify_trait
+              trait: influence
+              delta: -1
+          next_node: village_arrival
+
+        - id: leave
+          text: "Leave quickly"
+          next_node: ending_chased_away
+
+  elder_conversation:
+    narrative: |
+      The elder looks up from her garden, eyes sharp despite her years.
+
+      "A traveler. We don't see many these days." She sets down her
+      trowel. "The temple has been... troubled. Our guardian has
+      grown distant. The oracle speaks in riddles more dire than usual."
+    choice:
+      prompt: "What do you ask?"
+      options:
+        - id: ask_temple
+          text: "Ask about the temple's troubles"
+          consequence:
+            - type: set_flag
+              flag: knows_temple_trouble
+              value: true
+            - type: modify_relationship
+              npc: elder
+              delta: 5
+          next_node: temple_explanation
+
+        - id: ask_guardian
+          text: "Ask about the guardian"
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 2
+          next_node: guardian_explanation
+
+        - id: offer_help
+          text: "Offer to help"
+          precondition:
+            type: trait_minimum
+            trait: courage
+            minimum: 4
+          consequence:
+            - type: set_flag
+              flag: offered_help
+              value: true
+            - type: modify_relationship
+              npc: elder
+              delta: 10
+            - type: gain_item
+              item: elder_blessing
+            # Schedule an event for later (Phase 4)
+            - type: schedule_event
+              event_id: elder_prepares_gift
+              delay:
+                amount: 2
+                unit: hours
+              consequences:
+                - type: gain_item
+                  item: temple_key
+                - type: set_flag
+                  flag: elder_gift_ready
+                  value: true
+          next_node: accepted_quest
+
+  temple_explanation:
+    narrative: |
+      "The temple has stood for centuries as a bridge between our world
+      and the divine. But lately..." She lowers her voice. "The oracle's
+      visions have grown dark. She speaks of a shadow consuming the
+      sacred light."
+
+      The elder's hands tremble slightly.
+    choice:
+      prompt: "This is clearly important."
+      options:
+        - id: help_now
+          text: "Offer to investigate"
+          consequence:
+            - type: set_flag
+              flag: investigating_temple
+              value: true
+            - type: modify_trait
+              trait: courage
+              delta: 1
+          next_node: accepted_quest
+
+        - id: think
+          text: "Consider your options"
+          next_node: village_arrival
+
+  guardian_explanation:
+    narrative: |
+      "The guardian? Once, he was the warmest soul in the village.
+      Now he stands at those gates like a statue, speaking to no one,
+      letting no one pass."
+
+      She shakes her head sadly. "It's as if something has stolen
+      his spirit."
+    choice:
+      prompt: "The guardian sounds troubled."
+      options:
+        - id: approach_guardian
+          text: "Go speak with the guardian"
+          next_node: temple_gates_arrival
+
+        - id: stay
+          text: "Stay and talk more with the elder"
+          next_node: elder_conversation
+
+  accepted_quest:
+    narrative: |
+      The elder clasps your hands in hers.
+
+      "Thank you, traveler. The temple key... I'll prepare it for you.
+      Return in a few hours and I will have what you need."
+
+      She presses a worn blessing token into your palm.
+    choice:
+      prompt: "You've committed to helping."
+      options:
+        - id: temple_now
+          text: "Head to the temple gates now"
+          consequence:
+            - type: move_to
+              location: temple_gates
+          next_node: temple_gates_arrival
+
+        - id: explore_first
+          text: "Explore the village while waiting"
+          next_node: village_arrival
+
+  temple_gates_arrival:
+    # Advance time when arriving (Phase 4)
+    elapsed_since_previous:
+      amount: 30
+      unit: minutes
+
+    narrative: |
+      Massive stone gates tower before you, carved with symbols that
+      seem to shift in the light. A robed figure stands motionless
+      before them, back turned to you.
+
+      This must be the guardian the elder spoke of.
+    choice:
+      prompt: "How do you approach?"
+      options:
+        - id: announce
+          text: "Announce yourself formally"
+          cell: chooses
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 3
+          next_node: guardian_speaks
+
+        - id: wait
+          text: "Wait patiently for acknowledgment"
+          cell: unknown
+          next: improvise
+          improvise_context:
+            theme: "waiting respectfully at sacred gates"
+            permits: ["bow", "respect", "patient", "quiet", "reverent"]
+            blocks: ["demand", "shout", "push", "force", "mock"]
+            limbo_fallback: |
+              You wait. The guardian remains still as stone.
+              Time stretches. Perhaps a different approach is needed.
+          outcome_nodes:
+            discovery: guardian_notices_patience
+            constraint: guardian_dismisses
+
+        - id: sneak
+          text: "Try to slip past while distracted"
+          cell: avoids
+          precondition:
+            type: trait_minimum
+            trait: wisdom
+            minimum: 7
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: -5
+          next_node: sneak_attempt
+
+  guardian_speaks:
+    narrative: |
+      The guardian slowly turns. His face is gaunt, eyes hollow
+      with exhaustion.
+
+      "Another seeker of the oracle's wisdom." His voice is rough,
+      as if from disuse. "What brings you to this troubled place?"
+    choice:
+      prompt: "How do you respond?"
+      options:
+        - id: honest
+          text: "Speak honestly of the elder's concerns"
+          precondition:
+            type: flag_set
+            flag: knows_temple_trouble
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 10
+            - type: set_flag
+              flag: guardian_trusts
+              value: true
+          next_node: guardian_opens_up
+
+        - id: curious
+          text: "Express curiosity about the temple"
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 2
+          next_node: guardian_explains_temple
+
+        - id: demand
+          text: "Demand entry to the temple"
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: -10
+          next_node: guardian_refuses
+
+  guardian_notices_patience:
+    narrative: |
+      After what feels like an eternity, the guardian turns. His expression
+      softens slightly.
+
+      "You understand patience. Few do anymore." He gestures toward
+      the gates. "Perhaps you are meant to be here after all."
+    choice:
+      prompt: "The guardian seems receptive."
+      options:
+        - id: accept
+          text: "Accept his acknowledgment gracefully"
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 15
+            - type: set_flag
+              flag: guardian_trusts
+              value: true
+          next_node: guardian_opens_up
+
+  guardian_dismisses:
+    narrative: |
+      The guardian's jaw tightens. Without turning, he speaks.
+
+      "Your impatience echoes in every footstep, every breath.
+      The temple has no need of the restless. Leave."
+    choice:
+      prompt: "You've been dismissed."
+      options:
+        - id: apologize
+          text: "Apologize and try again"
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: -3
+          next_node: temple_gates_arrival
+
+        - id: leave
+          text: "Leave as commanded"
+          next_node: village_arrival
+
+  guardian_opens_up:
+    narrative: |
+      The guardian's shoulders sag. "I have stood here for weeks,
+      unable to enter. The shadow within... it calls to something
+      in me. Something dark."
+
+      He meets your eyes. "Perhaps an outsider, untouched by the
+      temple's history, could reach the oracle where I cannot."
+    choice:
+      prompt: "He's asking for your help."
+      options:
+        - id: agree
+          text: "Agree to enter the temple"
+          consequence:
+            - type: set_flag
+              flag: guardian_blessing
+              value: true
+            - type: move_to
+              location: temple_interior
+            # Schedule guardian to follow later (Phase 4)
+            - type: schedule_event
+              event_id: guardian_follows
+              delay:
+                amount: 1
+                unit: hours
+              consequences:
+                - type: move_npc
+                  npc: guardian
+                  location: temple_interior
+          next_node: temple_interior_first
+
+        - id: conditions
+          text: "Ask what you'll find inside"
+          next_node: guardian_explains_temple
+
+  guardian_explains_temple:
+    narrative: |
+      "The temple interior holds the sacred halls where our ancestors
+      prayed. Beyond lies the hidden sanctum, where only the oracle
+      dwells. But I warn you..."
+
+      He pauses. "Something has changed within. The light itself
+      seems... wrong."
+    choice:
+      prompt: "You now know what lies ahead."
+      options:
+        - id: enter
+          text: "Enter the temple"
+          precondition:
+            type: flag_set
+            flag: guardian_trusts
+          consequence:
+            - type: move_to
+              location: temple_interior
+          next_node: temple_interior_first
+
+        - id: prepare
+          text: "Return to the village to prepare"
+          next_node: village_arrival
+
+  guardian_refuses:
+    narrative: |
+      The guardian's hand moves to the blade at his hip.
+
+      "You demand nothing here. The temple is not yours to claim."
+    choice:
+      prompt: "You've angered the guardian."
+      options:
+        - id: apologize
+          text: "Apologize for your rudeness"
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 3
+          next_node: temple_gates_arrival
+
+        - id: leave
+          text: "Leave before things escalate"
+          next_node: village_arrival
+
+  sneak_attempt:
+    narrative: |
+      You move silently, using the guardian's stillness against him.
+      But as you near the gates, he speaks without turning.
+
+      "Did you think the sacred stones would not whisper your approach?"
+    choice:
+      prompt: "You've been caught."
+      options:
+        - id: confess
+          text: "Confess and apologize"
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 5
+          next_node: guardian_speaks
+
+        - id: flee
+          text: "Flee the temple grounds"
+          next_node: village_arrival
+
+  market_browse:
+    narrative: |
+      The market bustles with activity. A weathered merchant
+      catches your eye, his stall filled with unusual artifacts.
+
+      "Looking for something specific, traveler? Or perhaps
+      something will find you?"
+    choice:
+      prompt: "What interests you?"
+      options:
+        - id: browse
+          text: "Browse the artifacts"
+          consequence:
+            - type: modify_relationship
+              npc: merchant
+              delta: 2
+          next_node: merchant_items
+
+        - id: ask_temple
+          text: "Ask about temple-related items"
+          precondition:
+            type: flag_set
+            flag: knows_temple_trouble
+          consequence:
+            - type: modify_relationship
+              npc: merchant
+              delta: 5
+          next_node: merchant_temple_items
+
+        - id: leave
+          text: "Leave the market"
+          next_node: village_arrival
+
+  merchant_items:
+    narrative: |
+      The merchant displays his wares: a compass that points to
+      danger, a lantern that never dims, and a mirror that shows
+      hidden truths.
+
+      "Each has its use, each its price."
+    choice:
+      prompt: "What catches your eye?"
+      options:
+        - id: buy_lantern
+          text: "Purchase the undying lantern"
+          precondition:
+            type: has_item
+            item: traveler_token
+          consequence:
+            - type: lose_item
+              item: traveler_token
+            - type: gain_item
+              item: undying_lantern
+            - type: modify_relationship
+              npc: merchant
+              delta: 5
+          next_node: market_browse
+
+        - id: nothing
+          text: "Nothing today, thank you"
+          next_node: village_arrival
+
+  merchant_temple_items:
+    narrative: |
+      The merchant leans close. "Ah, the temple troubles you as well.
+      I have something that may help..."
+
+      He reveals a small vial of glowing liquid. "Sacred oil, blessed
+      by the oracle herself. It reveals what shadows hide."
+    choice:
+      prompt: "The oil could be valuable."
+      options:
+        - id: buy_oil
+          text: "Purchase the sacred oil"
+          precondition:
+            type: has_item
+            item: elder_blessing
+          consequence:
+            - type: lose_item
+              item: elder_blessing
+            - type: gain_item
+              item: sacred_oil
+            - type: modify_relationship
+              npc: merchant
+              delta: 10
+          next_node: merchant_browse
+
+        - id: decline
+          text: "The price is too high"
+          next_node: market_browse
+
+  temple_interior_first:
+    # Time-gated option available later (Phase 4)
+    narrative: |
+      The temple interior is vast and shadowed. Ancient tapestries
+      line the walls, depicting the village's history. At the far
+      end, a passage leads deeper into darkness.
+
+      The air feels heavy, charged with something unseen.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: study_tapestries
+          text: "Study the tapestries"
+          consequence:
+            - type: modify_trait
+              trait: wisdom
+              delta: 2
+            - type: set_flag
+              flag: studied_history
+              value: true
+            # Set location flag (Phase 1)
+            - type: set_location_flag
+              location: temple_interior
+              flag: tapestries_examined
+              value: true
+          next_node: tapestry_knowledge
+
+        - id: approach_sanctum
+          text: "Approach the hidden passage"
+          consequence:
+            - type: move_to
+              location: hidden_sanctum
+          next_node: sanctum_approach
+
+        - id: wait_guardian
+          text: "Wait for the guardian to follow"
+          # Only available after scheduled event (Phase 4)
+          precondition:
+            type: event_triggered
+            event_id: guardian_follows
+          consequence:
+            - type: npc_at_location
+              npc: guardian
+              location: current
+          next_node: guardian_reunion
+
+  tapestry_knowledge:
+    narrative: |
+      The tapestries tell of an ancient pact between the village and
+      a divine entity. In exchange for protection, the villagers
+      maintain the temple's sacred flame.
+
+      One tapestry shows the flame being extinguished... and shadows
+      consuming the land.
+    choice:
+      prompt: "You've learned something crucial."
+      options:
+        - id: continue
+          text: "Continue to the sanctum"
+          consequence:
+            - type: move_to
+              location: hidden_sanctum
+          next_node: sanctum_approach
+
+  guardian_reunion:
+    narrative: |
+      The guardian enters, his presence somehow stronger within
+      these walls.
+
+      "You've survived. Good. The oracle... can you hear her?"
+
+      In the distance, a faint voice echoes.
+    choice:
+      prompt: "The guardian has joined you."
+      options:
+        - id: together
+          text: "Proceed together to the sanctum"
+          consequence:
+            - type: move_npc
+              npc: guardian
+              location: hidden_sanctum
+          next_node: sanctum_approach
+
+  sanctum_approach:
+    # Node-level precondition (Phase 2)
+    precondition:
+      type: all_of
+      conditions:
+        - type: flag_set
+          flag: sanctum_revealed
+        - type: has_item
+          item: temple_key
+
+    blocked_narrative: |
+      The passage to the hidden sanctum pulses with protective wards.
+      Ancient magic bars your path.
+
+      You sense you need both the temple key and knowledge of how
+      to reveal the sanctum's entrance.
+
+    narrative: |
+      The temple key glows as you approach, and the wards part
+      like curtains. The hidden sanctum lies before you.
+
+      Within, a figure sits motionless - the oracle.
+    choice:
+      prompt: "You've reached the oracle."
+      options:
+        - id: approach_oracle
+          text: "Approach the oracle"
+          next_node: oracle_encounter
+
+  oracle_encounter:
+    narrative: |
+      The oracle's eyes snap open, blazing with inner light.
+
+      "You have come. The shadow grows, but so does hope."
+
+      Her voice echoes in your mind. "Choose now: embrace the
+      light and burn away the darkness, or carry it with you
+      forever changed."
+    choice:
+      prompt: "The oracle offers a choice."
+      options:
+        - id: embrace_light
+          text: "Embrace the sacred light"
+          precondition:
+            type: trait_minimum
+            trait: courage
+            minimum: 7
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 5
+            - type: set_flag
+              flag: chose_light
+              value: true
+          next_node: ending_light
+
+        - id: carry_shadow
+          text: "Carry the shadow with you"
+          consequence:
+            - type: modify_trait
+              trait: wisdom
+              delta: 5
+            - type: set_flag
+              flag: chose_shadow
+              value: true
+          next_node: ending_shadow
+
+        - id: refuse
+          text: "Refuse both paths"
+          cell: avoids
+          next_node: ending_unchanged
+
+endings:
+  ending_light:
+    narrative: |
+      Sacred fire courses through you, burning away doubt and fear.
+      The shadow flees before your radiance.
+
+      You emerge from the temple transformed - a beacon of hope
+      for the village and all who dwell in darkness.
+
+      The guardian kneels. "A new guardian rises."
+    type: victory
+
+  ending_shadow:
+    narrative: |
+      You accept the darkness, not as enemy but as teacher.
+      The shadow becomes part of you, granting wisdom bought
+      with a piece of your innocence.
+
+      You leave the village changed, carrying secrets that
+      light alone could never reveal.
+    type: transcendence
+
+  ending_unchanged:
+    narrative: |
+      You turn from the oracle's offer. Some choices are too
+      momentous to make lightly.
+
+      The temple remains troubled, and you remain... yourself.
+      Perhaps that is enough. Perhaps not.
+    type: unchanged
+
+  ending_chased_away:
+    narrative: |
+      You flee the village, unwelcome and unwanted.
+
+      Behind you, the temple's shadow grows.
+    type: unchanged
+
+# This template demonstrates:
+# - Location state flags and properties (Phase 1)
+# - NPC location tracking and movement (Phase 2)
+# - Node-level preconditions with blocked_narrative (Phase 2)
+# - Location-level preconditions with access_mode (Phase 3)
+# - Scheduled events with time delays (Phase 4)
+# - Time-based gating via event_triggered (Phase 4)
+# - Improvisation with outcome_nodes (Phase 4)
+# - Multiple ending types for completeness
