@@ -23,7 +23,7 @@ The thread represents a comprehensive critique from experienced IF developers an
 | 10,000 bowls of oatmeal | Authored scenarios + grid completeness | ✓ Addressed |
 | Accessibility (offline) | Local YAML files, no server required | ✓ Solved |
 | Creative authorship role | Author provides structure; LLM provides texture | ✓ Preserved |
-| Natural language didn't help adoption | Optional; classic mode available | ~ Acknowledged |
+| Natural language didn't help adoption | Optional; parser mode available | ~ Acknowledged |
 
 ---
 
@@ -374,7 +374,7 @@ What do you do?
 4. [Other - type custom action]
 ```
 
-**Classic mode:** Parser-style with hidden options
+**Parser mode:** Text adventure-style with hidden options
 ```
 > examine dragon
 > talk to dragon

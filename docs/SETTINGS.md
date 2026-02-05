@@ -10,7 +10,7 @@ Complete guide to customizing your Kleene gameplay experience.
 |---------|-------|---------|--------|
 | `/kleene temperature [0-10]` | 0-10 | 5 | Narrative adaptation level |
 | `/kleene foresight [0-10]` | 0-10 | 5 | Hint specificity |
-| `/kleene classic [on\|off]` | on/off | off | Parser-style play |
+| `/kleene parser [on\|off]` | on/off | off | Parser-style play |
 | `/kleene gallery [on\|off]` | on/off | off | Meta-commentary |
 
 **Settings persist in your save file** and are restored when you continue a game.
@@ -77,27 +77,31 @@ Controls how specific hints are when you ask for guidance (e.g., "where should I
 
 ---
 
-## Classic Mode (Parser Play)
+## Interaction Modes
 
-Recreates the Zork/Infocom text adventure experience by hiding pre-scripted choices.
+Kleene offers two complementary interaction modes. Both use the same
+underlying systems—the only difference is how options are presented.
 
-| Mode | What You See |
-|------|--------------|
-| **OFF** (default) | 2-4 scripted choices with descriptions |
-| **ON** | No choices shown - type commands like "go north" |
+| Mode | Setting | What You See |
+|------|---------|--------------|
+| **Choice** (default) | `parser_mode: false` | 2-4 scripted options with descriptions |
+| **Parser** | `parser_mode: true` | No choices shown - type commands |
 
-### How Classic Mode Works
+---
 
-When enabled:
-- **No choice options appear** - you type what you want to do
-- **Type "look"** to see your surroundings
-- **Type "inventory"** to check what you're carrying
-- **Type "help"** for context-sensitive suggestions based on hidden options
-- Commands like "go north", "take lamp", "examine mailbox", "talk to merchant" all work
+### Choice Mode (Default)
 
-### Example
+Menu-driven interface for accessible narrative gameplay.
 
-**Classic Mode OFF:**
+#### Why Choose Choice Mode?
+
+- **Accessibility**: Clear options reduce cognitive load
+- **Guidance**: Always know valid actions exist
+- **Discovery**: Options reveal narrative possibilities
+- **Onboarding**: Perfect for new players
+
+#### Example
+
 ```
 What do you do?
 1. Enter the cave
@@ -105,23 +109,54 @@ What do you do?
 3. Return to town
 ```
 
-**Classic Mode ON:**
+You can still type custom actions via "Other" at any time.
+
+#### Command
+```bash
+/kleene choice on     # Enable choice mode
+/kleene parser off    # Same effect
+```
+
+---
+
+### Parser Mode
+
+Type commands like classic text adventures (Zork, Colossal Cave).
+
+#### Why Choose Parser Mode?
+
+- **Immersion**: No visible choices breaks the "pick an option" pattern
+- **Exploration**: Discover what's possible through experimentation
+- **Authenticity**: Text adventure feel for those who prefer it
+- **Challenge**: Requires active engagement to find valid actions
+
+#### How It Works
+
+When enabled:
+- **No choice options appear** - you type what you want to do
+- **Type "look"** to see your surroundings
+- **Type "inventory"** to check what you're carrying
+- **Type "help"** for context-sensitive suggestions
+- Commands like "go north", "take lamp", "examine mailbox" all work
+
+#### Example
+
 ```
 What do you do?
 > _
 ```
 (You type: "enter the cave" or "go into cave" or "explore cave")
 
-### Best For
+#### Best For
 
 - Text adventure veterans who prefer typing
 - Zork I: Mini for authentic retro experience
-- Players who find choice lists limiting
+- Players who find choice menus limiting
 
-### Commands
+#### Command
 ```bash
-/kleene classic on    # Enable parser mode
-/kleene classic off   # Return to choice mode
+/kleene parser on     # Enable parser mode
+/kleene choice off    # Same effect
 ```
 
 ---
@@ -194,7 +229,7 @@ Learn the scenario as written. Hints available if you get stuck.
 
 ### Text Adventure Veteran
 ```bash
-/kleene classic on
+/kleene parser on
 /kleene temperature 3
 /kleene foresight 3
 ```
@@ -216,7 +251,7 @@ Balanced play with educational commentary on techniques.
 
 ### Zork Purist
 ```bash
-/kleene classic on
+/kleene parser on
 /kleene temperature 0
 /kleene foresight 0
 ```
@@ -228,10 +263,10 @@ Authentic 1980s text adventure experience. Perfect for `zork1-mini`.
 
 | Combination | Effect |
 |-------------|--------|
-| Temperature 10 + Classic ON | Maximum freedom - type anything, AI adapts fully |
-| Temperature 0 + Classic ON | Traditional parser adventure - strict but authentic |
+| Temperature 10 + Parser ON | Maximum freedom - type anything, AI adapts fully |
+| Temperature 0 + Parser ON | Traditional parser adventure - strict but authentic |
 | Gallery ON + Temperature 10 | See how your improvisations affect narrative |
-| Foresight 0 + Classic ON | Hardcore mode - no hints, no choices shown |
+| Foresight 0 + Parser ON | Hardcore mode - no hints, no choices shown |
 
 ---
 
@@ -240,7 +275,7 @@ Authentic 1980s text adventure experience. Perfect for `zork1-mini`.
 **"Free-text actions aren't working"**
 - Temperature must be > 0. Run `/kleene temperature 5` and try again.
 
-**"I can't figure out what to do in classic mode"**
+**"I can't figure out what to do in parser mode"**
 - Type "help" for context-sensitive suggestions
 - Type "look" to see your surroundings
 - Increase foresight: `/kleene foresight 7`

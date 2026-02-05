@@ -60,7 +60,7 @@ We love community-created scenarios! Here's how to contribute:
 
 - **Start simple** - Test core loop before adding complexity
 - **Work backward** - Design endings first, then paths to reach them
-- **Use templates** - See `scenarios/TEMPLATES/` for examples
+- **Use templates** - See `lib/framework/authoring/TEMPLATES/` for examples
 - **Improvisation-friendly** - Design for both scripted and free-form play
 - **Test edge cases** - What if player does something unexpected?
 - **Respect player agency** - Avoid railroading or false choices

@@ -9,8 +9,8 @@ arguments:
 
 # Kleene Gateway Command
 
-> **Tool Detection:** See `lib/patterns/tool-detection.md` for yq availability check.
-> **Templates:** See `lib/patterns/yaml-extraction.md` for all extraction patterns.
+> **Scenario Loading:** See `lib/framework/scenario-file-loading/overview.md`
+> **Extraction Templates:** See `lib/framework/scenario-file-loading/extraction-templates.md`
 
 **SILENT MODE**: Do NOT narrate your actions. No "Let me...", "Now I'll...", "Perfect!". Just use tools and present results. Be terse.
 
@@ -411,37 +411,48 @@ Use: /kleene foresight [0-10]
 
 **Note:** Foresight only applies during active gameplay when players ask questions like "where is the treasure?" or "what should I do?". The setting is saved with game state.
 
-### Classic Mode Actions
-Keywords: "classic", "parser", "text adventure", "zork mode", "manual"
+### Mode Selection Actions
+Keywords: "parser", "choice", "classic", "text adventure", "zork mode", "manual"
 
-**Toggle Classic Mode** (`/kleene classic [on|off]`):
+> **Behavior details:** See `lib/framework/gameplay/parser-mode.md` and `lib/framework/gameplay/choice-mode.md`
+
+**Toggle Parser Mode** (`/kleene parser [on|off]}` or `/kleene choice [on|off]`):
 1. Parse on/off value (or toggle if not provided)
-2. Update `settings.classic_mode` in current game state
+2. Update `settings.parser_mode` in current game state
 3. Confirm with explanation
 
-If no value provided, show current setting and explain:
+**Commands:**
+- `/kleene parser on` - Enable parser mode
+- `/kleene parser off` - Disable parser mode (same as `/kleene choice on`)
+- `/kleene choice on` - Enable choice mode (same as `/kleene parser off`)
+- `/kleene choice off` - Disable choice mode (same as `/kleene parser on`)
+- `/kleene classic on` - Alias for `/kleene parser on` (backward compatibility)
+
+If no value provided, show current mode and explain both:
 ```
-Classic mode: OFF
+Current mode: CHOICE (default)
 
-When ON, hides pre-scripted choice options. You must type commands
-like original text adventures (Zork, Colossal Cave, etc.).
+CHOICE MODE (current):
+  Shows 2-4 scripted options with descriptions.
+  Select from menu or type custom actions via "Other".
 
-Only "Look around" and "Inventory" remain as safety options -
-everything else requires typing via "Other". Try commands like:
-  - go north / enter cave / climb ladder
-  - examine painting / look at sword
-  - take key / pick up torch
-  - talk to merchant / attack troll
+PARSER MODE:
+  Hides pre-scripted choice options. You type commands
+  like text adventures (Zork, Colossal Cave, etc.).
+  Only "Look around", "Inventory", and "Help" remain.
+  Try commands like:
+    - go north / enter cave / climb ladder
+    - examine painting / look at sword
+    - take key / pick up torch
+    - talk to merchant / attack troll
 
-When OFF (default), shows 2-4 scripted choices with descriptions.
-
-Use: /kleene classic on
-     /kleene classic off
+Use: /kleene parser on     (enable parser mode)
+     /kleene choice on     (enable choice mode)
 ```
 
-**Note:** Classic mode only affects choice presentation. The
-improvisation system handles all typed commands. Setting is
-saved with game state.
+**Note:** Mode selection only affects choice presentation. The
+improvisation system handles all typed commands identically.
+Setting is saved with game state.
 
 ### Rewind Actions
 Keywords: "rewind", "go back", "restore", "undo"
@@ -485,7 +496,7 @@ Use: /kleene rewind 6.2.1
 ### Export Actions
 Keywords: "export", "transcript", "save story", "save journey", "summary", "stats"
 
-> **Reference:** See `lib/framework/gameplay/export.md` for complete format specifications.
+> **Reference:** See `lib/framework/post-gameplay/export.md` for complete format specifications.
 
 **Export Modes:**
 
@@ -582,10 +593,11 @@ SETTINGS
                                     0 = Blind (no hints)
                                     5 = Suggestive (default)
                                    10 = Oracle (full walkthrough)
-  /kleene classic                 Show classic mode status
-  /kleene classic [on|off]        Toggle text adventure mode:
+  /kleene parser                  Show current interaction mode
+  /kleene parser [on|off]         Toggle parser mode:
                                     on = Type commands (Zork-style)
                                     off = Show choice menu (default)
+  /kleene choice [on|off]         Toggle choice mode (inverse of parser)
 
 DURING GAMEPLAY
   Select "Other" or type freely   Improvise beyond scripted choices
@@ -603,7 +615,7 @@ Saves: ./saves/[scenario]/[timestamp].yaml
 
 ## Persistence
 
-> **Reference:** See `lib/framework/formats/saves.md` for game folder conventions, save format, and persistence rules.
+> **Reference:** See `lib/framework/formats/savegame-format.md` for game folder conventions, save format, and persistence rules.
 
 Saves are stored at `./saves/[scenario]/[timestamp].yaml` in the game folder.
 Bundled scenarios loaded from: `${CLAUDE_PLUGIN_ROOT}/scenarios/`

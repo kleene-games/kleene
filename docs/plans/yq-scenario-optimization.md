@@ -281,7 +281,7 @@ yq '.endings | keys' scenario.yaml
 | **Init** | Get ending IDs | Read full endings section | `yq '.endings | keys'` | 4 lines vs 60+ |
 | **Turn** | Get current node | `grep -A 80` | `yq '.nodes.{node_id}'` | Exact extraction, no overflow |
 | **Turn** | Check ending | String match on cached list | Same yq query at init | Already have data |
-| **Improvise** | Prefetch outcomes | Multiple greps | `yq '.nodes.{discovery}, .nodes.{revelation}'` | One query for both nodes |
+| **Improvise** | Prefetch outcomes | Multiple greps | `yq '.nodes.{discovery}, .nodes.{constraint}'` | One query for both nodes |
 
 **Per-session overhead:**
 - Init: 1 yq query (header + ending IDs)
@@ -554,7 +554,7 @@ dragon_quest:
     node_count: 18
     ending_count: 4
     tier: "Silver"
-    cells_covered: ["triumph", "barrier", "escape", "discovery"]
+    cells_covered: ["triumph", "rebuff", "escape", "discovery"]
 ```
 
 **Benefits:**

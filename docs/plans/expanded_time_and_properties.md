@@ -592,7 +592,7 @@ locations:
 **Files to Modify:**
 - `kleene/skills/kleene-play/SKILL.md` (lines 1-800: state model, consequence/precondition logic)
 - `kleene/lib/framework/scenario-format.md` (consequence/precondition docs)
-- `kleene/lib/framework/saves.md` (save format v4 spec)
+- `kleene/lib/framework/savegame-format.md` (save format v4 spec)
 
 **Validation:**
 - All existing scenarios load without errors
@@ -691,7 +691,7 @@ locations:
 **Files to Modify:**
 - `kleene/lib/framework/scenario-format.md` (temporal system, NPC tracking, events)
 - `kleene/skills/kleene-play/SKILL.md` (time tracking, event processing, NPC management)
-- `kleene/lib/framework/saves.md` (time structure in saves)
+- `kleene/lib/framework/savegame-format.md` (time structure in saves)
 
 **Validation:**
 - Time advances correctly with units
@@ -734,8 +734,8 @@ locations:
 - `kleene/skills/kleene-analyze/SKILL.md` (reachability algorithm, validation)
 - `kleene/scenarios/TEMPLATES/advanced.yaml` (new comprehensive template)
 - `kleene/scenarios/TEMPLATES/temporal_example.yaml` (time system showcase)
-- `kleene/lib/guides/migration-v2.md` (migration guide)
-- `kleene/lib/guides/best-practices.md` (design patterns)
+- `kleene/lib/authoring/migration-v2.md` (migration guide)
+- `kleene/lib/authoring/best-practices.md` (design patterns)
 - `kleene/lib/framework/core.md` (clarify improvisation routing)
 
 **Validation:**
@@ -1014,7 +1014,7 @@ This enables:
 1. **`kleene/skills/kleene-play/SKILL.md`** - Game engine, state model, consequence/precondition evaluation, turn flow
 2. **`kleene/lib/framework/scenario-format.md`** - Complete schema documentation (human-readable)
 3. **`kleene/lib/schema/scenario-schema.json`** - Formal JSON Schema definition (machine-readable) **[NEW]**
-4. **`kleene/lib/framework/saves.md`** - Save format v4 with all new state
+4. **`kleene/lib/framework/savegame-format.md`** - Save format v4 with all new state
 
 ### Phase 5 (Analysis & Migration)
 5. **`kleene/skills/kleene-analyze/SKILL.md`** - Static analysis, validation with schema checking

@@ -5,6 +5,16 @@ All notable changes to Kleene will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-01-22
+
+### Changed
+- **Renamed Classic Mode to Parser Mode** - Better describes the feature's purpose
+  - Setting: `classic_mode` → `parser_mode`
+  - Command: `/kleene classic` → `/kleene parser` (classic still works as alias)
+  - Documentation: `classic-mode.md` → `parser-mode.md`
+- **Added Choice Mode Documentation** - New `choice-mode.md` gives equal treatment to both modes
+- **Save Format v8** - Auto-migrates `classic_mode` to `parser_mode`
+
 ## [0.4.0] - 2026-01-19
 
 ### Added
@@ -98,6 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic precondition/consequence system
 - Save/load functionality
 
+[0.5.0]: https://github.com/hiivmind/kleene/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/hiivmind/kleene/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/hiivmind/kleene/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/hiivmind/kleene/compare/v0.1.0...v0.2.0

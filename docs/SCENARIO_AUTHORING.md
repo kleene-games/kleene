@@ -24,7 +24,7 @@ Create your own adaptive text adventures for Kleene. This guide takes you from m
 **Three ways to create scenarios:**
 
 1. **Generate with AI:** `/kleene generate a space station mystery`
-2. **Use templates:** Copy `scenarios/TEMPLATES/minimal.yaml`
+2. **Use templates:** Copy `lib/framework/authoring/TEMPLATES/minimal.yaml`
 3. **Write from scratch:** Follow this guide
 
 **Workflow:**
@@ -803,7 +803,7 @@ my_scenario:
 ## Next Steps
 
 **Ready to create?**
-1. Check out `scenarios/TEMPLATES/` for starter templates
+1. Check out `lib/framework/authoring/TEMPLATES/` for starter templates
 2. Study `scenarios/dragon_quest.yaml` for a complete example
 3. Read the [full format specification](../lib/framework/formats/scenario-format.md)
 4. Share your scenario - see [CONTRIBUTING.md](../CONTRIBUTING.md)

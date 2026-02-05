@@ -6,7 +6,7 @@ Copyright in Kleene is owned by **Mountain Ash Holdings Pty Ltd**.
 
 ## History
 
-- **2025-01**: Original development by Nathaniel Ramm
+- **2025-12**: Original development by Nathaniel Ramm
 - **2026-01**: Copyright assigned to Mountain Ash Holdings Pty Ltd
 
 ## License

@@ -233,7 +233,7 @@ Kleene's `kleene-play` skill provides:
 - Rewind to previous decision points
 - Export to transcript/summary/stats
 - Gallery mode for educational meta-commentary
-- Classic mode (parser-style, hide scripted options)
+- Parser mode (text adventure-style, hide scripted options)
 
 ---
 

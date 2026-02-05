@@ -39,7 +39,7 @@ kleene/
 │   │   │   └── endings.md            # Null case definitions
 │   │   ├── formats/                  # File specifications
 │   │   │   ├── scenario-format.md    # YAML scenario spec
-│   │   │   ├── saves.md              # Save file format
+│   │   │   ├── savegame-format.md              # Save file format
 │   │   │   └── registry-format.md    # Scenario registry spec
 │   │   └── gameplay/                 # Runtime behavior
 │   │       ├── presentation.md       # Display formatting
@@ -142,7 +142,7 @@ endings:
 
 ### Adding New Scenarios
 
-1. Start from a template in `scenarios/TEMPLATES/` (basic, intermediate, or advanced)
+1. Start from a template in `lib/framework/authoring/TEMPLATES/` (basic, intermediate, or advanced)
 2. Create `scenarios/your_scenario.yaml` following `lib/framework/formats/scenario-format.md`
 3. Add metadata entry to `scenarios/registry.yaml`
 4. Validate with `/kleene analyze your_scenario`
@@ -157,7 +157,7 @@ Skills in `skills/*/SKILL.md` define behavior through markdown prompts. Key patt
 
 ## Game Folder Convention
 
-> **Reference:** See `lib/framework/formats/saves.md` for complete details.
+> **Reference:** See `lib/framework/formats/savegame-format.md` for complete details.
 
 The current working directory is the "game folder". Saves are stored at `./saves/[scenario]/[timestamp].yaml`. Each gameplay session creates a new timestamped save file at start.
 
