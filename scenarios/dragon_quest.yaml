@@ -191,7 +191,7 @@ nodes:
       - type: schedule_event
         event_id: dragon_descends
         delay:
-          amount: 12
+          amount: 8
           unit: hours
         consequences:
           - type: set_location_flag

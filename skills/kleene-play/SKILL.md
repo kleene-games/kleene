@@ -70,6 +70,28 @@ Track the game state in working memory across turns. The state includes:
 - Settings (improvisation_temperature, gallery_mode, foresight, parser_mode)
 - Checkpoints for replay functionality
 
+## Narrative Presentation
+
+> **⚠️ MANDATORY: Follow `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md` EXACTLY**
+>
+> **ALL OUTPUT MUST BE 70 CHARACTERS WIDE — NO EXCEPTIONS.**
+>
+> This includes:
+> - Header block ═ borders: exactly 70 ═ characters
+> - Narrative text: wrap at 70 characters
+> - Status lines: wrap at 70 characters
+>
+> Users play on small screens. Text wider than 70 chars is cut off.
+
+### Which Header Block to display
+
+> **MANDATORY:**  See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md` → "Header Block" for templates and examples of each header
+
+- **Cinematic header**: Game start, location changes, major story beats
+- **Normal Header**: Same location, no major narrative changes 
+
+
+
 ## Core Workflow
 
 ### Phase 1: Initialization
@@ -380,25 +402,6 @@ When player asks for help/hints, generate responses gated by `settings.foresight
 
 When a player selects an option with `next: improvise`, execute the special flow for the Unknown row of the Decision Grid. This involves presenting a sub-prompt, classifying the response to Discovery/Constraint/Limbo, generating appropriate narrative, and determining whether to advance to an outcome node or stay at the current node.
 
-## Narrative Presentation
-
-> **⚠️ MANDATORY: Follow `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md` EXACTLY**
->
-> **ALL OUTPUT MUST BE 70 CHARACTERS WIDE — NO EXCEPTIONS.**
->
-> This includes:
-> - Header block ═ borders: exactly 70 ═ characters
-> - Narrative text: wrap at 70 characters
-> - Status lines: wrap at 70 characters
->
-> Users play on small screens. Text wider than 70 chars is cut off.
-
-### Which Header Block to display
-
-> **MANDATORY:**  See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md` → "Header Block" for templates and examples of each header
-
-- **Cinematic header**: Game start, location changes, major story beats
-- **Normal Header**: Same location, no major narrative changes 
 
 
 
