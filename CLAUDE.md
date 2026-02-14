@@ -22,37 +22,54 @@ Kleene is a Claude Code plugin implementing a three-valued narrative engine for 
 
 ```
 kleene/
+├── .claude/                          # Project settings
+│   └── settings.json
 ├── .claude-plugin/
-│   └── plugin.json           # Plugin manifest
+│   └── plugin.json                   # Plugin manifest (v0.2.0)
 ├── commands/
-│   └── kleene.md             # Gateway command (routes to skills)
+│   └── kleene.md                     # Gateway command (routes to skills)
 ├── skills/
-│   ├── kleene-play/          # Game loop (inline, no sub-agent)
-│   ├── kleene-generate/      # Scenario generation
-│   └── kleene-analyze/       # Structural analysis
-├── lib/framework/
-│   ├── core.md               # Option type semantics & Nine Cells framework
-│   ├── scenario-format.md    # YAML specification
-│   ├── presentation.md       # Header, trait, and choice formatting
-│   ├── improvisation.md      # Free-text action handling
-│   └── saves.md              # Game folder, save format, persistence
-├── scenarios/                # Bundled scenarios
-│   └── dragon_quest.yaml     # Example scenario
-├── hooks/                    # Auto-approve for seamless gameplay
-└── _archive/                 # Archived components
-    └── game-runner.md        # Legacy sub-agent (replaced by inline skill)
+│   ├── kleene-play/                  # Game loop (inline, no sub-agent)
+│   ├── kleene-generate/              # Scenario generation
+│   └── kleene-analyze/               # Structural analysis
+├── lib/
+│   ├── framework/
+│   │   ├── core/                     # Core semantics
+│   │   │   ├── core.md               # Option types & Decision Grid
+│   │   │   └── endings.md            # Null case definitions
+│   │   ├── formats/                  # File specifications
+│   │   │   ├── scenario-format.md    # YAML scenario spec
+│   │   │   ├── savegame-format.md              # Save file format
+│   │   │   └── registry-format.md    # Scenario registry spec
+│   │   └── gameplay/                 # Runtime behavior
+│   │       ├── presentation.md       # Display formatting
+│   │       ├── improvisation.md      # Free-text handling
+│   │       ├── gallery-mode.md       # Meta-commentary system
+│   │       └── export.md             # Export modes
+│   ├── guides/                       # Authoring guides
+│   ├── patterns/                     # Reusable patterns
+│   └── schema/                       # JSON schema for validation
+├── scenarios/
+│   ├── dragon_quest.yaml             # Example scenario
+│   ├── registry.yaml                 # Scenario metadata
+│   └── TEMPLATES/                    # Authoring templates
+├── docs/                             # User documentation
+├── scripts/                          # Validation scripts
+├── hooks/                            # Auto-approve for seamless gameplay
+└── _archive/                         # Archived components
+    └── core_original.md              # Legacy core.md
 ```
 
 ## Core Concepts
 
-### The Nine Cells
+### The Decision Grid
 
-Every choice exists at the intersection of three player states and three world responses:
+Every choice exists at the intersection of player intent (Chooses/Unknown/Avoids) and world response (Permits/Indeterminate/Blocks):
 
 |                    | World Permits | World Indeterminate | World Blocks |
 |--------------------|---------------|---------------------|--------------|
-| **Player Chooses** | Triumph       | Commitment          | Barrier      |
-| **Player Unknown** | Discovery     | Limbo               | Revelation   |
+| **Player Chooses** | Triumph       | Commitment          | Rebuff       |
+| **Player Unknown** | Discovery     | Limbo               | Constraint   |
 | **Player Avoids**  | Escape        | Deferral            | Fate         |
 
 **Player Unknown** captures both hesitation and improvised free-text actions.
@@ -61,9 +78,9 @@ Every choice exists at the intersection of three player states and three world r
 
 ### Completeness Tiers
 
-- **Bronze**: 4 corner cells (Triumph, Barrier, Escape, Fate) - the original quadrants
+- **Bronze**: 4 corner cells (Triumph, Rebuff, Escape, Fate) - the original quadrants
 - **Silver**: Bronze + 2 middle cells (adds uncertainty/exploration)
-- **Gold**: All 9 cells - full narrative possibility space
+- **Gold**: All 9 intersections - full narrative possibility space
 
 ### Null Cases
 
@@ -125,9 +142,11 @@ endings:
 
 ### Adding New Scenarios
 
-1. Create `scenarios/your_scenario.yaml` following the format in `lib/framework/scenario-format.md`
-2. Validate with `/kleene analyze your_scenario`
-3. Test with `/kleene play your_scenario`
+1. Start from a template in `lib/framework/authoring/TEMPLATES/` (basic, intermediate, or advanced)
+2. Create `scenarios/your_scenario.yaml` following `lib/framework/formats/scenario-format.md`
+3. Add metadata entry to `scenarios/registry.yaml`
+4. Validate with `/kleene analyze your_scenario`
+5. Test with `/kleene play your_scenario`
 
 ### Modifying Skills
 
@@ -136,15 +155,22 @@ Skills in `skills/*/SKILL.md` define behavior through markdown prompts. Key patt
 - Reference `${CLAUDE_PLUGIN_ROOT}` for plugin-relative paths
 - Keep menus to 2-4 options
 
-### Game Runner Agent
-
-The `agents/game-runner.md` defines a haiku-model subagent that:
-- Receives scenario path (first turn) or scenario name + state (subsequent turns)
-- Evaluates preconditions and applies consequences
-- Returns structured output with required markers
-
 ## Game Folder Convention
 
-> **Reference:** See `lib/framework/saves.md` for complete details.
+> **Reference:** See `lib/framework/formats/savegame-format.md` for complete details.
 
 The current working directory is the "game folder". Saves are stored at `./saves/[scenario]/[timestamp].yaml`. Each gameplay session creates a new timestamped save file at start.
+
+## Scenario Validation
+
+```bash
+# Full schema validation (requires check-jsonschema)
+pip install check-jsonschema
+check-jsonschema --schemafile lib/schema/scenario-schema.json scenarios/my_scenario.yaml
+
+# Or use the validation script (falls back to yq if check-jsonschema not installed)
+./scripts/validate-scenario.sh scenarios/my_scenario.yaml
+
+# Semantic analysis via skill
+/kleene analyze my_scenario
+```

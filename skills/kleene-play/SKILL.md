@@ -29,218 +29,68 @@ This skill runs game logic **inline** (no sub-agent). Benefits:
 
 ## Scenario Loading
 
-> **Tool Detection:** See `lib/patterns/tool-detection.md` for yq availability check.
-> **Templates:** See `lib/patterns/yaml-extraction.md` for all extraction patterns.
+> **Scenario Loading:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-file-loading/overview.md`
+> **Extraction Templates:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-file-loading/extraction-templates.md`
 
 Scenarios may be loaded in two modes depending on file size.
 
 ### Standard Load (small scenarios)
 
 For scenarios under ~20k tokens, read the entire file once and cache in context.
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-file-loading/standard-loading.md`
 
 ### Lazy Load (large scenarios)
 
-When the Read tool returns a token limit error, switch to lazy loading.
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-file-loading/lazy-loading.md`
+> for complete lazy loading protocol including cache strategy and error handling.
 
-> **Token Efficiency:** Using `yq` for YAML extraction is **dramatically more efficient** than Read/Grep:
-> - Header extraction: **~75% fewer tokens** (extracts only needed fields)
-> - Node loading: **~67% fewer tokens** (single node vs grep context)
-> - Entire large scenario playthrough: **~50% total token savings**
->
-> Always prefer yq when available. The savings compound across every turn.
+When the Read tool returns a token limit error, switch to lazy loading mode. This loads only the header at start, then fetches nodes on demand each turn.
 
-**Step 1: Detect yaml_tool capability**
+## Time System
 
-At session start, check for yq:
-```bash
-command -v yq >/dev/null 2>&1 && yq --version 2>&1 | head -1
-```
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/evaluation-reference.md`
+> for Time Unit Constants, Travel Time Calculation, and Improvisation Time Calculation.
 
-If output contains "mikefarah/yq" and version >= 4: `yaml_tool: yq`
-Otherwise: `yaml_tool: grep`
+When a scenario includes `travel_config`, time passes automatically during:
+- **Travel**: `move_to` consequences add travel time based on connection data
+- **Improvisation**: Free-text actions consume time based on intent classification
 
-**Step 2: Load header**
-
-**If yaml_tool=yq (~75% token savings):**
-```bash
-yq '{"name": .name, "start_node": .start_node, "initial_character": .initial_character, "initial_world": .initial_world, "ending_ids": [.endings | keys | .[]]}' scenario.yaml
-```
-
-**If yaml_tool=grep (fallback):**
-```
-Read scenario file with limit: 200
-```
-
-Extract and cache:
-- `name` - scenario identifier
-- `initial_character` - starting character state
-- `initial_world` - starting world state
-- `start_node` - first node ID
-- `ending_ids` - list of ending identifiers
-
-**Step 3: Load nodes on demand**
-
-**If yaml_tool=yq (~67% token savings):**
-```bash
-yq '.nodes.NODE_ID' scenario.yaml
-```
-
-For structured turn context:
-```bash
-yq '.nodes.NODE_ID as $n | {"narrative": $n.narrative, "prompt": $n.choice.prompt, "options": [$n.choice.options[] | {"id": .id, "text": .text, "cell": .cell, "precondition": .precondition, "next_node": .next_node, "has_improvise": (.next == "improvise"), "outcome_nodes": .outcome_nodes}]}' scenario.yaml
-```
-
-**If yaml_tool=grep (fallback):**
-```
-Pattern: "^  {node_id}:"
-Context: -A 80
-Path: scenario file
-```
-
-Parse YAML from grep output to extract narrative, choice prompt, and options.
-
-**Step 4: Improvise Prefetch (yq only)**
-
-When an option has `next: improvise`, prefetch outcome nodes in a single query:
-```bash
-yq '.nodes as $all | .nodes.NODE_ID.choice.options[] | select(.next == "improvise") | .outcome_nodes | to_entries | .[] | {"cell": .key, "node": $all[.value]}' scenario.yaml
-```
-
-This fetches both discovery and revelation nodes in one query, avoiding multiple round-trips.
-
-
-**Step 5: Adaptive Node Discovery (for improvised choices)**
-
-When narrative choices lead to unexpected paths or you need to find
-appropriate continuation nodes:
-
-**If yaml_tool=yq (preferred):**
-```bash
-# Find nodes by keyword/theme
-yq '.nodes | keys | .[]' scenario.yaml | grep -i 'keyword1\|keyword2\|theme'
-
-# Example: Finding morning-after scenes
-yq '.nodes | keys | .[]' scenario.yaml | grep -i 'morning\|wake\|dawn'
-```
-
-**If yaml_tool=grep (fallback):**
-```bash
-grep -i 'keyword' scenario.yaml | grep -E '^\s{2}\w+:'
-```
-
-**When to use:**
-- Player makes improvised choice that doesn't map to scripted next_node
-- Multiple potential continuation paths exist
-- Need to find thematically appropriate transition nodes
-- Lazy loading mode requires discovering relevant story branches
-
-**Result:** Seamless narrative flow that feels responsive rather than
-searching/loading. Do the keyword search, load the best-matching node,
-present or adapt it naturally as if you knew it was there all along.
-
-
-**Step 6: Cache strategy**
-- Header data: persistent (kept in context)
-- Current node: replaced each turn (don't accumulate old nodes)
-- Endings: persistent (needed for ending detection)
-- yaml_tool: persistent (detected once at session start)
-
-
-
-### Detecting Load Mode
-
-The gateway command attempts full read first. If it fails:
-1. Sets `lazy_loading: true` in game context
-2. Detects `yaml_tool: yq|grep` for extraction method
-3. Loads header via yq or partial read
-4. Passes scenario path for per-turn node loading
-
-When `lazy_loading: true`, Phase 2 uses the appropriate tool to load each node.
-
-### Error Handling
-
-If yq fails during extraction, silently fall back to grep. Never interrupt gameplay to report tool failures.
-
-## Time Unit Constants
-
-> **Reference:** See `lib/framework/scenario-format.md` → "Time Units" for conversion table.
-
-All temporal values in `world.time` are stored in seconds.
+Meta intents (save, help, inventory) never consume time.
 
 ## Game State Model
 
-Track these values in your working memory across turns:
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/game-state.md`
+> for complete game state schema including character, world, settings, and checkpoint structures.
 
-```
-GAME_STATE:
-  scenario_name: string       # e.g., "dragon_quest"
-  current_node: string        # Current node ID
-  previous_node: string       # Previous node ID (for blocked restoration)
+Track the game state in working memory across turns. The state includes:
+- Scenario info and current/previous node IDs
+- Turn/scene/beat counters with beat log for export
+- Character state (exists, traits, inventory, flags)
+- World state (location, time, flags, location_state, NPC positions, scheduled events)
+- Settings (improvisation_temperature, gallery_mode, foresight, parser_mode)
+- Checkpoints for replay functionality
 
-  # 3-Level Counter (see lib/framework/presentation.md)
-  turn: number                # Major node transitions
-  scene: number               # Groupings within turn (resets on turn++)
-  beat: number                # Individual moments (resets on scene++)
-  scene_title: string         # Auto-generated or from scenario
-  scene_location: string      # Location when scene started
+## Narrative Presentation
 
-  # Beat log for export reconstruction
-  beat_log: [                 # Cleared on session end or export
-    {turn, scene, beat, type, action, consequences}
-  ]
+> **⚠️ MANDATORY: Follow `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md` EXACTLY**
+>
+> **ALL OUTPUT MUST BE 70 CHARACTERS WIDE — NO EXCEPTIONS.**
+>
+> This includes:
+> - Header block ═ borders: exactly 70 ═ characters
+> - Narrative text: wrap at 70 characters
+> - Status lines: wrap at 70 characters
+>
+> Users play on small screens. Text wider than 70 chars is cut off.
 
-  character:
-    exists: boolean           # false = None (character ceased)
-    traits: {name: value}     # courage, wisdom, luck, etc.
-    inventory: [items]        # Items held
-    flags: {flag: boolean}    # Character-specific flags
+### Which Header Block to display
 
-  world:
-    current_location: string  # Location ID
-    time: number              # Time in seconds since game start
-    flags: {flag: boolean}    # World state flags
-    location_state:           # Per-location mutable state
-      [location_id]:
-        flags: {flag: boolean}
-        properties: {name: number}
-        environment: {lighting: "dim", temperature: 20}  # Environmental conditions
+> **MANDATORY:**  See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md` → "Header Block" for templates and examples of each header
 
-    # NEW in Phase 4 (v5)
-    npc_locations:            # NPC position tracking
-      [npc_id]: location_id   # Maps NPC to their current location
+- **Cinematic header**: Game start, location changes, major story beats
+- **Normal Header**: Same location, no major narrative changes 
 
-    scheduled_events:         # Pending events
-      - event_id: string
-        trigger_at: number    # Time (seconds) when event fires
-        consequences: [...]   # Consequences to apply
 
-    triggered_events: [string]  # IDs of events that have fired
-
-  settings:
-    improvisation_temperature: number  # 0-10, controls narrative adaptation
-                                       # 0 = verbatim, 5 = balanced, 10 = fully adaptive
-    gallery_mode: boolean              # Enable meta-commentary
-    foresight: number                  # 0-10, controls hint specificity
-    classic_mode: boolean              # Hide scripted options (parser mode)
-
-  recent_history: [string]    # Last 3-5 turns for context
-```
-
-### Counter Increment Rules
-
-| Counter | Increments When | Resets |
-|---------|-----------------|--------|
-| Turn | Advancing to new node via `next_node` | scene→1, beat→1 |
-| Scene | Location change, time skip, 5+ beats, explicit marker | beat→1 |
-| Beat | Improvised action resolves, scripted choice selected | — |
-
-### Scene Detection Triggers
-
-Scene++ occurs automatically when:
-1. `world.current_location` differs from `scene_location`
-2. Narrative contains time-skip patterns: `[Time passes]`, `[Hours later]`, `[The next morning]`
-3. Beat count reaches 5+ without scene change (auto-subdivision)
-4. Node has `scene_break: true` marker
 
 ## Core Workflow
 
@@ -276,11 +126,12 @@ Scene++ occurs automatically when:
    character: [scenario.initial_character]
    world: [scenario.initial_world]
    settings:
-     improvisation_temperature: 5  # Default (Balanced). See lib/framework/improvisation.md
+     improvisation_temperature: 5  # Default (Balanced). See lib/framework/gameplay/improvisation.md
      gallery_mode: false
      foresight: 5                  # Default (Suggestive)
-     classic_mode: false           # Default: show choices
+     parser_mode: false           # Default: show choices
    recent_history: []
+   checkpoints: []                 # For end-game replay feature
    ```
 
 3. **Do NOT create a save file yet.** Only save when:
@@ -323,8 +174,8 @@ TURN:
       - Max cascade depth: 10 (prevent infinite loops from event chains)
 
   2. Check for ending:
-     - If current_node is in scenario.endings → display ending, save state, EXIT
-     - If character.exists == false → display death ending, save state, EXIT
+     - If current_node is in scenario.endings → display ending, save state, GOTO End-Game Menu
+     - If character.exists == false → display death ending, save state, GOTO End-Game Menu
 
   2a. Check node precondition (if present):
      - If current node has `precondition`:
@@ -342,7 +193,7 @@ TURN:
      - IF temperature > 0 AND improv_* flags exist:
        - Generate contextual framing based on temperature level
        - Weave into or prepend to narrative text
-       - See lib/framework/improvisation.md → "Improvisation Temperature"
+       - See lib/framework/gameplay/improvisation.md → "Improvisation Temperature"
      - Output the (possibly adapted) narrative with formatting
      - Show character stats line
 
@@ -357,11 +208,11 @@ TURN:
      - IF temperature >= 7 AND improv_* flags suggest bonus action:
        - Generate at most 1 bonus option based on improv flags
        - Bonus options use soft consequences only (like free-text improv)
-       - See lib/framework/improvisation.md → "Bonus Options"
+       - See lib/framework/gameplay/improvisation.md → "Bonus Options"
 
   5. Present choices via AskUserQuestion:
 
-     **IF settings.classic_mode == true:**
+     **IF settings.parser_mode == true:**
      ```json
      {
        "questions": [{
@@ -377,7 +228,7 @@ TURN:
      }
      ```
 
-     **ELSE (classic_mode == false):**
+     **ELSE (parser_mode == false):**
      ```json
      {
        "questions": [{
@@ -396,6 +247,8 @@ TURN:
       - Check feasibility against current state
       - Generate narrative response matching scenario tone
       - Apply soft consequences only (trait ±1, add_history, improv_* flags)
+      - Apply improvisation time cost (see evaluation-reference.md → "Improvisation Time Calculation")
+        - After time advance: re-check scheduled events (step 1b)
       - Beat++ (log to beat_log with type: "improv", action: summary)
       - Check scene triggers: location change, time skip, beat >= 5
         - If triggered: Scene++, beat→1, update scene_title
@@ -412,6 +265,8 @@ TURN:
       - Treat like emergent improvisation (same as 6a)
       - Generate narrative response matching scenario tone
       - Apply soft consequences only (trait ±1, add_history, improv_* flags)
+      - Apply improvisation time cost (classify as 'act' intent, see evaluation-reference.md → "Improvisation Time Calculation")
+        - After time advance: re-check scheduled events (step 1b)
       - Beat++ (log to beat_log with type: "bonus", action: option label)
       - Check scene triggers (same as 6a)
       - Display response with consequence indicators
@@ -419,74 +274,23 @@ TURN:
       - Do NOT advance node or turn
       - GOTO step 6
 
-  6d. IF selection is "Look around" (classic mode):
-      - Re-display current node narrative (abbreviated if long)
-      - Extract and list exits mentioned in narrative
-      - Extract and list notable items/NPCs if mentioned
-      - Format as atmospheric description, not menu
+  6d. IF selection is "Look around" (parser mode):
+      > See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/parser-mode.md` → "Look Around"
       - Beat++ (log to beat_log with type: "look")
-      - Present choices again
-      - Do NOT advance node or turn
+      - Present choices again, do NOT advance node or turn
       - GOTO step 6
 
-  6e. IF selection is "Inventory" (classic mode):
-      - Display character.inventory as formatted list
-      - If empty: "You are empty-handed."
-      - If items: List each with brief description if available
+  6e. IF selection is "Inventory" (parser mode):
+      > See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/parser-mode.md` → "Inventory"
       - Beat++ (log to beat_log with type: "inventory")
-      - Present choices again
-      - Do NOT advance node or turn
+      - Present choices again, do NOT advance node or turn
       - GOTO step 6
 
-  6f. IF selection is "Show help" (classic mode):
-      - Generate adaptive help from hidden options (see below)
+  6f. IF selection is "Show help" (parser mode):
+      > See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/parser-mode.md` → "Adaptive Help"
       - Beat++ (log to beat_log with type: "help")
-      - Present choices again
-      - Do NOT advance node or turn
+      - Present choices again, do NOT advance node or turn
       - GOTO step 6
-
-      **Adaptive Help Generation:**
-
-      1. Extract verbs from hidden options:
-         - Read all `options[].text` from current node
-         - Parse the leading verb (e.g., "Open the mailbox" → "open")
-         - Lowercase and deduplicate verbs
-
-      2. Categorize by action type:
-         ```
-         MOVEMENT:     go, enter, climb, descend, exit, flee, leave, walk
-         EXAMINE:      examine, look, read, search, inspect, study
-         INTERACT:     open, close, take, drop, give, use, push, pull, turn
-         COMBAT:       attack, fight, defend, strike, parry
-         COMMUNICATE:  say, ask, talk, tell, shout, whisper
-         ```
-
-      3. Generate contextual help output:
-         ```
-         ═══════════════════════════════════════════════════════════════════════
-         COMMANDS THAT MIGHT WORK HERE
-         ═══════════════════════════════════════════════════════════════════════
-
-         Movement:    go [direction], enter
-         Examine:     examine [thing], read
-         Interact:    open, take
-
-         UNIVERSAL COMMANDS
-         inventory    - check what you're carrying
-         look         - survey surroundings
-         save         - save your game
-         ═══════════════════════════════════════════════════════════════════════
-         ```
-
-      4. What to include/exclude:
-         - INCLUDE: Verbs extracted from available options
-         - INCLUDE: Universal commands (inventory, look, save)
-         - EXCLUDE: Specific objects (say "open" not "open mailbox")
-         - EXCLUDE: Which directions are valid
-         - EXCLUDE: Options blocked by preconditions
-
-      5. If no contextual verbs found (node has no options):
-         - Show only universal commands section
 
   7. Display option narrative (if present):
      - Check if selected option has a `narrative` field
@@ -495,9 +299,10 @@ TURN:
 
   8. Apply consequences of chosen option:
      - Execute each consequence type (see Consequence Application table)
+     - For `move_to` consequences: apply travel time (see evaluation-reference.md → "Travel Time Calculation")
      - Update character/world state in memory
      - After all consequences: re-check scheduled events (step 1b)
-       - This handles advance_time or schedule_event consequences
+       - This handles advance_time, move_to travel time, or schedule_event consequences
 
   9. Advance state:
      - Log current beat: beat_log.append({turn, scene, beat, type: "scripted_choice", action: option.text})
@@ -507,13 +312,23 @@ TURN:
      - Update scene_location = world.current_location
      - Generate scene_title from new node context
      - Add choice to recent_history (keep last 5)
+     - Save checkpoint for replay:
+       checkpoints.append({
+         turn: [new turn number],
+         scene: 1,
+         beat: 1,
+         node_id: current_node,
+         description: [summarize the choice just made],
+         character: [deep copy of character state],
+         world: [deep copy of world state]
+       })
 
   10. GOTO step 1 (next turn)
 ```
 
 ### Phase 3: Persistence
 
-> **Reference:** See `lib/framework/saves.md` for save format, file creation, and operations.
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/savegame-format.md` for save format, file creation, and operations.
 
 Save to disk when:
 - Game ends (victory, death, transcendence)
@@ -543,91 +358,19 @@ The PreToolUse hook auto-approves saves/ writes for seamless gameplay.
 
 ## Precondition & Consequence Evaluation
 
-> **Reference:** See `lib/framework/evaluation-reference.md` for precondition evaluation and consequence application tables.
-> **Schema Reference:** See `lib/framework/scenario-format.md` for all types and YAML syntax.
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/evaluation-reference.md` for precondition evaluation and consequence application tables.
+> **Schema Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/scenario-format.md` for all types and YAML syntax.
 
 ### Location Access Validation
 
-When evaluating a `move_to` consequence or presenting location-based options:
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/evaluation-reference.md`
+> for location access validation, blocked display formatting, and fallback message generation.
 
-1. Find target location in `scenario.initial_world.locations[]`
-2. If location has `precondition`:
-   - Evaluate precondition against current state
-   - If FAILS, apply `access_mode`:
-     - `filter` (default): Hide the option entirely
-     - `show_locked`: Show option with "[Locked]" indicator, disabled
-     - `show_normal`: Show normally, fail with message if selected
-
-**Access Denied Display (for show_normal mode):**
-```
-╭──────────────────────────────────────────────────────────────────────╮
-│ ACCESS DENIED                                                        │
-╰──────────────────────────────────────────────────────────────────────╯
-
-[access_denied_narrative or generated fallback]
-
-You cannot enter [location name].
-```
-
-**Location Access Fallback Messages:**
-| Precondition Type | Fallback Template |
-|-------------------|-------------------|
-| `has_item` | "You need the **[item]** to enter this place." |
-| `trait_minimum` | "Your **[trait]** is insufficient to access this location." |
-| `flag_set` | "Something must happen before this place opens to you." |
-| `environment_is` | "The **[property]** here must be **[value]**." |
-| `environment_minimum` | "The **[property]** here is too low." |
-| `environment_maximum` | "The **[property]** here is too high." |
-| `all_of` | Generate message for first failing sub-condition |
-
-### Blocked Display Format
-
-When a node precondition fails, display:
-
-```
-╭──────────────────────────────────────────────────────────────────────╮
-│ BLOCKED                                                              │
-╰──────────────────────────────────────────────────────────────────────╯
-
-[blocked_narrative or generated fallback]
-
-You remain where you are.
-```
-
-The header uses the standard 70-character width with rounded corners.
-
-### Fallback Message Generation
-
-If a node has a `precondition` but no `blocked_narrative`, generate a fallback:
-
-| Precondition Type | Fallback Template |
-|-------------------|-------------------|
-| `has_item` | "You need the **[item]** to proceed here." |
-| `missing_item` | "The **[item]** you carry prevents this path." |
-| `trait_minimum` | "Your **[trait]** ([current]) is insufficient. Requires at least [minimum]." |
-| `trait_maximum` | "Your **[trait]** ([current]) is too high. Requires [maximum] or less." |
-| `flag_set` | "Something must happen before you can proceed." |
-| `flag_not_set` | "Your past actions have closed this path." |
-| `relationship_minimum` | "Your relationship with **[npc]** ([current]) is insufficient. Requires at least [minimum]." |
-| `location_flag_set` | "The **[location]** is not yet prepared for this." |
-| `location_flag_not_set` | "Conditions at **[location]** prevent this path." |
-| `location_property_minimum` | "The **[property]** at **[location]** is insufficient." |
-| `location_property_maximum` | "The **[property]** at **[location]** is too high." |
-| `all_of` | Generate message for first failing sub-condition |
-| `any_of` | "You need at least one of several requirements." |
-| `none_of` | "Your current situation prevents this path." |
-
-**Edge Case - Start Node with Precondition:**
-If `start_node` has a `precondition`, this is a scenario design error. Display:
-```
-ERROR: Start node cannot have a precondition.
-The scenario "[name]" has an invalid configuration.
-```
-Refuse to start the game.
+When a location has a `precondition`, evaluate it and apply the configured `access_mode`.
 
 ## Improvised Action Handling
 
-> **Reference:** See `lib/framework/improvisation.md` for complete handling rules.
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md` for complete handling rules.
 
 When a player selects "Other" and provides free-text input:
 
@@ -640,185 +383,32 @@ When a player selects "Other" and provides free-text input:
 
 Soft consequences preserve scenario balance while rewarding exploration.
 
+### Compound Command Resolution
+
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md` → "Compound Command Resolution"
+
+Multi-step natural language input (e.g., "go to the tree, climb it, get the egg") can be resolved across multiple nodes in a single interaction with batched validation and cohesive narrative output.
+
 ### Hint Generation (Foresight-Gated)
 
-When player asks for help/hints during improvisation (e.g., "where is the
-treasure?", "what should I do?", "how do I get past the troll?"):
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md` → "Hint Generation (Foresight-Gated)"
 
-1. Classify as Meta intent with hint_request subtype
-2. Read `settings.foresight` value (default: 5)
-3. Generate hint at appropriate specificity level:
-
-| Foresight | Name | Response Pattern |
-|-----------|------|------------------|
-| 0 | Blind | "You'll have to discover that yourself." (refuse hint) |
-| 1-3 | Cryptic | Atmospheric/poetic. Reference mood, themes, not specifics. |
-| 4-6 | Suggestive | Directional. Name regions/directions without exact steps. |
-| 7-9 | Helpful | Clear guidance. Name specific locations and items needed. |
-| 10 | Oracle | Full walkthrough. Step-by-step instructions to goal. |
-
-**Example responses for "Where can I find treasure?"**
-
-- **0 (Blind)**: "The adventurer must discover their own fortune."
-- **3 (Cryptic)**: "Treasures favor those who venture into the deep places..."
-- **5 (Suggestive)**: "The eastern passages and underground depths hold rewards."
-- **8 (Helpful)**: "There's a painting in the Gallery to the east, and a bar in the Loud Room."
-- **10 (Oracle)**: "Go east twice to the Gallery, take the painting. Then go down to the cellar, navigate past the troll, and find the platinum bar in the Loud Room."
-
-**Hint generation requires scenario knowledge:**
-- Standard mode: Use cached scenario data to identify goals, items, paths
-- Lazy mode: Query scenario with yq/grep to find relevant objectives
-
-Hints should reference the scenario's actual content, not generic advice.
-After delivering the hint, present the same choices again (no node advance).
+When player asks for help/hints, generate responses gated by `settings.foresight` (0-10). Hints should reference actual scenario content, not generic advice. Present same choices again after hint (no node advance).
 
 ## Scripted Improvisation Flow
 
-When a player selects an option with `next: improvise`, execute this special flow for the Unknown row of the Nine Cells.
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/scripted-improvisation.md`
+> for complete scripted improvisation protocol including grid cell classification, pattern matching, and outcome node handling.
 
-> **CRITICAL:** See `lib/framework/presentation.md` → "Improvise Option Flow" for seamless presentation rules. Never output internal processing notes.
+When a player selects an option with `next: improvise`, execute the special flow for the Unknown row of the Decision Grid. This involves presenting a sub-prompt, classifying the response to Discovery/Constraint/Limbo, generating appropriate narrative, and determining whether to advance to an outcome node or stay at the current node.
 
-### Step 1: Display option narrative
 
-If the option has a `narrative` field, display it first as context. Then immediately present the sub-prompt - no meta-commentary.
-
-### Step 2: Present sub-prompt
-
-Ask the player for specific intent:
-
-```json
-{
-  "questions": [{
-    "question": "What specifically do you do?",
-    "header": "Action",
-    "multiSelect": false,
-    "options": [
-      {"label": "Watch carefully", "description": "Observe and study"},
-      {"label": "Wait patiently", "description": "See what happens"},
-      {"label": "Look for details", "description": "Search for information"}
-    ]
-  }]
-}
-```
-
-Generate options based on `improvise_context.theme`. Always allow free-text via "Other".
-
-### Step 3: Classify response to grid cell
-
-Match the player's response against the patterns in `improvise_context`:
-
-```
-IF response matches any pattern in `permits`:
-  cell = Discovery (Unknown + World Permits)
-
-ELSE IF response matches any pattern in `blocks`:
-  cell = Revelation (Unknown + World Blocks)
-
-ELSE:
-  cell = Limbo (Unknown + World Indeterminate)
-```
-
-Pattern matching uses case-insensitive regex. Example:
-- `permits: ["scales", "eyes", "breathing"]` matches "I study the dragon's scales"
-- `blocks: ["attack", "steal"]` matches "I try to sneak past and steal something"
-
-### Step 4: Generate narrative response
-
-Based on the determined cell, generate an appropriate response:
-
-**Discovery (permits matched):**
-- Exploration yields insight
-- Positive tone, rewarding curiosity
-- May add soft trait bonus (+1 wisdom typical)
-
-**Revelation (blocks matched):**
-- World prevents or warns against action
-- Explanatory tone, teaches constraint
-- May add soft trait adjustment (-1 luck typical)
-
-**Limbo (no match):**
-- Use `improvise_context.limbo_fallback` as the base
-- Elaborate with atmospheric detail
-- Neutral tone, maintains suspense
-- No trait changes
-
-### Step 5: Apply soft consequences
-
-Same rules as emergent improvisation:
-- `modify_trait` with delta -1 to +1 only
-- `add_history` to record the exploration
-- `set_flag` with `improv_*` prefix only
-
-### Step 6: Determine next state
-
-Check `outcome_nodes` for the determined cell:
-
-```yaml
-outcome_nodes:
-  discovery: dragon_notices_patience
-  revelation: dragon_dismisses_hesitation
-  # limbo: omitted
-```
-
-**If outcome_nodes[cell] is specified:**
-- Advance to that node
-- Increment turn
-- Continue to next turn (step 1)
-
-**If outcome_nodes[cell] is omitted (typical for Limbo):**
-- Stay at current node
-- Do NOT increment turn
-- Re-present original choices (step 5)
-
-### Example Flow
-
-```
-Option selected: "Wait and observe the dragon"
-  └── has next: improvise
-
-Sub-prompt: "What specifically do you do?"
-  └── Player response: "I study the inscriptions on its scales"
-
-Pattern match:
-  └── permits: ["scales", "inscriptions"] ← MATCH
-  └── cell = Discovery
-
-Generate narrative:
-  └── "You peer closer at the ancient markings etched into the iron-hard
-       scales. They seem to form words in a language older than human
-       memory. One pattern repeats - a symbol of greeting, perhaps?"
-  └── +1 wisdom - Attention to detail
-
-Outcome nodes:
-  └── discovery: dragon_notices_patience
-  └── Advance to dragon_notices_patience, turn++
-```
-
-## Narrative Presentation
-
-> **⚠️ MANDATORY: Follow `lib/framework/presentation.md` EXACTLY**
->
-> **ALL OUTPUT MUST BE 70 CHARACTERS WIDE — NO EXCEPTIONS.**
->
-> This includes:
-> - Header block ═ borders: exactly 70 ═ characters
-> - Narrative text: wrap at 70 characters
-> - Status lines: wrap at 70 characters
->
-> Users play on small screens. Text wider than 70 chars is cut off.
-
-### Which Header Block to display
-
-- **Cinematic header**: Game start, location changes, major story beats
-- **Normal Header**: Same location, no major narrative changes 
-
-> **MANDATORY:**  See `lib/framework/presentation.md` → "Header Block" for templates and examples of each header
 
 
 
 ## Choice Presentation
 
-Use AskUserQuestion per conventions in `lib/framework/presentation.md`.
+Use AskUserQuestion per conventions in `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md`.
 
 **Silent Precondition Filtering**: Options failing preconditions are
 removed BEFORE presenting choices. Never show "locked" or "requires X"
@@ -847,49 +437,46 @@ Check for endings:
 2. character.exists == false
 3. No available choices (dead end - shouldn't happen in well-designed scenarios)
 
-Display ending with appropriate tone:
+**Display ending with appropriate tone** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/core/endings.md` 
 
-**Victory:**
-```
-╔═══════════════════════════════════════════════════════════╗
-| VICTORY                                                   |
-╚═══════════════════════════════════════════════════════════╝
+## End-Game Menu
 
-[Ending narrative - celebratory tone]
-```
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/post-gameplay/end-game-menu.md`
+> for complete end-game menu system, statistics display, game analysis,
+> and replay functionality.
 
-**Death:**
-```
-╔═══════════════════════════════════════════════════════════╗
-| DEATH                                                     |
-╚═══════════════════════════════════════════════════════════╝
+Present the end-game menu following the framework document. The menu
+offers four options:
+- **View stats** — Final traits, relationships, inventory
+- **Game analysis** — Timeline, key decisions, paths not taken
+- **Play again** — Reset and restart from Turn 1
+- **Replay from moment** — Return to a key decision checkpoint
 
-[Ending narrative - somber, respectful]
-```
-
-**Transcendence:**
-```
-╔═══════════════════════════════════════════════════════════╗
-| TRANSCENDENCE                                             |
-╚═══════════════════════════════════════════════════════════╝
-
-[Ending narrative - mystical, transformative]
-```
-
-**Unchanged (Irony):**
-```
-╔═══════════════════════════════════════════════════════════╗
-| UNCHANGED                                                 |
-╚═══════════════════════════════════════════════════════════╝
-
-[Ending narrative - ironic, reflective]
-```
+The menu loops until player selects an action that restarts gameplay.
 
 ## Additional Resources
 
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics, quadrant theory
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification, preconditions, consequences
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/presentation.md`** - Header, trait, and choice formatting
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/improvisation.md`** - Free-text action handling
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/saves.md`** - Game folder, save format, persistence rules
+### Core
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md`** - Option type semantics, Decision Grid theory
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/endings.md`** - Ending classification, flavor system
+
+### Formats
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/scenario-format.md`** - YAML specification, preconditions, consequences
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/savegame-format.md`** - Game folder, save format, persistence rules
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/registry-format.md`** - Scenario registry format
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/game-state.md`** - Game state schema, counters, checkpoints
+
+### Gameplay
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md`** - Header, trait, and choice formatting
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md`** - Free-text action handling, compound commands, hints
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/parser-mode.md`** - Parser-style interface behaviors
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/choice-mode.md`** - Default choice-based interface mode
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/gallery-mode.md`** - Meta-commentary system for replays
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/evaluation-reference.md`** - Precondition/consequence tables
+
+### Post-Gameplay
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/post-gameplay/overview.md`** - Post-gameplay system architecture
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/post-gameplay/export.md`** - End-game transcript/summary generation
+
+### Scenarios
 - **`${CLAUDE_PLUGIN_ROOT}/scenarios/`** - Bundled scenarios

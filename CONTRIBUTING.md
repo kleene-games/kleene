@@ -60,7 +60,7 @@ We love community-created scenarios! Here's how to contribute:
 
 - **Start simple** - Test core loop before adding complexity
 - **Work backward** - Design endings first, then paths to reach them
-- **Use templates** - See `scenarios/TEMPLATES/` for examples
+- **Use templates** - See `lib/framework/authoring/TEMPLATES/` for examples
 - **Improvisation-friendly** - Design for both scripted and free-form play
 - **Test edge cases** - What if player does something unexpected?
 - **Respect player agency** - Avoid railroading or false choices
@@ -86,7 +86,7 @@ We love community-created scenarios! Here's how to contribute:
 
 - **Markdown documentation** - Clear, concise, well-formatted
 - **YAML scenarios** - Valid syntax, proper indentation
-- **Follow conventions** - See `lib/framework/presentation.md`
+- **Follow conventions** - See `lib/framework/gameplay/presentation.md`
 - **Test thoroughly** - Playtest changes at multiple temperatures
 
 ### Pull Request Process
@@ -171,7 +171,7 @@ Have an idea? Great! Please include:
 
 ## License
 
-By contributing, you agree your contributions will be licensed under the MIT License (same as the project).
+By contributing, you agree your contributions will be licensed under the GNU Affero General Public License v3.0 (same as the project).
 
 ---
 

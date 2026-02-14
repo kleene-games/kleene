@@ -1,0 +1,602 @@
+# Intermediate Kleene Scenario Template
+# Demonstrates advanced features: relationships, complex preconditions, improvisation
+# ~30-40 minutes of gameplay
+
+name: "Intermediate Template"
+description: "An adventure demonstrating advanced Kleene features"
+
+initial_character:
+  name: "Seeker"
+  traits:
+    combat: 5
+    diplomacy: 5
+    investigation: 5
+    morality: 10
+  inventory:
+    - letter_of_introduction
+  relationships:
+    guardian: 0
+    merchant: 0
+    oracle: 0
+  flags:
+    trusted_by_guardian: false
+    learned_secret: false
+    completed_trial: false
+
+initial_world:
+  current_location: "temple_gates"
+  time: 0
+  flags:
+    gates_opened: false
+    ritual_performed: false
+
+  # NEW in v5: NPC location tracking
+  npc_locations:
+    guardian: temple_gates
+    merchant: temple_interior
+    oracle: temple_interior
+
+  # NEW in v5: Pre-scheduled events (empty at start, populated via schedule_event)
+  scheduled_events: []
+  triggered_events: []
+
+  # Location definitions with gated access example
+  locations:
+    - id: temple_gates
+      name: "Temple Gates"
+      connections: [temple_interior]
+
+    - id: temple_interior
+      name: "Temple Interior"
+      connections: [temple_gates, hidden_chamber]
+
+    - id: hidden_chamber
+      name: "Hidden Chamber"
+      description: "A secret room beneath the temple"
+      connections: [temple_interior]
+
+      # Gated location - requires learning the secret AND having the truth mirror
+      precondition:
+        type: all_of
+        conditions:
+          - type: flag_set
+            flag: learned_secret
+          - type: has_item
+            item: truth_mirror
+
+      access_denied_narrative: |
+        You sense a hidden passage, but cannot find the way.
+        Perhaps with the right knowledge and tools...
+
+      access_mode: show_locked
+
+      initial_state:
+        environment:
+          lighting: dark
+          ambiance: mysterious
+
+start_node: temple_gates
+
+nodes:
+  temple_gates:
+    narrative: |
+      Massive stone gates bar your path to the ancient temple.
+      A robed guardian stands watch, stern and unyielding.
+
+      You've journeyed far to seek the Oracle's wisdom. But first,
+      you must prove yourself worthy.
+    choice:
+      prompt: "How do you approach the guardian?"
+      options:
+        - id: present_letter
+          text: "Present your letter of introduction"
+          precondition:
+            type: has_item
+            item: letter_of_introduction
+          consequence:
+            - type: lose_item
+              item: letter_of_introduction
+            - type: modify_relationship
+              npc: guardian
+              delta: 5
+          narrative: "The guardian reads your letter carefully, then nods with approval."
+          next_node: guardian_conversation
+
+        - id: demand_entry
+          text: "Demand entry as your right"
+          precondition:
+            type: trait_minimum
+            trait: combat
+            minimum: 7
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: -10
+          narrative: "The guardian's eyes narrow. This will not end well."
+          next_node: combat_path
+
+        - id: observe
+          text: "Wait and observe the situation"
+          next: improvise
+          improvise_context:
+            theme: "observing the temple guardian"
+            permits: ["ritual", "pattern", "weakness", "shift", "ceremony"]
+            blocks: ["attack", "force", "break"]
+            limbo_fallback: |
+              You watch quietly, uncertain. The guardian remains
+              impassive, giving nothing away.
+          outcome_nodes:
+            discovery: guardian_respect
+            constraint: guardian_dismissal
+
+        # NEW in v5: NPC-gated option (only available when guardian is present)
+        - id: speak_to_guardian
+          text: "Speak directly to the guardian"
+          precondition:
+            type: npc_at_location
+            npc: guardian
+            location: current
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 2
+          narrative: "The guardian acknowledges your direct approach."
+          next_node: guardian_conversation
+
+  guardian_conversation:
+    narrative: |
+      "You come seeking wisdom," the guardian says. "But wisdom
+      requires sacrifice. Will you prove your worth?"
+
+      You sense this is a test of character, not strength.
+    choice:
+      prompt: "How do you respond?"
+      options:
+        - id: accept_humbly
+          text: "Accept the trial with humility"
+          consequence:
+            - type: modify_trait
+              trait: morality
+              delta: 2
+            - type: modify_relationship
+              npc: guardian
+              delta: 10
+            - type: set_flag
+              flag: trusted_by_guardian
+              value: true
+          next_node: trial_choice
+
+        - id: negotiate
+          text: "Try to negotiate the terms"
+          precondition:
+            type: trait_minimum
+            trait: diplomacy
+            minimum: 7
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 5
+          next_node: trial_choice
+
+        - id: refuse
+          text: "Refuse the trial"
+          consequence:
+            - type: modify_trait
+              trait: morality
+              delta: -3
+          next_node: ending_turned_away
+
+  trial_choice:
+    narrative: |
+      The guardian presents three paths before you:
+
+      The Path of Blades - test your combat prowess
+      The Path of Words - test your wisdom and diplomacy
+      The Path of Shadows - test your cunning and investigation
+    choice:
+      prompt: "Which trial do you choose?"
+      options:
+        - id: combat_trial
+          text: "The Path of Blades"
+          precondition:
+            type: trait_minimum
+            trait: combat
+            minimum: 6
+          consequence:
+            - type: set_flag
+              flag: completed_trial
+              value: true
+            - type: modify_trait
+              trait: combat
+              delta: 2
+            # NEW in v5: Schedule an event - the guardian will move after 1 hour
+            - type: schedule_event
+              event_id: guardian_moves_to_interior
+              delay:
+                amount: 1
+                unit: hours
+              consequences:
+                - type: move_npc
+                  npc: guardian
+                  location: temple_interior
+            # NEW in v5: Advance time with units
+            - type: advance_time
+              amount: 30
+              unit: minutes
+          next_node: temple_interior
+
+        - id: diplomacy_trial
+          text: "The Path of Words"
+          precondition:
+            type: trait_minimum
+            trait: diplomacy
+            minimum: 6
+          consequence:
+            - type: set_flag
+              flag: completed_trial
+              value: true
+            - type: modify_trait
+              trait: diplomacy
+              delta: 2
+          next_node: temple_interior
+
+        - id: investigation_trial
+          text: "The Path of Shadows"
+          precondition:
+            type: trait_minimum
+            trait: investigation
+            minimum: 6
+          consequence:
+            - type: set_flag
+              flag: completed_trial
+              value: true
+            - type: modify_trait
+              trait: investigation
+              delta: 2
+          next_node: temple_interior
+
+        - id: admit_unready
+          text: "Admit you're not ready"
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 15
+            - type: modify_trait
+              trait: morality
+              delta: 3
+          next_node: training_montage
+
+  temple_interior:
+    narrative: |
+      You pass through the gates into the temple proper.
+
+      The Oracle sits in the center chamber, ancient and knowing.
+      Beside her, a merchant offers strange wares, and shadows
+      dance in the corners.
+    choice:
+      prompt: "What do you seek first?"
+      options:
+        - id: approach_oracle
+          text: "Approach the Oracle"
+          precondition:
+            type: all_of
+            conditions:
+              - type: flag_set
+                flag: completed_trial
+                value: true
+              - type: relationship_minimum
+                npc: guardian
+                minimum: 5
+          next_node: oracle_wisdom
+
+        - id: visit_merchant
+          text: "Visit the merchant's stall"
+          next_node: merchant_encounter
+
+        - id: investigate_shadows
+          text: "Investigate the dancing shadows"
+          precondition:
+            type: trait_minimum
+            trait: investigation
+            minimum: 7
+          next_node: shadow_secret
+
+        - id: enter_inner_sanctum
+          text: "Approach the inner sanctum"
+          next_node: inner_sanctum
+
+        - id: seek_hidden_chamber
+          text: "Search for the hidden chamber"
+          consequence:
+            - type: move_to
+              location: hidden_chamber
+          next_node: hidden_chamber_discovery
+
+        # NEW in v5: Time-gated option (only available after 1 hour has passed)
+        - id: meet_guardian_again
+          text: "Seek out the guardian again"
+          precondition:
+            type: all_of
+            conditions:
+              - type: event_triggered
+                event_id: guardian_moves_to_interior
+              - type: npc_at_location
+                npc: guardian
+                location: current
+          narrative: "The guardian has followed you into the temple."
+          next_node: guardian_conversation
+
+  # New node for hidden chamber discovery (demonstrates gated location)
+  hidden_chamber_discovery:
+    narrative: |
+      The truth mirror pulses with ancient light as you approach the
+      hidden passage. Your knowledge of the temple's secrets guides
+      your steps through the concealed doorway.
+
+      Within lies a chamber untouched for centuries. Crystalline
+      formations catch the light of your mirror, revealing inscriptions
+      that speak of powers beyond mortal ken.
+    choice:
+      prompt: "What do you do in the hidden chamber?"
+      options:
+        - id: study_inscriptions
+          text: "Study the inscriptions carefully"
+          consequence:
+            - type: modify_trait
+              trait: investigation
+              delta: 5
+            - type: set_environment
+              property: lighting
+              value: illuminated
+          next_node: oracle_wisdom
+
+        - id: leave_chamber
+          text: "Return to the temple interior"
+          consequence:
+            - type: move_to
+              location: temple_interior
+          next_node: temple_interior
+
+  oracle_wisdom:
+    narrative: |
+      The Oracle's eyes pierce your soul. She speaks in riddles,
+      but her words carry the weight of truth.
+
+      "You seek what you already possess," she says. "The journey
+      has been the answer all along."
+    choice:
+      prompt: "How do you receive her wisdom?"
+      options:
+        - id: understand
+          text: "Embrace the truth"
+          precondition:
+            type: trait_minimum
+            trait: morality
+            minimum: 12
+          next_node: ending_enlightenment
+
+        - id: confused
+          text: "Ask for clarification"
+          next_node: ending_seeker
+
+  combat_path:
+    narrative: |
+      The guardian draws a blade. This was not wisdom you sought,
+      but conflict you have found.
+    choice:
+      prompt: "What do you do?"
+      options:
+        - id: fight
+          text: "Fight with honor"
+          next_node: ending_fallen
+
+        - id: flee
+          text: "Flee the temple"
+          next_node: ending_coward
+
+  guardian_respect:
+    narrative: |
+      Your patient observation reveals a pattern in the guardian's
+      stance - a ceremonial posture of respect. You mirror it,
+      and recognition flashes in their eyes.
+    choice:
+      prompt: "The guardian nods approvingly."
+      options:
+        - id: continue
+          text: "Continue with respect"
+          consequence:
+            - type: modify_relationship
+              npc: guardian
+              delta: 15
+            - type: set_flag
+              flag: trusted_by_guardian
+              value: true
+          next_node: guardian_conversation
+
+  guardian_dismissal:
+    narrative: |
+      Your attempt to find weakness is transparent. The guardian
+      shakes their head in disappointment.
+
+      "Seekers of shortcuts find only closed doors."
+    choice:
+      prompt: "You are dismissed."
+      options:
+        - id: leave
+          text: "Leave with dignity"
+          next_node: ending_turned_away
+
+  training_montage:
+    narrative: |
+      The guardian sees your humility and offers to train you.
+
+      Weeks pass in intense study. You grow stronger, wiser,
+      more capable. When you are ready, the trial awaits.
+    choice:
+      prompt: "You are ready now."
+      options:
+        - id: return
+          text: "Face the trial"
+          consequence:
+            - type: modify_trait
+              trait: combat
+              delta: 3
+            - type: modify_trait
+              trait: diplomacy
+              delta: 3
+            - type: modify_trait
+              trait: investigation
+              delta: 3
+          next_node: trial_choice
+
+  merchant_encounter:
+    narrative: |
+      The merchant offers mysterious items: a mirror that shows
+      truth, a key to hidden doors, a map of star-paths.
+
+      Each costs something precious.
+    choice:
+      prompt: "What do you trade for?"
+      options:
+        - id: trade_morality
+          text: "Trade your moral certainty for the mirror"
+          consequence:
+            - type: modify_trait
+              trait: morality
+              delta: -5
+            - type: gain_item
+              item: truth_mirror
+          next_node: temple_interior
+
+        - id: trade_nothing
+          text: "Decline - some prices are too high"
+          consequence:
+            - type: modify_trait
+              trait: morality
+              delta: 2
+          next_node: temple_interior
+
+  shadow_secret:
+    narrative: |
+      Your investigation reveals the shadows are not threats
+      but memories - echoes of past seekers who found wisdom here.
+
+      You learn from their experiences.
+    choice:
+      prompt: "The shadows whisper secrets."
+      options:
+        - id: learn
+          text: "Absorb their wisdom"
+          consequence:
+            - type: set_flag
+              flag: learned_secret
+              value: true
+            - type: modify_trait
+              trait: investigation
+              delta: 3
+          next_node: temple_interior
+
+  inner_sanctum:
+    # Node-level precondition - blocks entry unless all conditions are met
+    precondition:
+      type: all_of
+      conditions:
+        - type: flag_set
+          flag: completed_trial
+        - type: relationship_minimum
+          npc: guardian
+          minimum: 10
+        - type: trait_minimum
+          trait: morality
+          minimum: 8
+
+    blocked_narrative: |
+      The inner sanctum's threshold shimmers with protective wards.
+      You sense three requirements: completion of the trial, the
+      guardian's deep trust, and a heart uncorrupted by darkness.
+
+      The way is barred to you.
+
+    # Temporal metadata (Phase 2: parsing only, not yet functional)
+    elapsed_since_previous:
+      amount: 1
+      unit: hours
+
+    narrative: |
+      The inner sanctum opens before you, welcoming your presence.
+
+      Sacred light filters through crystalline windows, illuminating
+      ancient texts and treasures beyond measure. The Oracle's true
+      power radiates from within.
+    choice:
+      prompt: "What draws your attention first?"
+      options:
+        - id: confront_shadows
+          text: "Confront the unnatural shadows"
+          consequence:
+            - type: modify_trait
+              trait: combat
+              delta: 2
+          next_node: shadow_confrontation
+
+        - id: seek_oracle
+          text: "Approach the Oracle directly"
+          consequence:
+            - type: modify_relationship
+              npc: oracle
+              delta: 10
+          next_node: oracle_wisdom
+
+  shadow_confrontation:
+    narrative: |
+      You face the shadows head-on. They swirl and coalesce,
+      testing your resolve. Your courage burns bright.
+    choice:
+      prompt: "The shadows yield. What now?"
+      options:
+        - id: continue_to_oracle
+          text: "Proceed to the Oracle"
+          next_node: oracle_wisdom
+
+endings:
+  ending_enlightenment:
+    narrative: |
+      The Oracle's words resonate within you. Understanding dawns
+      like sunrise after a long night.
+
+      You leave the temple transformed, carrying wisdom that
+      cannot be taken or lost. You are complete.
+    type: transcendence
+
+  ending_seeker:
+    narrative: |
+      You leave with questions still burning, but that is growth.
+
+      The path continues. You are a seeker still, and that is
+      enough. Wisdom is a journey, not a destination.
+    type: unchanged
+
+  ending_turned_away:
+    narrative: |
+      The temple gates close behind you. Perhaps you were not
+      ready, or perhaps wisdom comes to those who seek it
+      differently.
+
+      The journey continues elsewhere.
+    type: unchanged
+
+  ending_fallen:
+    narrative: |
+      You fall in combat, brave but foolish.
+
+      The temple claims another who sought to take wisdom by
+      force rather than earn it through character.
+    type: death
+
+  ending_coward:
+    narrative: |
+      You flee into the wilderness, unworthy and unchanged.
+
+      Some lessons can only be learned through courage to face
+      what we fear most.
+    type: unchanged

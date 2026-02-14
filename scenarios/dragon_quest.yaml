@@ -1,6 +1,17 @@
 name: "The Dragon's Choice"
-description: "A hero must decide how to face the dragon threatening their village."
-version: "1.0.0"
+description: "A hero must decide how to face the dragon threatening their village. Features time pressure, NPC tracking, and environmental dynamics."
+version: "2.1.0"
+
+# Travel time configuration (NEW in v2.1.0)
+travel_config:
+  default_travel_minutes: 30
+  auto_apply_on_move: true
+  improvisation_time:
+    explore: 15
+    interact: 10
+    act: 20
+    meta: 0
+    limbo: 5
 
 # Initial character state
 initial_character:
@@ -10,7 +21,8 @@ initial_character:
     wisdom: 5
     luck: 5
   inventory: []
-  relationships: {}
+  relationships:
+    elder: 0
   flags: {}
 
 # Initial world state
@@ -20,36 +32,136 @@ initial_world:
   flags:
     dragon_alive: true
     village_threatened: true
+
+  # NPC location tracking (NEW in v0.4.0)
+  npc_locations:
+    elder: village
+    dragon: dragon_lair
+
+  # Per-location state (NEW in v0.4.0)
+  location_state:
+    village:
+      flags:
+        under_attack: false
+        evacuated: false
+      properties:
+        population: 100
+        morale: 50
+      environment:
+        lighting: daylight
+        ambiance: tense
+    shrine:
+      flags:
+        sealed: false
+        blessing_used: false
+      properties:
+        blessing_power: 100
+      environment:
+        lighting: dim
+        ambiance: sacred
+    dragon_lair:
+      flags:
+        treasure_found: false
+      properties:
+        heat_level: 300
+      environment:
+        lighting: fire_glow
+        temperature: hot
+
   locations:
     - id: village
       name: "Quiet Village"
       description: "A peaceful village threatened by the dragon."
-      connections: [forest, mountain_path]
-      items: [rusty_sword]
+      connections:
+        - target: forest
+          travel_minutes: 60
+          description: "Through the dark woods at the village edge"
+        - target: mountain_path
+          travel_minutes: 180
+          description: "A long, winding climb up the mountainside"
+        - target: blacksmith
+          travel_minutes: 5
+          description: "Just across the village square"
+      items: []
+      initial_state:
+        environment: { lighting: daylight, ambiance: tense }
+
+    - id: blacksmith
+      name: "Blacksmith's Forge"
+      description: "The village smithy, filled with weapons and the smell of iron."
+      connections:
+        - target: village
+          travel_minutes: 5
+      items: [rusty_sword, steel_sword]
+      precondition:
+        type: has_item
+        item: blacksmith_key
+      access_mode: show_locked
+      access_denied_narrative: |
+        The blacksmith's door is locked tight. The old lock looks
+        well-made - you'll need the key to enter.
+      initial_state:
+        environment: { lighting: forge_glow, temperature: warm }
 
     - id: forest
       name: "Dark Forest"
       description: "A mysterious forest with ancient secrets."
-      connections: [village, shrine]
+      connections:
+        - target: village
+          travel_minutes: 60
+          description: "Back through the shadowed trees"
+        - target: shrine
+          travel_minutes: 45
+          description: "Deeper into the ancient woods"
       items: []
+      initial_state:
+        environment: { lighting: filtered, ambiance: mysterious }
 
     - id: shrine
       name: "Ancient Shrine"
       description: "A shrine to the old gods, holding forbidden knowledge."
-      connections: [forest]
+      connections:
+        - target: forest
+          travel_minutes: 45
+          description: "Back through the sacred grove"
       items: [dragon_tongue_scroll]
+      # Location access control (NEW in v0.4.0)
+      precondition:
+        type: flag_not_set
+        flag: desecrated_forest
+      access_mode: show_locked
+      access_denied_narrative: |
+        The ancient spirits of the forest bar your way.
+        Your earlier actions have closed this path to you.
+      initial_state:
+        flags: { sealed: false }
+        environment: { lighting: dim, ambiance: sacred }
 
     - id: mountain_path
       name: "Mountain Path"
       description: "The winding path up to the dragon's lair."
-      connections: [village, dragon_lair]
+      connections:
+        - target: village
+          travel_minutes: 120
+          description: "Descending back to the village"
+        - target: dragon_lair
+          travel_minutes: 90
+          description: "The final climb to the dragon's domain"
       items: []
+      initial_state:
+        environment: { lighting: exposed, temperature: cold }
 
     - id: dragon_lair
       name: "Dragon's Lair"
       description: "The cavern where the great wyrm dwells."
-      connections: [mountain_path]
+      connections:
+        - target: mountain_path
+          travel_minutes: 60
+          description: "Back down the treacherous path"
       items: []
+      initial_state:
+        flags: { treasure_found: false }
+        environment: { lighting: fire_glow, temperature: hot }
 
 # Starting node
 start_node: intro
@@ -63,26 +175,87 @@ nodes:
       "The dragon has returned. It circles the mountain each night,
       and soon it will descend upon us."
 
-      She presses something into your hand - an old key.
-      "The blacksmith's shop. Take what you need. But know this:
-      not all paths require a blade."
+      Her weathered hands tremble as she speaks, and you notice
+      something glinting at her belt - an old iron key.
+
+      "Will you face it? The blacksmith's forge holds weapons,
+      but not all paths require a blade."
 
       You stand at the village crossroads. The mountain looms to the north.
       The dark forest whispers to the east.
+
+      Above, through gaps in the clouds, you glimpse a dark shape circling.
+      Time is running out.
+    # Schedule the dragon attack event at game start (NEW in v0.4.0)
+    on_enter:
+      - type: schedule_event
+        event_id: dragon_descends
+        delay:
+          amount: 8
+          unit: hours
+        consequences:
+          - type: set_location_flag
+            location: village
+            flag: under_attack
+            value: true
+          - type: modify_location_property
+            location: village
+            property: morale
+            delta: -30
+          - type: move_npc
+            npc: dragon
+            location: village
     choice:
       prompt: "What do you do?"
       options:
-        - id: take_sword
-          text: "Visit the blacksmith and take the sword"
+        - id: try_blacksmith
+          text: "Visit the blacksmith"
           cell: chooses
           consequence:
-            - type: gain_item
-              item: rusty_sword
+            - type: advance_time
+              amount: 5
+              unit: minutes
             - type: modify_trait
-              trait: courage
-              delta: 1
-          narrative: "You take the blade. It feels right in your hand."
-          next_node: sword_taken
+              trait: luck
+              delta: -1
+          narrative: |
+            The blacksmith's door is locked tight. You rattle the handle,
+            then try to force it - the old wood holds, but your knuckles
+            scrape painfully against the iron fittings.
+
+            A bad omen, perhaps. You return to the crossroads, nursing
+            your bruised hands.
+          next_node: intro
+
+        - id: notice_key
+          text: "Ask about the key at her belt"
+          cell: unknown
+          consequence:
+            - type: advance_time
+              amount: 15
+              unit: minutes
+            - type: modify_relationship
+              npc: elder
+              delta: -5
+          narrative: "You gesture at the glinting metal. 'That key...'"
+          next: improvise
+          improvise_context:
+            theme: "noticing and asking about the blacksmith key"
+            permits:
+              [
+                "key",
+                "blacksmith",
+                "weapons",
+                "open",
+                "borrow",
+                "need",
+                "please",
+              ]
+            blocks: ["steal", "grab", "take by force", "threaten", "demand"]
+            limbo_fallback: "The elder's hand moves to cover the key, waiting..."
+          outcome_nodes:
+            discovery: key_given_direct
+            constraint: elder_refuses_key
 
         - id: seek_knowledge
           text: "Enter the dark forest to seek another way"
@@ -90,12 +263,22 @@ nodes:
           consequence:
             - type: move_to
               location: forest
+            - type: advance_time
+              amount: 1
+              unit: hours
           narrative: "You turn from steel toward secrets."
           next_node: forest_entrance
 
         - id: ask_elder
           text: "Ask the elder what she knows about the dragon"
           cell: unknown
+          consequence:
+            - type: advance_time
+              amount: 20
+              unit: minutes
+            - type: modify_relationship
+              npc: elder
+              delta: -8
           narrative: "The elder pauses, studying your face."
           next: improvise
           improvise_context:
@@ -106,7 +289,7 @@ nodes:
             limbo_fallback: "The elder watches you, waiting for a real question..."
           outcome_nodes:
             discovery: elder_lore
-            revelation: elder_silence
+            constraint: elder_silence
 
         - id: rush_mountain
           text: "Head directly to the mountain"
@@ -114,32 +297,30 @@ nodes:
           consequence:
             - type: move_to
               location: mountain_path
+            - type: advance_time
+              amount: 3
+              unit: hours
+            - type: schedule_event
+              event_id: elder_follows_secretly
+              delay:
+                amount: 30
+                unit: minutes
+              consequences:
+                - type: move_npc
+                  npc: elder
+                  location: mountain_path
           narrative: "No time to waste. The dragon awaits."
           next_node: mountain_approach
 
-  sword_taken:
-    narrative: |
-      The sword is old but serviceable. You feel its weight, its history.
-      Many have carried this blade before you.
-
-      The mountain path awaits. But you could still seek other options...
-    choice:
-      prompt: "What now?"
-      options:
-        - id: to_mountain_armed
-          text: "Head to the mountain with your sword"
-          narrative: "Steel in hand, you climb toward destiny."
-          next_node: mountain_approach
-
-        - id: to_forest_armed
-          text: "Explore the forest first"
-          consequence:
-            - type: move_to
-              location: forest
-          narrative: "Perhaps knowledge and steel together..."
-          next_node: forest_entrance
-
   forest_entrance:
+    # Gate based on whether the dragon has already descended
+    precondition:
+      type: event_not_triggered
+      event_id: dragon_descends
+    blocked_narrative: |
+      Through the trees, you see fire. The village!
+      Smoke rises above the canopy, orange flames painting the sky.
+    blocked_next_node: dragon_attacks_forest
     narrative: |
       The forest swallows you in shadow. Ancient trees whisper secrets.
 
@@ -156,6 +337,9 @@ nodes:
             - type: modify_trait
               trait: wisdom
               delta: 2
+            - type: advance_time
+              amount: 2
+              unit: hours
           narrative: "The old magic stirs as you approach."
           next_node: shrine_discovery
 
@@ -165,6 +349,15 @@ nodes:
           next_node: intro
 
   shrine_discovery:
+    # Gate based on whether the dragon has already descended
+    precondition:
+      type: event_not_triggered
+      event_id: dragon_descends
+    blocked_narrative: |
+      The shrine's peace shatters. Through the sacred clearing,
+      you see smoke rising from the village direction.
+      The dragon has descended.
+    blocked_next_node: dragon_attacks_forest
     narrative: |
       The shrine hums with ancient power. Upon an altar lies a scroll
       inscribed with symbols that shift before your eyes.
@@ -184,7 +377,22 @@ nodes:
             - type: set_flag
               flag: knows_dragon_tongue
               value: true
-          narrative: "The words burn themselves into your mind."
+            - type: set_location_flag
+              location: shrine
+              flag: blessing_used
+              value: true
+            - type: modify_location_property
+              location: shrine
+              property: blessing_power
+              delta: -50
+            - type: set_environment
+              location: shrine
+              property: lighting
+              value: fading
+            - type: advance_time
+              amount: 1
+              unit: hours
+          narrative: "The words burn themselves into your mind. The shrine's light dims."
           next_node: scroll_taken
 
         - id: leave_scroll
@@ -204,10 +412,202 @@ nodes:
       options:
         - id: to_mountain_wise
           text: "Climb the mountain with newfound wisdom"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: mountain_path
+            - type: advance_time
+              amount: 3
+              unit: hours
+            - type: schedule_event
+              event_id: elder_follows_secretly
+              delay:
+                amount: 30
+                unit: minutes
+              consequences:
+                - type: move_npc
+                  npc: elder
+                  location: mountain_path
           narrative: "You know now what you must do."
           next_node: mountain_approach
 
+        - id: practice_tongue
+          text: "Practice speaking the ancient words"
+          cell: unknown
+          consequence:
+            - type: advance_time
+              amount: 30
+              unit: minutes
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+          narrative: |
+            You sit among the roots of an ancient tree, letting the
+            words roll through your mind. They feel strange on your
+            tongue - old, powerful, alive.
+          next: improvise
+          improvise_context:
+            theme: "practicing the dragon tongue in solitude"
+            permits:
+              - "speak"
+              - "practice"
+              - "meditate"
+              - "remember"
+              - "understand"
+              - "words"
+            blocks:
+              - "attack"
+              - "destroy"
+              - "forget"
+              - "abandon"
+            limbo_fallback: "The words swirl in your mind, not quite settling..."
+          outcome_nodes:
+            discovery: scroll_mastery
+            constraint: scroll_doubt
+
+        - id: return_to_elder
+          text: "Return to share this knowledge with the elder"
+          cell: avoids
+          consequence:
+            - type: move_to
+              location: village
+            - type: advance_time
+              amount: 2
+              unit: hours
+            - type: modify_relationship
+              npc: elder
+              delta: 10
+            - type: set_flag
+              flag: shared_scroll_knowledge
+              value: true
+          narrative: |
+            Perhaps wisdom is best shared. The elder may know more
+            about what these words mean - and what risks they carry.
+          next_node: elder_lore
+
+  scroll_mastery:
+    narrative: |
+      The words settle into your bones like an old friend's greeting.
+      You speak them aloud, and the forest itself seems to listen.
+
+      Something has changed. The language is no longer foreign -
+      it is yours now, as natural as breath.
+
+      When you face the dragon, you will speak as an equal.
+    choice:
+      prompt: "You have mastered the words."
+      options:
+        - id: mastery_to_mountain
+          text: "Now you are truly ready - climb the mountain"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 2
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+            - type: set_flag
+              flag: scroll_mastered
+              value: true
+            - type: move_to
+              location: mountain_path
+            - type: advance_time
+              amount: 3
+              unit: hours
+          narrative: "With words of power and a heart of understanding, you ascend."
+          next_node: mountain_approach
+
+        - id: mastery_seek_elder
+          text: "Share your mastery with the elder before leaving"
+          cell: chooses
+          consequence:
+            - type: set_flag
+              flag: scroll_mastered
+              value: true
+            - type: move_to
+              location: village
+            - type: advance_time
+              amount: 2
+              unit: hours
+          narrative: "True wisdom includes knowing when to seek counsel."
+          next_node: elder_lore
+
+  scroll_doubt:
+    narrative: |
+      The words twist in your mind, refusing to settle. Each time
+      you try to speak them, they slip away like water through fingers.
+
+      Perhaps some knowledge is not meant for mortals. Or perhaps
+      you simply need more time to understand.
+
+      The scroll's power is real, but mastery eludes you.
+    choice:
+      prompt: "The language resists you."
+      options:
+        - id: doubt_persist
+          text: "Press on anyway - you have the scroll, that must be enough"
+          cell: chooses
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 1
+            - type: move_to
+              location: mountain_path
+            - type: advance_time
+              amount: 3
+              unit: hours
+          narrative: "Doubt or not, the dragon awaits. You will speak, and hope."
+          next_node: mountain_approach
+
+        - id: doubt_seek_help
+          text: "Seek the elder's guidance - perhaps she knows these words"
+          cell: avoids
+          consequence:
+            - type: modify_relationship
+              npc: elder
+              delta: 5
+            - type: move_to
+              location: village
+            - type: advance_time
+              amount: 2
+              unit: hours
+          narrative: "Pride yields to wisdom. The elder may know the way."
+          next_node: elder_lore
+
+        - id: doubt_abandon
+          text: "Abandon the scroll - this path is not for you"
+          cell: avoids
+          consequence:
+            - type: lose_item
+              item: dragon_tongue_scroll
+            - type: clear_flag
+              flag: knows_dragon_tongue
+            - type: modify_trait
+              trait: wisdom
+              delta: -1
+            - type: move_to
+              location: shrine
+          narrative: |
+            You place the scroll back on the altar. Some burdens
+            are not meant to be carried. Some paths are not meant
+            to be walked.
+          next_node: shrine_discovery
+
   mountain_approach:
+    # Gate based on whether the dragon has already descended (NEW in v0.4.0)
+    precondition:
+      type: event_not_triggered
+      event_id: dragon_descends
+    blocked_narrative: |
+      The mountain path lies empty. The smoke that once curled
+      from the peak has gone - the dragon has descended.
+
+      Behind you, from the direction of the village, you hear
+      the distant roar of flames.
+
+      You are too late.
+    blocked_next_node: ending_too_late
     narrative: |
       The path winds upward, growing steeper. Smoke curls from above.
 
@@ -222,8 +622,14 @@ nodes:
           text: "Draw your sword and fight!"
           cell: chooses
           precondition:
-            type: has_item
-            item: rusty_sword
+            type: any_of
+            conditions:
+              - type: has_item
+                item: rusty_sword
+              - type: has_item
+                item: steel_sword
+              - type: has_item
+                item: forged_blade
           narrative: "Steel rings as you draw the blade."
           next_node: dragon_fight
 
@@ -249,6 +655,10 @@ nodes:
         - id: observe_dragon
           text: "Wait and observe the dragon"
           cell: unknown
+          consequence:
+            - type: advance_time
+              amount: 30
+              unit: minutes
           narrative: "You hold your ground, watching."
           next: improvise
           improvise_context:
@@ -267,7 +677,28 @@ nodes:
             limbo_fallback: "The dragon's presence holds you in place, time stretching in the mountain silence..."
           outcome_nodes:
             discovery: dragon_notices_patience
-            revelation: dragon_dismisses_coward
+            constraint: dragon_dismisses_coward
+
+        - id: elder_arrives
+          text: "You hear someone climbing behind you"
+          cell: discovery
+          precondition:
+            type: all_of
+            conditions:
+              - type: flag_set
+                flag: elder_trusts_you
+              - type: relationship_minimum
+                npc: elder
+                minimum: 30
+              - type: event_triggered
+                event_id: elder_follows_secretly
+              - type: flag_not_set
+                flag: elder_revealed
+          consequence:
+            - type: set_flag
+              flag: elder_revealed
+              value: true
+          next_node: elder_reveals_herself
 
         - id: flee_dragon
           text: "Turn and flee!"
@@ -275,22 +706,133 @@ nodes:
           narrative: "Survival is its own victory... isn't it?"
           next_node: attempt_flee
 
+  # Elder companion reveal (NEW for v0.4.1)
+  elder_reveals_herself:
+    narrative: |
+      "Wait!"
+
+      You spin to see a figure climbing the path behind you.
+      The elder. Her robes are torn, her breathing ragged, but
+      her eyes burn with determination.
+
+      "I followed you. I had to." She reaches the ledge and
+      leans against the rock, catching her breath.
+
+      "There is something I never told you. Something I was
+      too afraid to use." She meets your eyes. "I speak the
+      dragon's tongue. I learned it as a girl, from texts
+      now burned and forbidden."
+
+      She straightens. "I lacked the courage to face this beast.
+      But you... you gave me courage. Let me speak for you.
+      Let me translate the words that might end this peacefully."
+    choice:
+      prompt: "The elder offers to help."
+      options:
+        - id: accept_elder_help
+          text: "Accept her help gratefully"
+          cell: chooses
+          consequence:
+            - type: set_flag
+              flag: elder_speaks_for_you
+              value: true
+            - type: modify_relationship
+              npc: elder
+              delta: 10
+          narrative: |
+            "Together, then."
+            You help her up the final slope. Whatever comes,
+            you face it as allies.
+          next_node: dragon_dialogue
+
+        - id: protect_elder
+          text: "Send her back - it's too dangerous"
+          cell: avoids
+          consequence:
+            - type: modify_relationship
+              npc: elder
+              delta: 5
+            - type: modify_trait
+              trait: luck
+              delta: -1
+          narrative: |
+            "No. I won't risk your life. Go back to the village."
+            She protests, but you are firm. Some battles must be
+            faced alone.
+          next_node: mountain_approach
+
+        - id: ask_why_hidden
+          text: "Why did you hide this?"
+          cell: unknown
+          narrative: |
+            "Why didn't you tell me? All those years..."
+
+            Pain crosses her face. "I was afraid. The last one
+            who spoke to a dragon..." She shudders. "I saw what
+            happened. I swore never again."
+
+            She takes your hand. "But you showed me that
+            silence has its own price. Let me help you."
+          next_node: elder_reveals_herself
+
   dragon_fight:
+    # Environmental dynamics during combat (NEW in v0.4.0)
+    on_enter:
+      - type: modify_location_property
+        location: dragon_lair
+        property: heat_level
+        delta: 200
+      - type: set_environment
+        location: dragon_lair
+        property: lighting
+        value: blazing
     narrative: |
       The battle is fierce. Fire and steel clash in the mountain air.
+      The lair grows hotter with each blast of dragonfire. The very
+      stones glow red with accumulated heat.
 
-      Your blade finds its mark - a gap in the ancient scales.
-      The dragon roars, not in anger, but in... surprise? Respect?
-
-      "Well struck, mortal. I yield."
-
-      The dragon's hoard is yours. The village is saved.
-      And you... you have been transformed by the trial.
+      You raise your blade and strike...
     choice:
-      prompt: "The dragon yields."
+      prompt: "You strike!"
       options:
-        - id: claim_victory
-          text: "Accept victory with honor"
+        - id: strike_with_forged
+          text: "Your blade sings through scale and sinew"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: forged_blade
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 4
+            - type: set_flag
+              flag: dragon_slain
+              value: true
+            - type: gain_item
+              item: dragon_scale
+            - type: cancel_event
+              event_id: dragon_descends
+            - type: advance_time
+              amount: 1
+              unit: hours
+          narrative: |
+            The forged blade sings through scale and sinew with
+            impossible precision. The dragon roars - but there is
+            respect in its eyes.
+
+            "Well forged... well struck. A weapon worthy of this battle."
+
+            The ancient wyrm yields, not in defeat, but in acknowledgment
+            of a worthy foe. As a token of respect, it offers you a scale
+            from its ancient hide.
+          next_node: ending_victory
+
+        - id: strike_with_steel
+          text: "Your steel blade bites deep"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: steel_sword
           consequence:
             - type: modify_trait
               trait: courage
@@ -298,8 +840,36 @@ nodes:
             - type: set_flag
               flag: dragon_slain
               value: true
-          narrative: "You have become more than you were."
+            - type: gain_item
+              item: dragon_scale
+            - type: cancel_event
+              event_id: dragon_descends
+            - type: advance_time
+              amount: 2
+              unit: hours
+          narrative: |
+            Steel finds a gap in ancient scales. The blade bites deep,
+            drawing dark blood.
+
+            The dragon roars, not in anger, but in... surprise? Respect?
+
+            "Well struck, mortal. I yield." It sheds a scale as tribute.
           next_node: ending_victory
+
+        - id: strike_with_rusty
+          text: "Your rusty blade scrapes across scales"
+          cell: chooses
+          precondition:
+            type: has_item
+            item: rusty_sword
+          narrative: |
+            The rusty blade scrapes across ancient scales but fails to
+            penetrate. Sparks fly, but no blood.
+
+            The dragon's eyes narrow with something like contempt.
+
+            "A rusted blade against me? You insult us both."
+          next_node: dragon_retaliates
 
   dragon_fight_unarmed:
     narrative: |
@@ -316,6 +886,108 @@ nodes:
           consequence:
             - type: character_dies
               reason: "consumed by dragonfire"
+          next_node: ending_death
+
+  dragon_retaliates:
+    narrative: |
+      The dragon's claw sweeps toward you. You barely dodge,
+      losing your footing on the rocky ground. The rusty blade
+      clatters against stone.
+
+      "A rusted blade against me? You insult us both."
+
+      Smoke curls from its nostrils. The dragon's furnace-eyes
+      hold contempt... but also, perhaps, a question.
+
+      "Why did you come here with such a worthless weapon?
+      Did you seek death? Or did you not know what you faced?"
+
+      You have one chance.
+    choice:
+      prompt: "The dragon readies its flame."
+      options:
+        - id: desperate_strike
+          text: "Strike again with everything you have"
+          cell: chooses
+          precondition:
+            type: trait_minimum
+            trait: courage
+            minimum: 7
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: 2
+            - type: set_flag
+              flag: dragon_slain
+              value: true
+            - type: gain_item
+              item: dragon_scale
+            - type: cancel_event
+              event_id: dragon_descends
+            - type: advance_time
+              amount: 2
+              unit: hours
+          narrative: |
+            Courage guides your final strike true. Not the blade's
+            edge, but the force of your will finds its mark.
+
+            The dragon staggers back, wounded not by steel but by
+            the sheer audacity of your defiance.
+
+            "Impossible," it breathes. "No one has ever..."
+
+            It yields, not to your weapon, but to your spirit. A scale
+            falls from its hide - a token of grudging respect.
+          next_node: ending_victory
+
+        - id: desperate_plea
+          text: "Throw down your blade and speak"
+          cell: unknown
+          precondition:
+            type: flag_set
+            flag: knows_dragon_tongue
+          consequence:
+            - type: lose_item
+              item: rusty_sword
+          narrative: |
+            In desperation, you cast aside the useless blade.
+            The ancient words rise unbidden from your memory.
+
+            "I did not come to insult you. I came seeking... truth."
+
+            The dragon pauses, flame dying in its throat.
+          next_node: dragon_dialogue
+
+        - id: explain_desperation
+          text: "Tell the dragon you had no choice"
+          cell: unknown
+          precondition:
+            type: flag_set
+            flag: knows_dragon_history
+          consequence:
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+          narrative: |
+            "I know why you're here," you gasp. "Your mate - she
+            fell here, long ago. You're not raiding. You're grieving."
+
+            The dragon's eyes widen. The flame gutters.
+
+            "You... know this? How could you know this?"
+          next_node: dragon_dialogue
+
+        - id: accept_judgment
+          text: "Accept the dragon's judgment"
+          cell: avoids
+          consequence:
+            - type: character_dies
+              reason: "burned by dragonfire, wielding an unworthy blade"
+          narrative: |
+            You close your eyes. Some weapons are not meant for
+            some battles. Some heroes are not meant for some quests.
+
+            The fire is brief. At least there is that.
           next_node: ending_death
 
   dragon_dialogue:
@@ -345,7 +1017,63 @@ nodes:
             - type: set_flag
               flag: dragon_ally
               value: true
+            - type: cancel_event
+              event_id: dragon_descends
+            - type: advance_time
+              amount: 4
+              unit: hours
           narrative: "You see now - there are no monsters, only stories."
+          next_node: dragon_alliance
+
+        - id: invoke_patience
+          text: "Remind the dragon of your patience"
+          cell: chooses
+          precondition:
+            type: flag_set
+            flag: dragon_respects_patience
+          consequence:
+            - type: modify_trait
+              trait: wisdom
+              delta: 2
+            - type: set_flag
+              flag: dragon_ally
+              value: true
+            - type: cancel_event
+              event_id: dragon_descends
+          narrative: |
+            "You watched me. You waited. Few mortals have such restraint."
+            The dragon's voice softens. "I respect this. Let us speak as equals."
+          next_node: dragon_alliance
+
+        - id: elder_translates
+          text: "Let the elder speak for you"
+          cell: chooses
+          precondition:
+            type: all_of
+            conditions:
+              - type: flag_set
+                flag: elder_speaks_for_you
+              - type: flag_set
+                flag: elder_revealed
+          consequence:
+            - type: set_flag
+              flag: dragon_ally
+              value: true
+            - type: cancel_event
+              event_id: dragon_descends
+            - type: modify_relationship
+              npc: elder
+              delta: 15
+          narrative: |
+            The elder steps forward, ancient words flowing from her lips.
+
+            The dragon's eyes widen. "You speak as the old ones did.
+            Few mortals have known this tongue in a thousand years."
+
+            She tells the dragon of its mate's resting place - knowledge
+            passed down through generations of village elders. The dragon
+            listens, and for the first time, you see peace in those
+            furnace eyes.
           next_node: dragon_alliance
 
         - id: refuse_dragon
@@ -354,6 +1082,28 @@ nodes:
           next_node: dragon_refused
 
   dragon_alliance:
+    # Node-level precondition - requires dragon_ally flag AND knowledge/wisdom
+    precondition:
+      type: all_of
+      conditions:
+        - type: flag_set
+          flag: dragon_ally
+        - type: any_of
+          conditions:
+            - type: flag_set
+              flag: knows_dragon_history
+            - type: trait_minimum
+              trait: wisdom
+              minimum: 7
+    blocked_narrative: |
+      The dragon's eyes narrow. Something in your manner betrays
+      your hesitation - you offer help, but without true commitment.
+
+      "You speak words of alliance, but I see doubt in your heart.
+      Return when you have truly chosen to help me."
+
+      The dragon turns away. Perhaps if you had agreed more
+      earnestly when first asked...
     narrative: |
       Together, you descend. The dragon shows you ancient passages
       beneath your village - places no living human has seen.
@@ -373,8 +1123,22 @@ nodes:
       options:
         - id: embrace_transcendence
           text: "Carry this wisdom forward"
+          # Time-based precondition for best ending (NEW in v0.4.0)
+          precondition:
+            type: time_elapsed_maximum
+            amount: 8
+            unit: hours
+          consequence:
+            - type: character_departs
+              reason: "transcended with the dragon spirits"
           narrative: "Some victories transcend winning or losing."
           next_node: ending_transcendence
+
+        - id: return_changed
+          text: "Return to the village, forever changed"
+          # Available even if too much time passed
+          narrative: "You have done what needed to be done. Time to go home."
+          next_node: ending_victory
 
   dragon_refused:
     narrative: |
@@ -448,37 +1212,63 @@ nodes:
       returns seeking her resting place.
 
       "Perhaps," the elder says, "there is more than one way to end this."
+
+      She reaches to her belt and presses the iron key into your hand.
+      "The blacksmith's forge. Take what you need - but choose wisely."
     choice:
       prompt: "The elder's words change everything."
       options:
-        - id: take_sword_informed
-          text: "Take the sword, but with new understanding"
+        - id: take_key_to_blacksmith
+          text: "Go to the blacksmith's forge"
           cell: chooses
           consequence:
             - type: gain_item
-              item: rusty_sword
+              item: blacksmith_key
             - type: modify_trait
               trait: wisdom
               delta: 2
+            - type: modify_trait
+              trait: courage
+              delta: 1
             - type: set_flag
               flag: knows_dragon_history
               value: true
+            - type: set_flag
+              flag: elder_trusts_you
+              value: true
+            - type: modify_relationship
+              npc: elder
+              delta: 15
+            - type: advance_time
+              amount: 10
+              unit: minutes
           narrative: "Steel and wisdom together. Perhaps that is the way."
-          next_node: sword_taken
+          next_node: blacksmith_shop
 
         - id: seek_shrine_informed
           text: "Seek the shrine - there must be another way"
           cell: chooses
           consequence:
+            - type: gain_item
+              item: blacksmith_key
             - type: move_to
               location: forest
             - type: modify_trait
               trait: wisdom
               delta: 2
+            - type: modify_trait
+              trait: courage
+              delta: 1
             - type: set_flag
               flag: knows_dragon_history
               value: true
-          narrative: "The elder nods. 'The old gods may know the path.'"
+            - type: set_flag
+              flag: elder_trusts_you
+              value: true
+            - type: modify_relationship
+              npc: elder
+              delta: 15
+          narrative: "The elder nods. 'The old gods may know the path. Keep the key - you may need it later.'"
           next_node: forest_entrance
 
   elder_silence:
@@ -498,9 +1288,15 @@ nodes:
           text: "Apologize and ask properly"
           cell: chooses
           consequence:
+            - type: advance_time
+              amount: 10
+              unit: minutes
             - type: modify_trait
               trait: wisdom
               delta: 1
+            - type: modify_relationship
+              npc: elder
+              delta: 5
           narrative: "You bow your head. 'I'm sorry. Please, help me understand.'"
           next_node: elder_lore
 
@@ -511,8 +1307,271 @@ nodes:
             - type: modify_trait
               trait: courage
               delta: 1
+            - type: modify_relationship
+              npc: elder
+              delta: -10
+            - type: modify_trait
+              trait: luck
+              delta: -1
           narrative: "Pride carries you out the door. You'll face this alone."
-          next_node: sword_taken
+          next_node: intro
+
+  # Key discovery nodes
+
+  key_given_direct:
+    narrative: |
+      The elder looks at you with surprise, then something like respect.
+
+      "You notice things. Good. A hero who sees clearly has a chance."
+
+      She unclips the key from her belt and places it in your palm.
+      The iron is warm from her body heat.
+
+      "The blacksmith's forge. Old Bram left it locked when he fled
+      last winter - couldn't face another dragon season. Take what
+      you need."
+    choice:
+      prompt: "You have the key."
+      options:
+        - id: go_to_blacksmith
+          text: "Go to the blacksmith's forge"
+          cell: chooses
+          consequence:
+            - type: gain_item
+              item: blacksmith_key
+            - type: modify_trait
+              trait: courage
+              delta: 1
+            - type: set_flag
+              flag: elder_trusts_you
+              value: true
+            - type: modify_relationship
+              npc: elder
+              delta: 10
+            - type: advance_time
+              amount: 10
+              unit: minutes
+          narrative: "The forge awaits."
+          next_node: blacksmith_shop
+
+        - id: ask_about_dragon_too
+          text: "Ask what she knows about the dragon first"
+          cell: chooses
+          consequence:
+            - type: advance_time
+              amount: 20
+              unit: minutes
+            - type: gain_item
+              item: blacksmith_key
+            - type: modify_trait
+              trait: courage
+              delta: 1
+            - type: set_flag
+              flag: elder_trusts_you
+              value: true
+            - type: modify_relationship
+              npc: elder
+              delta: 20
+          narrative: "You pocket the key and lean closer. 'Tell me about the dragon.'"
+          next_node: elder_lore
+
+  elder_refuses_key:
+    narrative: |
+      The elder's hand tightens on the key. Her eyes narrow.
+
+      "You would take without asking? Demand without respect?"
+
+      She steps back, the key disappearing into her robes.
+
+      "The forge will stay locked until you remember how to speak
+      to those who would help you."
+    choice:
+      prompt: "The elder has refused you."
+      options:
+        - id: apologize_for_key
+          text: "Apologize and ask properly"
+          cell: chooses
+          consequence:
+            - type: advance_time
+              amount: 10
+              unit: minutes
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+            - type: modify_relationship
+              npc: elder
+              delta: -5
+            - type: modify_relationship
+              npc: elder
+              delta: 8
+          narrative: "You bow your head. 'I'm sorry. I didn't mean to offend.'"
+          next_node: key_given_direct
+
+        - id: leave_without_key
+          text: "Leave - find another way"
+          cell: avoids
+          consequence:
+            - type: modify_relationship
+              npc: elder
+              delta: -5
+          narrative: "Fine. You'll face the dragon without a blade if you must."
+          next_node: intro
+
+  # Blacksmith shop and weapon choices
+
+  blacksmith_shop:
+    # Gate based on whether the dragon has already descended
+    precondition:
+      type: event_not_triggered
+      event_id: dragon_descends
+    blocked_narrative: |
+      The forge's glow is drowned by a fiercer light outside.
+      Through the window, you see the dragon descending on the village!
+    blocked_next_node: dragon_attacks_village
+    narrative: |
+      The forge glows warm. Weapons line the walls - some old and rusted,
+      some well-maintained, a few clearly exceptional. The smell of iron
+      and old coal fills the air.
+
+      No blacksmith works here now - old Bram fled months ago. But his
+      work remains, waiting for someone with need.
+
+      On a rack by the door: a rusty blade, quick to grab.
+      On the wall: a proper steel sword, well-balanced.
+      On the anvil: unfinished work and tools. With time, you could
+      forge something better.
+    choice:
+      prompt: "What do you take?"
+      options:
+        - id: take_rusty
+          text: "Grab the rusty sword by the door"
+          cell: chooses
+          consequence:
+            - type: gain_item
+              item: rusty_sword
+            - type: modify_trait
+              trait: courage
+              delta: 1
+            - type: advance_time
+              amount: 10
+              unit: minutes
+          narrative: |
+            Quick and simple. The blade is pitted with age but still
+            has an edge. It'll do.
+          next_node: armed_and_ready
+
+        - id: take_steel
+          text: "Choose the proper steel blade"
+          cell: chooses
+          consequence:
+            - type: gain_item
+              item: steel_sword
+            - type: modify_trait
+              trait: courage
+              delta: 2
+            - type: advance_time
+              amount: 15
+              unit: minutes
+          narrative: |
+            A balanced blade. Well-maintained despite the months of
+            abandonment. This is a warrior's weapon.
+          next_node: armed_and_ready
+
+        - id: forge_blade
+          text: "Work the forge yourself - create something special"
+          cell: unknown
+          precondition:
+            type: trait_minimum
+            trait: wisdom
+            minimum: 7
+          consequence:
+            - type: gain_item
+              item: forged_blade
+            - type: modify_trait
+              trait: wisdom
+              delta: 1
+            - type: modify_trait
+              trait: courage
+              delta: 3
+            - type: advance_time
+              amount: 4
+              unit: hours
+          narrative: |
+            Hours pass at the forge. You are no master smith, but
+            something guides your hands - perhaps the wisdom you've
+            gathered, perhaps something older.
+
+            When you're done, the blade gleams with an edge that seems
+            almost alive. This is no ordinary sword.
+          next_node: armed_and_ready
+
+        - id: leave_unarmed
+          text: "Leave without a weapon"
+          cell: avoids
+          consequence:
+            - type: advance_time
+              amount: 5
+              unit: minutes
+          narrative: "Not all paths require a blade. You leave the forge empty-handed."
+          next_node: intro
+
+  armed_and_ready:
+    narrative: |
+      Weapon in hand, you step out of the forge into the village square.
+
+      The mountain looms to the north, smoke curling from its peak.
+      The dark forest whispers to the east. And above, through gaps
+      in the clouds, the dragon still circles.
+
+      You are armed now. But are you ready?
+    choice:
+      prompt: "Where do you go?"
+      options:
+        - id: straight_to_mountain
+          text: "Head directly to the mountain"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: mountain_path
+            - type: advance_time
+              amount: 3
+              unit: hours
+            - type: schedule_event
+              event_id: elder_follows_secretly
+              delay:
+                amount: 30
+                unit: minutes
+              consequences:
+                - type: move_npc
+                  npc: elder
+                  location: mountain_path
+          narrative: "No more delays. The dragon awaits."
+          next_node: mountain_approach
+
+        - id: seek_wisdom_first
+          text: "Seek wisdom in the forest before facing the dragon"
+          cell: chooses
+          consequence:
+            - type: move_to
+              location: forest
+            - type: advance_time
+              amount: 1
+              unit: hours
+          narrative: "Steel alone may not be enough. Perhaps the old shrine holds answers."
+          next_node: forest_entrance
+
+        - id: ask_elder_armed
+          text: "Return to the elder - ask what she knows"
+          cell: unknown
+          precondition:
+            type: flag_not_set
+            flag: knows_dragon_history
+          consequence:
+            - type: modify_relationship
+              npc: elder
+              delta: 10
+          narrative: "With blade in hand, you seek understanding."
+          next_node: elder_lore
 
   dragon_notices_patience:
     narrative: |
@@ -546,8 +1605,14 @@ nodes:
           text: "Draw your sword now - while it's distracted"
           cell: chooses
           precondition:
-            type: has_item
-            item: rusty_sword
+            type: any_of
+            conditions:
+              - type: has_item
+                item: rusty_sword
+              - type: has_item
+                item: steel_sword
+              - type: has_item
+                item: forged_blade
           consequence:
             - type: modify_trait
               trait: courage
@@ -611,8 +1676,14 @@ nodes:
           text: "Stand and fight - you have no choice"
           cell: chooses
           precondition:
-            type: has_item
-            item: rusty_sword
+            type: any_of
+            conditions:
+              - type: has_item
+                item: rusty_sword
+              - type: has_item
+                item: steel_sword
+              - type: has_item
+                item: forged_blade
           narrative: "If you must die, die with steel in hand."
           next_node: dragon_fight
 
@@ -633,6 +1704,118 @@ nodes:
               reason: "consumed by dragonfire, having failed to escape"
           narrative: "Some things cannot be outrun. You close your eyes."
           next_node: ending_death
+
+  # Time-triggered dragon attack nodes (NEW for v0.4.1)
+  dragon_attacks_village:
+    narrative: |
+      The sky darkens. A shadow falls across the village square.
+
+      You look up to see the dragon descending, wings spread wide,
+      flames already building in its throat.
+
+      The elder's voice cuts through the chaos: "You waited too long!"
+
+      There is no time to run. No time to prepare. Only time to
+      make one final choice.
+    choice:
+      prompt: "The dragon attacks!"
+      options:
+        - id: accept_village_fate
+          text: "There is nothing you can do"
+          cell: avoids
+          consequence:
+            - type: character_dies
+              reason: "caught in the dragon's attack on the village"
+          next_node: ending_village_destroyed
+
+        - id: shield_elder
+          text: "Throw yourself over the elder"
+          cell: chooses
+          precondition:
+            type: relationship_minimum
+            npc: elder
+            minimum: 10
+          consequence:
+            - type: character_dies
+              reason: "died protecting the elder from dragonfire"
+          narrative: |
+            In your final moment, you choose sacrifice over survival.
+            The elder lives. You do not.
+          next_node: ending_death
+
+        - id: call_dragon_ally
+          text: "Call out to your dragon ally"
+          cell: discovery
+          precondition:
+            type: flag_set
+            flag: dragon_ally
+          consequence:
+            - type: cancel_event
+              event_id: dragon_descends
+          narrative: |
+            "WAIT!"
+
+            Your voice carries the old tongue, the words the dragon taught you.
+            The great wyrm hesitates, fire dying in its throat.
+
+            "You... you are the one who helped me find her."
+
+            The dragon lands gently, shielding you and the elder from its own flames.
+
+            "Forgive me. Grief has clouded my judgment. I will leave your village in peace."
+          next_node: ending_victory
+
+  dragon_attacks_forest:
+    narrative: |
+      Through the canopy, you glimpse fire in the sky.
+
+      The dragon has descended - but not here. The village.
+      Smoke rises in the distance, orange flames visible even
+      through the ancient trees.
+
+      You are too far away to help.
+    choice:
+      prompt: "The village burns in the distance."
+      options:
+        - id: hide_in_forest
+          text: "Hide here until it's over"
+          cell: avoids
+          precondition:
+            type: trait_minimum
+            trait: luck
+            minimum: 4
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: -3
+          narrative: |
+            You crouch among the trees, listening to distant screams.
+            When silence finally falls, you are alive.
+            But what does that life mean now?
+          next_node: ending_fled
+
+        - id: rush_to_village
+          text: "Run to the village - maybe you can still help"
+          cell: chooses
+          consequence:
+            - type: advance_time
+              amount: 30
+              unit: minutes
+          narrative: |
+            You sprint through the forest, branches tearing at your clothes.
+          next_node: dragon_attacks_village
+
+        - id: accept_failure_forest
+          text: "Accept that you have failed"
+          cell: avoids
+          consequence:
+            - type: modify_trait
+              trait: courage
+              delta: -2
+          narrative: |
+            You sink to your knees among the ancient trees.
+            The forest witnessed your failure. It will keep the secret.
+          next_node: ending_fled
 
 # Endings
 endings:
@@ -695,3 +1878,50 @@ endings:
       Until then, you carry the weight of the choice you made.
       ═══════════════════════════════════════════════════════════
     type: unchanged
+
+  # NEW endings for time pressure system (v0.4.0)
+  ending_too_late:
+    narrative: |
+      ═══════════════════════════════════════════════════════════
+      TOO LATE
+
+      You climb the empty mountain path to find the lair abandoned.
+
+      When you return to the village, you find smoke and ashes.
+      The elder sits among the ruins, her eyes hollow.
+
+      "You took too long," she whispers. "The dragon descended.
+      We evacuated who we could, but..." She gestures at the
+      burned husks of homes, the scattered belongings of the fled.
+
+      The dragon is gone now - its rampage spent, its grief
+      expressed in fire. But so too is everything you were
+      meant to protect.
+
+      You survived. The question that haunts you forever:
+      was survival worth the cost?
+      ═══════════════════════════════════════════════════════════
+    type: unchanged
+
+  ending_village_destroyed:
+    narrative: |
+      ═══════════════════════════════════════════════════════════
+      ASHES
+
+      You hesitated too long.
+
+      When the dragon's shadow falls over the village, you are
+      still there - still preparing, still deliberating, still
+      seeking the perfect path.
+
+      There is no perfect path. There is only the fire.
+
+      The elder's face is the last thing you see, lit by flames,
+      her expression not of fear but of profound disappointment.
+
+      "You had time," she says. "You had choices. And you
+      chose nothing."
+
+      The dragon's breath takes you both.
+      ═══════════════════════════════════════════════════════════
+    type: death

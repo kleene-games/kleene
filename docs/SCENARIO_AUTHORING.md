@@ -24,7 +24,7 @@ Create your own adaptive text adventures for Kleene. This guide takes you from m
 **Three ways to create scenarios:**
 
 1. **Generate with AI:** `/kleene generate a space station mystery`
-2. **Use templates:** Copy `scenarios/TEMPLATES/minimal.yaml`
+2. **Use templates:** Copy `lib/framework/authoring/TEMPLATES/minimal.yaml`
 3. **Write from scratch:** Follow this guide
 
 **Workflow:**
@@ -450,7 +450,7 @@ Design scenarios that work well at ALL temperature levels.
 
 ### Improvisation Contexts (Advanced)
 
-Add `improvise` options for the "Unknown" row of the Nine Cells:
+Add `improvise` options for the "Unknown" row of the Decision Grid:
 
 ```yaml
 options:
@@ -464,7 +464,7 @@ options:
       limbo_fallback: "You watch, uncertain what to do."
     outcome_nodes:
       discovery: dragon_notices_patience
-      revelation: dragon_dismisses_hesitation
+      constraint: dragon_dismisses_hesitation
       # limbo loops back to current node
 ```
 
@@ -473,7 +473,7 @@ options:
 2. Gets sub-prompt: "What specifically do you do?"
 3. Player response matched against patterns:
    - Matches `permits` → Discovery outcome
-   - Matches `blocks` → Revelation outcome
+   - Matches `blocks` → Constraint outcome
    - No match → Limbo (loops back)
 
 ---
@@ -803,9 +803,9 @@ my_scenario:
 ## Next Steps
 
 **Ready to create?**
-1. Check out `scenarios/TEMPLATES/` for starter templates
+1. Check out `lib/framework/authoring/TEMPLATES/` for starter templates
 2. Study `scenarios/dragon_quest.yaml` for a complete example
-3. Read the [full format specification](../lib/framework/scenario-format.md)
+3. Read the [full format specification](../lib/framework/formats/scenario-format.md)
 4. Share your scenario - see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 **Need help?**

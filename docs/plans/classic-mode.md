@@ -1,4 +1,13 @@
-# Classic Mode Implementation Plan
+# Classic Mode Implementation Plan (ARCHIVED)
+
+> **Note:** This feature has been implemented and renamed to "Parser Mode".
+> See `lib/framework/gameplay/parser-mode.md` for the current specification.
+> The setting has been renamed from `classic_mode` to `parser_mode`.
+> Commands `/kleene classic` still work as aliases for `/kleene parser`.
+
+---
+
+# Original Plan (for historical reference)
 
 ## Overview
 
@@ -19,7 +28,7 @@ This leverages the existing improvisation system which already handles free-text
 
 ## Files to Modify
 
-### 1. `lib/framework/saves.md`
+### 1. `lib/framework/savegame-format.md`
 - Add `classic_mode` to settings block
 - Add backward compatibility note
 

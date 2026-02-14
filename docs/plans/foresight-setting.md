@@ -18,7 +18,7 @@ Add a "foresight" setting to the Kleene gameplay framework that controls how muc
 
 ## Files to Modify
 
-### 1. `lib/framework/saves.md`
+### 1. `lib/framework/savegame-format.md`
 - Add `foresight` to save format settings block
 - Add backward compatibility note for v5 → v6
 

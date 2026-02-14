@@ -38,31 +38,20 @@ The AI adapts the story to your creativity. ✨
 
 ---
 
-## Four Scenarios Included
+## Two Scenarios Included
 
-### Dragon Quest (Beginner) ⚔️
+### Dragon Quest (Beginner)
 Classic fantasy adventure. Perfect for learning Kleene basics.
 - **Playtime:** 15-20 minutes
 - **Difficulty:** Beginner
 - **Best for:** First-time players
 
-### The Yabba (Advanced) 🌵
-Psychological thriller inspired by *Wake in Fright* (1971). Dark themes, moral ambiguity.
-- **Playtime:** 30-60 minutes
-- **Difficulty:** Advanced
-- **Content Warnings:** Psychological themes, substance use, moral ambiguity
-
-### Altered State Nightclub (Experimental) 🎭
-Surreal mystery in a nightclub that defies reality.
-- **Playtime:** 20-40 minutes
+### Zork I: The Great Underground Empire - Mini (Intermediate)
+The legendary 1980 Infocom text adventure, adapted for Kleene. Explore the white house, descend into the Great Underground Empire, and collect treasures.
+- **Playtime:** 20-30 minutes
 - **Difficulty:** Intermediate
-- **Best for:** Players who like weird, experimental narratives
-
-### Corporate Banking (Intermediate) 💼
-Navigate career challenges and ethical dilemmas in the corporate world.
-- **Playtime:** 25-35 minutes
-- **Difficulty:** Intermediate
-- **Best for:** Decision-making practice, ethical dilemmas
+- **Best for:** Text adventure fans, parser mode enthusiasts
+- **Tip:** Try `/kleene parser on` for authentic text adventure play!
 
 ---
 
@@ -82,7 +71,7 @@ The AI creates a complete scenario with:
 
 ### Option 2: Use Templates
 
-1. Check out `scenarios/TEMPLATES/minimal.yaml`
+1. Check out `lib/framework/authoring/TEMPLATES/minimal.yaml`
 2. Copy and modify
 3. Test with `/kleene analyze your_scenario`
 
@@ -90,7 +79,7 @@ The AI creates a complete scenario with:
 
 1. Study `scenarios/dragon_quest.yaml` for inspiration
 2. Follow the [Scenario Authoring Guide](docs/SCENARIO_AUTHORING.md)
-3. Use the [format specification](lib/framework/scenario-format.md) as reference
+3. Use the [format specification](lib/framework/formats/scenario-format.md) as reference
 
 **Minimal working scenario:**
 
@@ -133,13 +122,15 @@ Save as `scenarios/my_adventure.yaml` and run `/kleene play my_adventure`
 | `/kleene continue [scenario]` | Resume from save |
 | `/kleene temperature [0-10]` | Set adaptation level |
 | `/kleene foresight [0-10]` | Set hint specificity (0=none, 10=full walkthrough) |
-| `/kleene classic [on\|off]` | Toggle Zork-style text adventure mode |
+| `/kleene parser [on\|off]` | Toggle Zork-style text adventure mode |
 | `/kleene save` | Save current game |
 | `/kleene rewind [target]` | Go back to earlier point |
 | `/kleene export [mode]` | Export gameplay to markdown |
 | `/kleene gallery [on\|off]` | Toggle meta-commentary |
 | `/kleene generate [theme]` | Create new scenario |
 | `/kleene analyze [scenario]` | Check for issues |
+
+For detailed settings documentation, see the [Settings Reference](SETTINGS.md).
 
 ---
 
@@ -191,6 +182,8 @@ This is what makes Kleene unique - the same scenario plays completely differentl
 | **10** | Wild experimentation | Fully emergent - anything can happen |
 
 **Pro tip:** Start at 0 to learn a scenario, then crank it up to 10 for emergent magic.
+
+For complete settings documentation including foresight, parser mode, and gallery mode, see the [Settings Reference](SETTINGS.md).
 
 ---
 

@@ -491,7 +491,7 @@ Then temp has less impact.
     limbo_fallback: "Text"
   outcome_nodes:
     discovery: node_id
-    revelation: node_id
+    constraint: node_id
 ```
 
 **2. Verify patterns**
@@ -540,7 +540,7 @@ Include:
 
 ### "Invalid precondition type"
 **Meaning:** Precondition uses unrecognized type
-**Fix:** Check spelling, see [format specification](../lib/framework/scenario-format.md)
+**Fix:** Check spelling, see [format specification](../lib/framework/formats/scenario-format.md)
 
 ### "Missing required field: X"
 **Meaning:** Scenario is missing a required field

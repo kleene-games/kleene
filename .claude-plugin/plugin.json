@@ -4,11 +4,11 @@
   "description": "Adaptive AI text adventure engine for Claude Code. Play branching stories or improvise freely - temperature controls how much the AI adapts. 4 scenarios included.",
   "author": {
     "name": "Nathaniel Ramm",
-    "email": "nathaniel@hiivmind.ai"
+    "email": "nathaniel@hiivmind.dev"
   },
   "repository": "https://github.com/kleene-games/kleene",
   "homepage": "https://github.com/kleene-games/kleene#readme",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "keywords": [
     "game",
     "text-adventure",

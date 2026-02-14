@@ -1,12 +1,12 @@
 ---
 name: kleene-generate
-description: This skill should be used when the user asks to "generate a scenario", "create a new quest", "make me a game about...", "expand the story", "generate a new path", or when the player ventures beyond known scenario boundaries during gameplay. Generates narratively complete scenarios using Option type semantics and the Nine Cells framework.
+description: This skill should be used when the user asks to "generate a scenario", "create a new quest", "make me a game about...", "expand the story", "generate a new path", or when the player ventures beyond known scenario boundaries during gameplay. Generates narratively complete scenarios using Option type semantics and the Kleene Decision Grid.
 version: 0.2.0
 ---
 
 # Kleene Generate Skill
 
-Generate new scenarios or expand existing ones using LLM capabilities while maintaining Option type semantics and narrative completeness according to the Nine Cells framework.
+Generate new scenarios or expand existing ones using LLM capabilities while maintaining Option type semantics and narrative completeness according to the Kleene Decision Grid.
 
 ## Generation Modes
 
@@ -56,9 +56,9 @@ Use `AskUserQuestion` to gather key decisions. Group related choices in a single
       "header": "Tier",
       "multiSelect": false,
       "options": [
-        {"label": "Bronze (Recommended)", "description": "4 corner cells - focused, clear narrative"},
-        {"label": "Silver", "description": "6+ cells - adds uncertainty and exploration"},
-        {"label": "Gold", "description": "All 9 cells - full chaos, improv-friendly"}
+        {"label": "Bronze (Recommended)", "description": "4 of 9 cells (corners) - focused, clear narrative"},
+        {"label": "Silver", "description": "6+ of 9 cells - adds uncertainty and exploration"},
+        {"label": "Gold", "description": "All 9 cells - complete Decision Grid coverage"}
       ]
     }
   ]
@@ -85,39 +85,16 @@ For protagonist archetype, use a separate call (progressive disclosure):
 }
 ```
 
-**Menu Guidelines:** See `lib/framework/presentation.md` → "Menu Conventions".
+**Menu Guidelines:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/presentation.md` → "Menu Conventions".
 
 ### Step 2: Design the Narrative Skeleton
 
-Create the core structure based on target tier:
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md` → "Completeness Tiers" for full definitions.
 
-**Bronze (4 corners):**
-```
-START
-  ├── Path A (decisive action)
-  │   ├── A1: Triumph (Chooses + Permits) → Victory
-  │   └── A2: Barrier (Chooses + Blocks) → Blocked/Death
-  └── Path B (avoidance)
-      ├── B1: Escape (Avoids + Permits) → Unchanged
-      └── B2: Fate (Avoids + Blocks) → Forced consequence
-```
-
-**Silver (Bronze + middle cells):**
-```
-START
-  ├── Path A (decisive action)
-  │   ├── A1: Triumph → Victory
-  │   ├── A2: Commitment (Chooses + Indeterminate) → Pending outcome
-  │   └── A3: Barrier → Blocked
-  ├── Path B (exploration/hesitation)
-  │   └── B1: Discovery (Unknown + Permits) → Insight gained
-  └── Path C (avoidance)
-      ├── C1: Escape → Unchanged
-      └── C2: Deferral (Avoids + Indeterminate) → Tension building
-```
-
-**Gold (all 9 cells):**
-Include explicit nodes for all cells. The "Unknown" row (Discovery, Limbo, Revelation) can be reached through exploration options or improvised play.
+Create structure based on target tier:
+- **Bronze**: 4 corners (Triumph, Rebuff, Escape, Fate)
+- **Silver**: Bronze + 2 middle cells (Commitment, Discovery, Constraint, Deferral, or Limbo)
+- **Gold**: All 9 cells scripted or via improvisation
 
 ### Step 3: Define Key Elements
 
@@ -159,24 +136,16 @@ For each node, ensure:
 
 ### Step 5: Ensure Grid Coverage
 
-Verify scenario coverage based on target tier:
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md` → "Completeness Tiers" for cell definitions.
+> **Validation:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/analysis-validation-guide.md` → "Narrative Validation" to verify.
 
-**Bronze (Required):**
-- [ ] Triumph (Chooses + Permits) - victory/transformation
-- [ ] Barrier (Chooses + Blocks) - blocked path
-- [ ] Escape (Avoids + Permits) - unchanged/survival
-- [ ] Fate (Avoids + Blocks) - forced consequence
-- [ ] At least one NONE_DEATH path (mortality)
-- [ ] At least one SOME_TRANSFORMED path (growth)
+**Minimum Requirements by Tier:**
 
-**Silver (Bronze + 2 of these):**
-- [ ] Commitment (Chooses + Indeterminate) - action with pending outcome
-- [ ] Discovery (Unknown + Permits) - exploration rewarded
-- [ ] Revelation (Unknown + Blocks) - hesitation reveals constraint
-- [ ] Deferral (Avoids + Indeterminate) - avoidance postpones consequence
-- [ ] Limbo (Unknown + Indeterminate) - typically via improvisation
-
-**Gold:** All nine cells represented
+| Tier | Cells | Required | Plus |
+|------|-------|----------|------|
+| Bronze | 4/9 | Triumph, Rebuff, Escape, Fate | NONE_DEATH + SOME_TRANSFORMED paths |
+| Silver | 6/9 | Bronze + 2 middle cells | Commitment, Discovery, Constraint, Deferral, or Limbo |
+| Gold | 9/9 | All cells | Scripted or via improvisation |
 
 ### Step 6: Write YAML
 
@@ -257,7 +226,7 @@ Improvised responses must:
 
 - Creating permanent new scenario nodes
 - Gaining/losing scenario items
-- Changing location
+- Changing location / Teleportation
 - Killing or transcending the character
 - Bypassing major story gates
 
@@ -389,7 +358,7 @@ Add paths that transform rather than defeat:
 
 ### Writing Style
 
-> **Reference:** See `lib/framework/improvisation.md` → "Tone Matching"
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md` → "Tone Matching"
 > and "Narrative Purity" for dialogue quality standards.
 
 Generated narrative and dialogue must:
@@ -397,14 +366,27 @@ Generated narrative and dialogue must:
 - Keep characters in-character (no meta-narrative terms like "redemption arc")
 - Reserve analytical observations for Gallery Mode, not in-world text
 
-**Characters speak as characters, not as literary critics.**
+**Characters speak as characters, not as literary critics or game machanics exposition.**
 
 ## Additional Resources
 
-### Reference Files
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core.md`** - Option type semantics, Nine Cells, and Improvisation Routing
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-format.md`** - YAML specification
-- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/improvisation.md`** - Tone Matching & Narrative Purity
+### Core
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/core.md`** - Option type semantics, Decision Grid, Completeness Tiers
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/core/endings.md`** - Ending classification and flavor system
+
+### Formats
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/formats/scenario-format.md`** - YAML specification
+
+### Guides
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/analysis-validation-guide.md`** - Validation checklists for generated scenarios
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/best-practices.md`** - v5 design patterns and authoring tips
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/migration-v2.md`** - Migration guide for updating older scenarios
+
+### Templates
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/authoring/TEMPLATES/README.md`** - Template usage guide and selection
+
+### Gameplay
+- **`${CLAUDE_PLUGIN_ROOT}/lib/framework/gameplay/improvisation.md`** - Tone Matching & Narrative Purity
 
 ### Example Scenarios
 - **`${CLAUDE_PLUGIN_ROOT}/scenarios/dragon_quest.yaml`** - Complete example
