@@ -24,6 +24,21 @@ command -v yq >/dev/null 2>&1 && yq --version 2>&1 | head -1
 
 Set `yaml_tool: yq` if output contains "mikefarah/yq" and version >= 4, otherwise `yaml_tool: grep`.
 
+## Server Detection (at session start)
+
+Check if a kleene-server local proxy is running:
+
+```bash
+curl -s --connect-timeout 1 http://localhost:8420/health 2>/dev/null
+```
+
+If the response contains `"status":"ok"`:
+- Set `server_url: http://localhost:8420`
+- Set `server_mode: true`
+- Remote loading becomes available for all scenarios on the server
+
+The server URL can also be set explicitly via `/kleene server [url]`.
+
 ## If no action provided, show menu FIRST
 
 Use AskUserQuestion to present options:
@@ -533,6 +548,43 @@ Keywords: "export", "transcript", "save story", "save journey", "summary", "stat
 If no active game:
 "No active game to export. Start a game with /kleene play first."
 
+### Server Actions
+Keywords: "server", "connect", "proxy", "remote", "mmo"
+
+**Set Server URL** (`/kleene server [url]`):
+1. If URL provided: set `server_url` and test connection
+2. If no URL: show current server status
+
+```bash
+curl -s --connect-timeout 2 [url]/health 2>/dev/null
+```
+
+If response contains `"status":"ok"`:
+- Store `server_url` in context
+- Set `server_mode: true`
+- Report: "Connected to kleene-server at [url] ([mode] mode)"
+
+If connection fails:
+- Report: "Cannot reach kleene-server at [url]. Is it running?"
+
+**Show Server Status** (`/kleene server`):
+```
+Kleene Server Status
+  URL: http://localhost:8420
+  Mode: local
+  Connected: yes
+  Scenarios: 3 available
+
+Use: /kleene server [url]    Set server URL
+     /kleene server off      Disconnect from server
+```
+
+**Disconnect** (`/kleene server off`):
+1. Clear `server_url` and `server_mode`
+2. Confirm: "Disconnected from server. Using local scenarios only."
+
+When `server_mode: true`, the Play menu shows both local and remote scenarios. Remote scenarios are loaded via the server API instead of local files. The game loop uses remote loading mode (see `lib/framework/scenario-file-loading/remote-loading.md`).
+
 ### Help Actions
 Keywords: "help", "how", "what", "?"
 
@@ -598,6 +650,11 @@ SETTINGS
                                     on = Type commands (Zork-style)
                                     off = Show choice menu (default)
   /kleene choice [on|off]         Toggle choice mode (inverse of parser)
+
+SERVER
+  /kleene server                  Show server connection status
+  /kleene server [url]            Connect to kleene-server
+  /kleene server off              Disconnect from server
 
 DURING GAMEPLAY
   Select "Other" or type freely   Improvise beyond scripted choices

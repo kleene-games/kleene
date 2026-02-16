@@ -1,0 +1,557 @@
+# Kleene MMO: Architecture Plan
+
+## Context
+
+Kleene is a Claude Code plugin implementing a three-valued narrative engine for interactive fiction. Currently it runs entirely client-side: the LLM IS the game engine, interpreting YAML scenarios, evaluating preconditions, applying consequences, and generating narrative. State lives in conversation context.
+
+This plan transforms Kleene into a multiplayer platform. The critical insight: **the LLM remains the game engine**. It evaluates preconditions, applies consequences, generates narrative, and handles improvisation — exactly as `kleene-play` works today. The server's role is **progressive node disclosure + centralized state** — serving scenario data one node at a time (like lazy-loading over HTTP) and storing player state, cell tracking, and payment status.
+
+Two deployment modes:
+- **Local mode**: A localhost proxy (like [claude-search-proxy](https://github.com/LePetitPince/claude-search-proxy)) serves local scenario nodes on demand. A web frontend provides visual gameplay controls. The LLM game engine (Claude Code / OpenClaw with kleene skills) drives gameplay.
+- **Remote mode (MMO)**: A server provides the same node disclosure over MCP/HTTP, plus PostgreSQL for multiplayer state, payments, and admin. The LLM game engine still runs client-side.
+
+**Why this works:** The current `kleene-play` SKILL.md already has two loading modes — standard (full file cached) and lazy (nodes fetched on demand via yq/grep). The server simply replaces the yq/grep calls with HTTP API calls. The entire game loop, precondition evaluation, consequence application, and narrative generation stay in the LLM's context. See `lib/framework/scenario-file-loading/lazy-loading.md` for the existing pattern.
+
+---
+
+## Repository Structure
+
+Three separate repos:
+
+| Repo | Purpose | Stack |
+|------|---------|-------|
+| **`kleene`** (existing) | Claude Code plugin. Framework docs, scenarios, client skills (`kleene-play` for local-only, `kleene-mmo` for remote). | Markdown, YAML |
+| **`kleene-server`** | Node disclosure service + state store. Local proxy mode (localhost) and remote MMO server mode. NOT a game engine. | Python (FastAPI), PostgreSQL |
+| **`kleene-web`** | Local web frontend. Connects to game engine (local or remote) via JSON API. Visual gameplay controls, per-turn settings. | HTML/CSS/JS (lightweight, no heavy framework) |
+
+---
+
+## Architecture Overview
+
+```
+                          Remote Server (kleene-server --remote)
+                         ┌──────────────────────────────┐
+                         │  ┌──────────┐  ┌───────────┐ │
+                         │  │   MCP    │  │  Admin    │ │
+                         │  │ Endpoint │  │  Web UI   │ │
+                         │  └────┬─────┘  └─────┬─────┘ │
+                         │  ┌────┴───────────────┴────┐  │
+                         │  │  Node Disclosure +       │  │
+                         │  │  State Store             │  │
+                         │  └────────────┬────────────┘  │
+                         │  ┌────────────┴────────────┐  │
+                         │  │  PostgreSQL + payments   │  │
+                         │  └─────────────────────────┘  │
+                         └──────────────┬───────────────┘
+                                        │ MCP/HTTPS
+                                        │ (remote scenarios,
+                                        │  multiplayer, state sync)
+   ┌────────────────────────────────────┼────────────────────────────┐
+   │ Player's Machine                   │                            │
+   │                                    │                            │
+   │  ┌──────────────────┐    ┌────────┴─────────┐                  │
+   │  │  Web Frontend    │    │  Local Proxy      │                  │
+   │  │  (kleene-web)    │◄──►│  (kleene-server   │                  │
+   │  │                  │JSON│   --local)         │                  │
+   │  │  Per-turn:       │API │                    │                  │
+   │  │  - temp slider   │    │  Serves nodes:     │                  │
+   │  │  - gallery toggle│    │  - LOCAL yaml files│                  │
+   │  │  - foresight     │    │  - REMOTE via MCP  │                  │
+   │  │  - parser mode   │    │                    │                  │
+   │  │  - stats display │    │  Stores state &    │                  │
+   │  │  - grid coverage │    │  relays to web UI  │                  │
+   │  └──────────────────┘    │                    │                  │
+   │                          │  localhost:8420    │                  │
+   │  ┌──────────────────┐    └────────┬───────────┘                  │
+   │  │  LLM Game Engine │             │                              │
+   │  │  (Claude Code /  │◄────────────┘                              │
+   │  │   OpenClaw)      │  Calls proxy for nodes                     │
+   │  │                  │  Pushes state + narrative                   │
+   │  │  THE ENGINE:     │  to proxy for web UI                       │
+   │  │  - evaluates     │                                            │
+   │  │    preconditions │                                            │
+   │  │  - applies       │                                            │
+   │  │    consequences  │                                            │
+   │  │  - generates     │                                            │
+   │  │    narrative     │                                            │
+   │  │  - handles       │                                            │
+   │  │    improvisation │                                            │
+   │  │  - tracks state  │                                            │
+   │  │    in context    │                                            │
+   │  └──────────────────┘                                            │
+   └──────────────────────────────────────────────────────────────────┘
+```
+
+### Key principles
+
+1. **The LLM IS the game engine.** Precondition evaluation, consequence application, narrative generation, improvisation — all happen in the LLM's context, exactly as `kleene-play` works today. The server never evaluates game logic.
+2. **The server is a data provider.** It serves scenario nodes on demand (progressive disclosure, like lazy-loading over HTTP) and stores centralized state (saves, cell tracking, player profiles, payments).
+3. **Unified JSON API.** The local proxy and remote server expose the same API shape. The LLM game engine calls it to fetch nodes and sync state. The web frontend reads from it for display.
+4. **Web frontend is a companion dashboard.** It displays the LLM's narrative output, shows per-turn settings controls (sliders/toggles), stats, inventory, and Decision Grid coverage. The LLM drives gameplay; the web UI provides visual controls.
+5. **Local + Remote scenario loading.** The local proxy loads nodes from filesystem YAML (replacing yq/grep lazy-loading). It can also fetch remote scenarios via MCP for premium/multiplayer content.
+6. **Three loading modes.** The `kleene-play` skill gains a third loading mode alongside standard and lazy: **remote** — fetching nodes from the proxy/server HTTP API instead of local files.
+
+---
+
+## MCP Tool API
+
+### Account & Store
+
+| Tool | Input | Returns |
+|------|-------|---------|
+| `kleene_authenticate` | `{ api_key }` | Player profile, owned scenarios, active sessions |
+| `kleene_list_scenarios` | `{ filter?: "owned"\|"free"\|"premium"\|"all" }` | Scenario catalog with ownership, prices, game modes |
+| `kleene_purchase_scenario` | `{ scenario_id }` | Stripe Checkout URL or immediate grant |
+| `kleene_player_profile` | `{ player_id? }` | Stats, cell coverage grid, achievements |
+
+### Scenario & Node Access (progressive disclosure)
+
+| Tool | Input | Returns |
+|------|-------|---------|
+| `kleene_get_header` | `{ scenario_id }` | Scenario metadata, initial_character, initial_world, start_node, ending_ids (like lazy-loading header) |
+| `kleene_get_node` | `{ scenario_id, node_id }` | Single node: narrative, choice prompt, options with preconditions, consequence defs, improvise contexts |
+| `kleene_get_ending` | `{ scenario_id, ending_id }` | Ending narrative, type, method, tone |
+| `kleene_get_locations` | `{ scenario_id }` | Location definitions with connections (for travel/map) |
+
+### Gameplay State
+
+| Tool | Input | Returns |
+|------|-------|---------|
+| `kleene_start_session` | `{ scenario_id, game_mode, world_id? }` | Session ID, world_id |
+| `kleene_sync_state` | `{ session_id, state }` | Confirms state stored. LLM pushes full game state after each turn for web UI + persistence. |
+| `kleene_report_cell` | `{ session_id, cell_type, node_id }` | Confirms cell recorded. LLM reports which Decision Grid cell was hit. |
+| `kleene_save_game` | `{ session_id, name?, state }` | Save ID |
+| `kleene_load_game` | `{ save_id }` | Saved state + scenario_id |
+| `kleene_poll_world_events` | `{ session_id, since }` | World changes from other players (shared mode) |
+
+### Social
+
+| Tool | Input | Returns |
+|------|-------|---------|
+| `kleene_list_active_players` | `{ scenario_id?, world_id? }` | Active players with locations |
+| `kleene_view_leaderboard` | `{ scenario_id?, metric }` | Ranked entries |
+| `kleene_share_improvisation` | `{ session_id, node_id, text, narrative }` | Submission ID (collaborative mode) |
+
+### Admin (elevated API key)
+
+| Tool | Input | Returns |
+|------|-------|---------|
+| `kleene_admin` | `{ action, params }` | Varies (manage players, upload scenarios, view usage/revenue) |
+
+### Design notes
+
+- **`kleene_get_node` is the lazy-loading replacement.** Instead of `yq '.nodes.NODE_ID' scenario.yaml`, the LLM calls `kleene_get_node`. Same data, HTTP transport. The LLM still evaluates preconditions, applies consequences, and generates narrative from the node data.
+- **`kleene_sync_state` is how the web UI sees the game.** After each turn, the LLM pushes its current game state to the proxy/server. The web frontend polls this to display stats, inventory, choices, and Decision Grid coverage.
+- **`kleene_report_cell` enables server-side cell tracking.** The LLM knows which cell was hit (from the option's `cell` annotation or improvisation classification). It reports this to the server for persistent tracking across sessions.
+- **All game logic stays in the LLM.** Precondition evaluation, consequence application, narrative generation, improvisation handling, temperature adaptation, gallery mode, compound commands — all handled by the LLM with `kleene-play` skills, exactly as today.
+- **Progressive disclosure:** The server never sends the full scenario YAML. It serves one node at a time via `kleene_get_node`. Future nodes are invisible to the client until requested.
+
+---
+
+## Server Architecture (kleene-server)
+
+The server is NOT a game engine. It is a **node disclosure service + state store**. The LLM (with `kleene-play` skills loaded) remains the full game engine, exactly as it works today.
+
+### What the server does (and doesn't do)
+
+| Server DOES | Server DOES NOT |
+|-------------|-----------------|
+| Serve scenario nodes on demand (like lazy-loading over HTTP) | Evaluate preconditions |
+| Store/retrieve player state (saves, profiles) | Apply consequences |
+| Track cell coverage per player/scenario | Generate narrative |
+| Authenticate players (API keys) | Handle improvisation |
+| Process payments (Stripe) | Manage game turns |
+| Coordinate shared world state (multiplayer) | Track game state during play |
+| Validate scenario YAML on upload | Make gameplay decisions |
+
+### How it mirrors lazy-loading
+
+Current lazy-loading (`lib/framework/scenario-file-loading/lazy-loading.md`):
+```
+LLM needs node → yq '.nodes.NODE_ID' scenario.yaml → gets node YAML → LLM processes it
+```
+
+New remote loading:
+```
+LLM needs node → GET /api/scenario/{id}/node/{node_id} → gets node JSON → LLM processes it
+```
+
+Same pattern, different transport. The LLM still receives the node data and does all game logic.
+
+### kleene-server project structure
+
+```
+kleene-server/
+├── scenarios/                 # Scenario YAML storage
+│   ├── loader.py              # YAML parser, node extraction, header extraction
+│   └── validator.py           # JSON Schema validation (reuses scenario-schema.json)
+├── api/
+│   ├── routes.py              # JSON API endpoints (shared by local + remote)
+│   ├── schemas.py             # Pydantic request/response models
+│   └── middleware.py          # CORS, rate limiting
+├── state/
+│   ├── sessions.py            # Game session state storage
+│   ├── cells.py               # Decision Grid cell tracking
+│   └── saves.py               # Save/load game state
+├── local/                     # LOCAL PROXY MODE
+│   ├── proxy.py               # FastAPI app for localhost
+│   ├── session_store.py       # In-memory or SQLite session storage
+│   └── narrative_relay.py     # Receives LLM narrative, relays to web UI
+├── remote/                    # REMOTE MMO MODE
+│   ├── mcp_server.py          # MCP Streamable HTTP endpoint
+│   ├── mcp_tools.py           # MCP tool definitions
+│   ├── auth.py                # API key middleware
+│   └── webhooks.py            # Stripe webhook handler
+├── multiplayer/
+│   ├── shared_world.py        # Shared world state management
+│   ├── events.py              # Cross-player event relay
+│   └── improvisations.py      # Collaborative worldbuilding store
+├── models/                    # SQLAlchemy models (remote mode only)
+├── admin_ui/                  # Jinja2 templates + static (remote mode only)
+├── config.py
+├── database.py                # PostgreSQL connection (remote mode only)
+└── main.py                    # Entry point: --local or --remote mode
+```
+
+### Two deployment modes
+
+```bash
+# Local proxy mode (player's machine)
+kleene-server --local --port 8420 --scenarios ~/kleene/scenarios/
+
+# Remote MMO mode (server)
+kleene-server --remote --db postgres://... --stripe-key sk_...
+```
+
+**Local mode** (`--local`):
+- Runs on `localhost:8420`
+- Loads scenario YAML from filesystem, extracts nodes on demand
+- In-memory session store (LLM pushes state snapshots for web UI)
+- No auth required (localhost-only binding)
+- Acts as intermediary: LLM pushes narrative/state → web UI reads it
+
+**Remote mode** (`--remote`):
+- Runs on public host with SSL
+- PostgreSQL for all persistent state
+- API key auth on every request
+- MCP Streamable HTTP endpoint for LLM clients
+- Same JSON API + admin dashboard + payments + multiplayer
+
+---
+
+## Data Model (PostgreSQL)
+
+### Core tables
+
+| Table | Purpose | Key columns |
+|-------|---------|-------------|
+| `players` | Accounts | `id`, `api_key`, `email`, `payment_status`, `stripe_customer_id` |
+| `scenarios` | Metadata (YAML on filesystem) | `id`, `name`, `yaml_path`, `price_cents`, `game_modes[]`, `tier` |
+| `player_scenarios` | Purchases | `player_id`, `scenario_id`, `stripe_payment_id` |
+| `game_sessions` | Per-player game state | `player_id`, `scenario_id`, `world_id?`, `game_mode`, `state_json` (JSONB) |
+| `save_points` | Named saves | `session_id`, `name`, `state_json`, counters |
+| `shared_worlds` | Shared world state | `scenario_id`, `world_state_json` (JSONB) |
+| `cell_tracking` | Decision Grid coverage | `player_id`, `scenario_id`, `cell_type`, unique per combo |
+| `usage_log` | Action tracking | `player_id`, `action`, `scenario_id`, `metadata` |
+| `improvisations` | Collaborative submissions | `player_id`, `node_id`, `text`, `classification`, `status` |
+| `achievements` / `player_achievements` | Gamification | Criteria-based unlock tracking |
+
+### State storage strategy
+
+- **Session state**: Full `GameState` as JSONB in `game_sessions.state_json`. Atomic replacement on each action.
+- **Shared world state**: Separate row in `shared_worlds`. Updated with `SELECT ... FOR UPDATE` row locking.
+- **Split in shared mode**: Character state in session, world state in shared_worlds. Both updated atomically in a transaction.
+
+---
+
+## Three Game Modes
+
+### Solo
+Classic Kleene. Own world instance. LLM evaluates all game logic locally. Server provides node disclosure and stores state snapshots/saves.
+
+### Shared World
+Multiple players in one world. **State split:**
+- Per-player: character (traits, inventory, flags, relationships), current location
+- Shared: world flags, location_state, npc_locations, scheduled_events, time
+
+Consistency via polling (`kleene_poll_world_events`). Row-level locking for writes.
+
+### Collaborative Worldbuilding
+Players' improvisations collected and curated. Approved submissions become supplementary content at nodes for future players. Scenarios grow organically. Curation via admin dashboard + voting.
+
+---
+
+## Client Skill (LLM Game Engine)
+
+The existing `kleene-play` SKILL.md gains a **third loading mode: remote**. The game loop is unchanged — the LLM still does all game logic. Only the data source changes.
+
+### Three loading modes in kleene-play
+
+| Mode | When | Node source | State storage |
+|------|------|-------------|---------------|
+| **Standard** | Small local scenarios | Full file cached in context | LLM context |
+| **Lazy** | Large local scenarios | `yq`/`grep` on demand | LLM context |
+| **Remote** | Server-hosted scenarios | `kleene_get_node` via HTTP/MCP | LLM context + sync to server |
+
+The LLM detects which mode to use:
+- Local file exists and fits in context → Standard
+- Local file exists but too large → Lazy
+- Scenario ID + server URL provided → Remote
+
+### Remote mode game loop
+
+Same as existing game loop (Phase 2 in SKILL.md), with these substitutions:
+
+| Current (lazy mode) | Remote mode |
+|---------------------|-------------|
+| `yq '.nodes.NODE_ID' scenario.yaml` | `kleene_get_node(scenario_id, node_id)` |
+| `yq '{header fields}' scenario.yaml` | `kleene_get_header(scenario_id)` |
+| `Write saves/[scenario]/[ts].yaml` | `kleene_save_game(session_id, state)` |
+| `Read saves/[scenario]/[ts].yaml` | `kleene_load_game(save_id)` |
+
+**Additional calls in remote mode:**
+- After each turn: `kleene_sync_state(session_id, state)` — pushes current state to server for web UI display and persistence
+- When a cell is hit: `kleene_report_cell(session_id, cell_type, node_id)` — reports Decision Grid coverage
+- In shared world mode: periodically `kleene_poll_world_events(session_id, since)` — checks for other players' state changes
+
+### What stays the same
+
+Everything else in `kleene-play` SKILL.md is unchanged:
+- Precondition evaluation (all 23 types) — LLM evaluates against state in context
+- Consequence application (all 22+ types) — LLM applies to state in context
+- Narrative generation with temperature adaptation
+- Improvisation handling (classification, soft consequences, time costs)
+- Gallery mode, parser mode, foresight hints, bonus options
+- Presentation formatting (70-char width, headers, stat lines)
+- AskUserQuestion for choices
+
+### OpenClaw adaptation
+
+Same MCP tool interface. Presentation adapts to messaging platform constraints (no 70-char boxes, simpler formatting, numbered options instead of AskUserQuestion).
+
+---
+
+## Web Frontend (kleene-web)
+
+A locally-run web UI that connects to the game engine's JSON API. Provides visual gameplay controls that the player can adjust on each turn — replacing chat-based commands with sliders, toggles, and buttons.
+
+### Project structure
+
+```
+kleene-web/
+├── index.html                 # Single-page app
+├── css/
+│   └── kleene.css             # Themed styling (dark/light, fantasy tones)
+├── js/
+│   ├── app.js                 # Main application, API client
+│   ├── game.js                # Game loop and state management
+│   ├── controls.js            # Settings panel (sliders, toggles)
+│   ├── narrative.js           # Narrative display and formatting
+│   └── grid.js                # Decision Grid visualization
+├── assets/                    # Icons, fonts
+└── README.md
+```
+
+No build step. No npm. Plain HTML/CSS/JS that opens in a browser. Connects to `localhost:8420` (local proxy) or a remote server URL.
+
+### Layout
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  KLEENE                               [Settings] [Save] │
+├─────────────────────┬───────────────────────────────────┤
+│                     │                                   │
+│  NARRATIVE PANEL    │  CONTROLS PANEL                   │
+│                     │                                   │
+│  ┌───────────────┐  │  Temperature  ████████░░  7       │
+│  │               │  │  Gallery      [ON] / OFF          │
+│  │  Scene text   │  │  Foresight    █████░░░░░  5       │
+│  │  displayed    │  │  Parser Mode  ON / [OFF]          │
+│  │  here with    │  │                                   │
+│  │  formatting   │  │  ─────────────────────────        │
+│  │               │  │  STATS                            │
+│  └───────────────┘  │  Courage: 7  Wisdom: 5            │
+│                     │  Inventory: sword, scroll          │
+│  ┌───────────────┐  │  Location: Dragon's Lair          │
+│  │ CHOICES       │  │  Turn 3 · Scene 2 · Beat 1        │
+│  │               │  │                                   │
+│  │ [Attack    ]  │  │  ─────────────────────────        │
+│  │ [Negotiate ]  │  │  DECISION GRID                    │
+│  │ [Flee      ]  │  │  ┌───┬───┬───┐                   │
+│  │ [Other...  ]  │  │  │ ■ │   │ ■ │  ■ = discovered   │
+│  └───────────────┘  │  ├───┼───┼───┤                    │
+│                     │  │ ■ │   │   │  Coverage: 4/9     │
+│                     │  ├───┼───┼───┤  Tier: Bronze      │
+│                     │  │ ■ │   │ ■ │                    │
+│                     │  └───┴───┴───┘                    │
+└─────────────────────┴───────────────────────────────────┘
+```
+
+### How it works
+
+The web frontend is a **companion dashboard** to the LLM game engine, not a standalone client. The flow:
+
+1. **LLM drives gameplay** — evaluates nodes, generates narrative, presents choices
+2. **LLM syncs state** — after each turn, pushes game state + rendered narrative to the proxy via `kleene_sync_state`
+3. **Web UI reads state** — polls the proxy and displays narrative, stats, inventory, choices, Decision Grid
+4. **Player adjusts settings** — uses web UI sliders/toggles to change temperature, gallery mode, foresight, parser mode
+5. **LLM reads settings** — on next turn, fetches updated settings from proxy and adapts accordingly
+6. **Player can also choose via web UI** — clicks a choice button, proxy stores the selection, LLM picks it up on next poll (alternative to AskUserQuestion)
+
+The proxy mediates between the LLM and the web UI, acting as a shared state relay.
+
+### Per-turn controls
+
+| Control | Type | Range | What it affects |
+|---------|------|-------|-----------------|
+| Temperature | Slider | 0-10 | Improvisation richness, narrative adaptation depth |
+| Gallery Mode | Toggle | on/off | Meta-commentary on narrative choices |
+| Foresight | Slider | 0-10 | Hint specificity level |
+| Parser Mode | Toggle | on/off | Hide scripted options, show only Look/Inventory/Help |
+
+These are the same settings currently managed via chat commands in `kleene-play`. The web UI makes them instantly adjustable per turn.
+
+### JSON API endpoints (served by both local proxy and remote server)
+
+| Endpoint | Method | Called by | Purpose |
+|----------|--------|-----------|---------|
+| `GET /api/scenarios` | GET | Web UI | List available scenarios |
+| `GET /api/scenario/{id}/header` | GET | LLM | Get scenario header (lazy-load init) |
+| `GET /api/scenario/{id}/node/{node_id}` | GET | LLM | Get single node (progressive disclosure) |
+| `GET /api/scenario/{id}/ending/{ending_id}` | GET | LLM | Get ending data |
+| `GET /api/scenario/{id}/locations` | GET | LLM/Web | Get location definitions |
+| `POST /api/game/start` | POST | LLM | Start session, get session ID |
+| `PUT /api/game/{session}/state` | PUT | LLM | Push current game state (after each turn) |
+| `GET /api/game/{session}/state` | GET | Web UI | Read latest state for display |
+| `PUT /api/game/{session}/narrative` | PUT | LLM | Push rendered narrative text |
+| `GET /api/game/{session}/narrative` | GET | Web UI | Read latest narrative for display |
+| `PATCH /api/game/{session}/settings` | PATCH | Web UI | Update settings (temp, gallery, etc.) |
+| `GET /api/game/{session}/settings` | GET | LLM | Read current settings |
+| `POST /api/game/{session}/cell` | POST | LLM | Report cell discovery |
+| `GET /api/game/{session}/grid` | GET | Web UI | Get Decision Grid coverage |
+| `POST /api/game/{session}/save` | POST | LLM | Save game state |
+| `GET /api/game/saves` | GET | Web UI/LLM | List saves |
+| `POST /api/game/load/{save_id}` | POST | LLM | Load saved state |
+| `GET /api/game/{session}/events` | GET | LLM | Poll world events (multiplayer) |
+
+The proxy is a **shared state relay** between the LLM and the web UI. The LLM pushes state + narrative; the web UI reads them. The web UI pushes settings; the LLM reads them.
+
+---
+
+## Admin Dashboard (MVP)
+
+FastAPI + Jinja2 + htmx. No JS framework. Admin API key auth.
+
+| Page | Purpose |
+|------|---------|
+| Dashboard | Active players, revenue, usage summary |
+| Players | List, search, API key management, payment status |
+| Scenarios | Upload, enable/disable, pricing, player stats |
+| Usage | Actions/day, popular scenarios, peak times |
+| Improvisations | Pending curation queue (approve/reject) |
+| Revenue | Stripe payment history |
+
+Stripe integration: Checkout Sessions for purchases, webhooks for confirmation.
+
+---
+
+## Progressive Disclosure & Achievements
+
+### Cell tracking
+- Recorded on each `make_choice` (from option's `cell` annotation) and `submit_improvisation` (from classification)
+- Per-player, per-scenario grid coverage
+- Tier calculation: Bronze (4 corners) → Silver (6+) → Gold (all 9)
+
+### Player profile visualization
+```
+              Permits    Indeterminate   Blocks
+Chooses      [TRIUMPH]   [ ]            [REBUFF]
+Unknown      [DISCOVERY] [ ]            [ ]
+Avoids       [ESCAPE]    [ ]            [FATE]
+Coverage: 4/9 (Bronze)
+```
+
+### Achievements
+First Blood (complete any), Bronze/Silver/Gold tiers, Improviser (10 successful), Worldbuilder (approved submission), Collector (5+ scenarios), Speed Runner, Explorer (all locations), Completionist (all endings).
+
+---
+
+## Technology Stack
+
+### kleene-server (Python)
+
+| Component | Choice |
+|-----------|--------|
+| Framework | FastAPI (Python 3.12+) |
+| MCP SDK | `mcp` Python package (Streamable HTTP transport) |
+| Database | PostgreSQL 16 (remote mode), SQLite/in-memory (local mode) |
+| ORM | SQLAlchemy 2.0 + Alembic migrations (remote mode) |
+| Payments | Stripe (Checkout Sessions + Webhooks) |
+| Admin UI | Jinja2 + htmx |
+| YAML parsing | ruamel.yaml |
+| Schema validation | jsonschema (reuse existing `scenario-schema.json`) |
+| Testing | pytest + pytest-asyncio |
+| Deployment | Docker + docker-compose (remote); `pip install` (local) |
+| SSL | Caddy reverse proxy + Let's Encrypt (remote only) |
+
+### kleene-web (Frontend)
+
+| Component | Choice |
+|-----------|--------|
+| Stack | Plain HTML/CSS/JS — no build step, no npm |
+| Styling | CSS custom properties for theming |
+| HTTP client | Fetch API |
+| Serving | Open `index.html` in browser, or `python -m http.server` |
+| Responsive | CSS Grid/Flexbox, works on desktop and tablet |
+
+---
+
+## Implementation Phases
+
+| Phase | Repo | Scope | Depends on |
+|-------|------|-------|------------|
+| **1. Local Proxy** | kleene-server | FastAPI on localhost. YAML scenario loader with node extraction. JSON API for header/node/ending/locations. In-memory state relay. Session management. | - |
+| **2. Remote Loading Mode** | kleene | Add third loading mode to `kleene-play` SKILL.md. LLM fetches nodes via HTTP instead of yq/grep. State sync calls after each turn. | Phase 1 |
+| **3. Web Frontend** | kleene-web | HTML/CSS/JS dashboard. Narrative display, choice buttons, settings sliders (temp/gallery/foresight/parser), stats panel, Decision Grid visualization. Polls proxy for state. | Phase 1 |
+| **4. Remote Server** | kleene-server | MCP Streamable HTTP endpoint. API key auth. Same JSON API as local proxy + PostgreSQL backend. Remote scenario hosting. | Phase 1 |
+| **5. Database** | kleene-server | PostgreSQL schema, SQLAlchemy models, Alembic. Player accounts, session persistence, cell tracking, usage logging, scenario metadata. | Phase 4 |
+| **6. Admin Dashboard** | kleene-server | Player/scenario management, usage analytics, API key generation. | Phase 5 |
+| **7. Payments** | kleene-server | Stripe Checkout integration, webhook handler, scenario purchase flow. | Phase 5, 6 |
+| **8. Shared World** | kleene-server | Shared world state store, state split (character=per-player, world=shared), poll_world_events, multi-player sessions. | Phase 5 |
+| **9. Collaborative** | kleene-server | Shared improvisation store, curation pipeline, admin curation page, voting. | Phase 8 |
+| **10. Social** | kleene-server | Leaderboards, achievements, player profiles. | Phase 5 |
+
+**Quick wins first:** Phases 1-3 get a working local game with web dashboard. No server deployment, no auth, no database. Just proxy + updated skill + frontend. The LLM game engine is already built — it's the existing `kleene-play` skill.
+
+---
+
+## Open Questions
+
+| # | Question | Proposed direction |
+|---|----------|--------------------|
+| 1 | **OpenClaw MCP readiness?** Partial support, community bridges exist. | Build for Claude Code first. MCP tool interface is identical for both clients. |
+| 2 | **Web UI ↔ LLM sync latency?** Polling vs SSE vs WebSocket? | Start with polling (simplest). Web UI polls `/api/game/{session}/state` every 2s. SSE upgrade later if latency matters. |
+| 3 | **Save format compatibility?** Existing saves are YAML files. | Server accepts/returns JSON. Conversion utility bridges YAML (existing) ↔ JSON (proxy API). Same state model. |
+| 4 | **Free tier limits for remote?** | 2 free scenarios, 50 actions/day. Local mode unlimited. |
+| 5 | **Scenario DRM for remote?** | Server never sends raw YAML. `kleene_get_node` serves one node at a time. Progressive disclosure IS the protection. |
+| 6 | **Web frontend packaging?** | Start with plain files served by `python -m http.server`. PWA later for offline. |
+| 7 | **Choice input via web UI?** Can the player click choice buttons in the browser instead of AskUserQuestion? | Yes. Web UI writes selection to `POST /api/game/{session}/choice`. LLM polls for it instead of using AskUserQuestion. Requires an alternative input path in the remote loading mode. |
+| 8 | **Multiplayer state authority?** If the LLM evaluates game logic, who is authoritative for shared world state? | Server stores authoritative world state. LLM reads it, proposes changes, server applies them. For solo play the LLM is authoritative (no conflict). |
+
+---
+
+## Critical Files to Modify
+
+| File | Change |
+|------|--------|
+| `skills/kleene-play/SKILL.md` | Add remote loading mode (third mode alongside standard and lazy). Add state sync calls. Add proxy-based choice input path. |
+| `lib/framework/scenario-file-loading/` | Add `remote-loading.md` spec alongside existing `lazy-loading.md` and `standard-loading.md`. |
+| `commands/kleene.md` | Add server URL configuration. Detect local proxy availability. Route to remote mode when configured. |
+
+## Verification
+
+- **Phase 1**: Start local proxy, `curl` node extraction endpoints, compare output to `yq` extraction of same nodes from `dragon_quest.yaml`
+- **Phase 2**: Play dragon_quest via Claude Code with remote loading mode (proxy serving nodes instead of local file). Verify identical gameplay to standard/lazy modes.
+- **Phase 3**: Open web frontend, see real-time narrative + stats as LLM plays. Adjust temperature slider, verify LLM adapts on next turn.
+- **Phase 4**: Connect Claude Code via MCP to remote server with API key. Play dragon_quest end-to-end over remote connection.
+- **Phase 8**: Two simultaneous Claude Code sessions in shared world. Player A kills dragon → Player B sees world state change on next poll.
