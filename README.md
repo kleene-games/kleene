@@ -4,7 +4,7 @@
 
 Unlike traditional choice-based games, Kleene responds to free-form actions and improvisation. The temperature system lets you control how much the AI adapts - from traditional branching (temp 0) to fully emergent storytelling (temp 10).
 
-🎮 [**Get Started in 5 Minutes**](GETTING_STARTED.md) | 📖 [Documentation](docs/) | 🤝 [Contributing](CONTRIBUTING.md)
+🎮 [**Get Started in 5 Minutes**](docs/GETTING_STARTED.md) | 📖 [Documentation](docs/) | 🤝 [Contributing](CONTRIBUTING.md)
 
 
 ## Quick Start
@@ -26,7 +26,7 @@ Unlike traditional choice-based games, Kleene responds to free-form actions and 
 /kleene analyze
 ```
 
-👉 **New to Kleene?** Check out the [Getting Started Guide](GETTING_STARTED.md)
+👉 **New to Kleene?** Check out the [Getting Started Guide](docs/GETTING_STARTED.md)
 
 ---
 

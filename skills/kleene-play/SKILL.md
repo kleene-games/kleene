@@ -32,7 +32,7 @@ This skill runs game logic **inline** (no sub-agent). Benefits:
 > **Scenario Loading:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-file-loading/overview.md`
 > **Extraction Templates:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-file-loading/extraction-templates.md`
 
-Scenarios may be loaded in two modes depending on file size.
+Scenarios may be loaded in three modes.
 
 ### Standard Load (small scenarios)
 
@@ -45,6 +45,20 @@ For scenarios under ~20k tokens, read the entire file once and cache in context.
 > for complete lazy loading protocol including cache strategy and error handling.
 
 When the Read tool returns a token limit error, switch to lazy loading mode. This loads only the header at start, then fetches nodes on demand each turn.
+
+### Remote Load (server-hosted scenarios)
+
+> **Reference:** See `${CLAUDE_PLUGIN_ROOT}/lib/framework/scenario-file-loading/remote-loading.md`
+> for complete HTTP API loading protocol.
+
+When a kleene-server URL is configured and a scenario is identified by ID (not local file path), use remote loading. This fetches nodes via HTTP API — same data as lazy loading, different transport.
+
+**Remote mode adds these calls each turn:**
+- After each turn: `PUT /api/game/{session_id}/state` — sync state for web UI + persistence
+- After narrative output: `PUT /api/game/{session_id}/narrative` — relay to web UI
+- When a cell is hit: `POST /api/game/{session_id}/cell` — report Decision Grid coverage
+- Before each turn: `GET /api/game/{session_id}/settings` — check for web UI setting changes
+- Before presenting choices: `GET /api/game/{session_id}/choice` — check for web UI choice input
 
 ## Time System
 
@@ -158,6 +172,7 @@ TURN:
   1. Get current node:
      - Standard mode: Access scenario.nodes[current_node] from cached scenario
      - Lazy mode: Grep for "^  {current_node}:" with -A 80, parse YAML
+     - Remote mode: GET /api/scenario/{scenario_id}/node/{current_node} from server
 
   1a. Process elapsed_since_previous (NEW in v5):
       - If node has elapsed_since_previous:
@@ -322,6 +337,13 @@ TURN:
          character: [deep copy of character state],
          world: [deep copy of world state]
        })
+
+  9a. Remote mode sync (if remote loading):
+      - PUT /api/game/{session_id}/state with full game state
+      - PUT /api/game/{session_id}/narrative with rendered narrative text
+      - If a cell was hit: POST /api/game/{session_id}/cell
+      - GET /api/game/{session_id}/settings to check for web UI changes
+      - GET /api/game/{session_id}/choice to check for web UI choice input
 
   10. GOTO step 1 (next turn)
 ```

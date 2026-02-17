@@ -8,20 +8,28 @@ This folder consolidates all scenario loading protocols for the Kleene engine.
 |------|-----------|----------|
 | **Standard** | Files under ~20k tokens | Read entire file, cache in context |
 | **Lazy** | Files exceeding token limit | Load header once, fetch nodes on demand |
+| **Remote** | Server-hosted scenarios | Fetch nodes via HTTP API from kleene-server |
 
 ## Decision Flow
 
 ```
-1. Detect yaml_tool at session start
-   └─ See tool-detection.md
-
-2. Attempt full Read of scenario file
+1. Check for server configuration
    │
-   ├─ SUCCESS → Standard mode
-   │   └─ See standard-loading.md
+   ├─ SERVER URL configured + scenario ID provided → Remote mode
+   │   └─ See remote-loading.md
    │
-   └─ TOKEN LIMIT ERROR → Lazy mode
-       └─ See lazy-loading.md
+   └─ LOCAL FILE available
+       │
+       ├─ Detect yaml_tool at session start
+       │   └─ See tool-detection.md
+       │
+       ├─ Attempt full Read of scenario file
+       │   │
+       │   ├─ SUCCESS → Standard mode
+       │   │   └─ See standard-loading.md
+       │   │
+       │   └─ TOKEN LIMIT ERROR → Lazy mode
+       │       └─ See lazy-loading.md
 ```
 
 ## Tool Detection
@@ -46,6 +54,7 @@ Set capability flag:
 | `tool-detection.md` | yq availability detection |
 | `standard-loading.md` | Full file read protocol |
 | `lazy-loading.md` | On-demand node loading protocol |
+| `remote-loading.md` | HTTP API loading protocol (kleene-server) |
 | `extraction-templates.md` | yq/grep templates for gameplay |
 
 ## Related Files
