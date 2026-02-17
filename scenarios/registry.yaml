@@ -3,7 +3,7 @@
 # Run /kleene sync to update after adding/removing scenario files
 
 version: 1
-last_synced: 2026-01-19T12:00:00Z
+last_synced: 2026-02-17T12:00:00Z
 
 scenarios:
   dragon_quest:
@@ -16,6 +16,12 @@ scenarios:
     estimated_playtime: "15-20"
     content_warnings: []
 
+  the_yabba:
+    name: "The Yabba"
+    description: "A schoolteacher stranded in an outback mining town descends into a nightmare of hospitality, gambling, and self-destruction."
+    path: the_yabba.yaml
+    enabled: true
+    tags: ["discovered"]
   zork1-mini:
     name: "Zork I: The Great Underground Empire - Mini"
     description: "Explore the ruins of an ancient empire, collect treasures, and survive the perils of the Great Underground Empire."
